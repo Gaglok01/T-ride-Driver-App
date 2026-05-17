@@ -1,30 +1,18 @@
 import 'dart:async';
-import 'dart:developer' show log;
+import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:t_rider_services_app/controllers/app_language_controller.dart';
-import 'package:t_rider_services_app/controllers/app_theme_controller.dart';
-import 'package:t_rider_services_app/controllers/driver_map_location_controller.dart';
-import 'package:t_rider_services_app/consts/appConst.dart';
-import 'package:t_rider_services_app/config/api_urls.dart';
 import 'package:t_rider_services_app/config/home_map_styles.dart';
-import 'package:t_rider_services_app/data/local/secure_storage_service.dart';
+import 'package:t_rider_services_app/consts/appConst.dart';
+import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart';
+import 'package:t_rider_services_app/data/repositories/driver_realtime_repository.dart';
 import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
-import 'package:t_rider_services_app/data/repositories/profile_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
-import 'package:t_rider_services_app/views/home/nearby_firestore_orders_screen.dart';
-import 'package:t_rider_services_app/views/home/widgets/active_orders_section.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
-import 'package:t_rider_services_app/views/home/widgets/service_mode_tiles_section.dart';
-import 'package:t_rider_services_app/views/home/full_screen_dashboard_map_screen.dart';
-import 'package:t_rider_services_app/utils/driver_location_marker_bitmap.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,1298 +22,880 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  final RiderStatusRepository _riderStatusRepository = RiderStatusRepository();
-  final ProfileRepository _profileRepository = ProfileRepository();
-  final SecureStorageService _secureStorageService = SecureStorageService();
-  final AppLanguageController _appLanguageController =
-      Get.find<AppLanguageController>();
-  bool _isOnline = false;
-  bool _onlineStatusLoading = true;
-  bool _togglingOnline = false;
-  num? _driverRating;
-  int? _totalTrips;
-  num? _earningsToday;
-  num? _earningsWeekly;
-  num? _earningsMonthly;
-  String? _userName;
-  int? _userId;
-  String? _userPhotoUrl;
-  String _carModel = '';
-  String _carPlate = '';
-  bool _profileLoading = true;
-  final TextEditingController _searchController = TextEditingController();
-  String _locationLabel = '';
-  bool _locationLoading = true;
-  LatLng? _userLatLng;
-  double _userHeading = 0;
+  final RiderStatusRepository _statusRepository = RiderStatusRepository();
+  final DriverRealtimeRepository _driverRepository = DriverRealtimeRepository();
+
   GoogleMapController? _mapController;
-  MapType _homeMapType = MapType.normal;
-  BitmapDescriptor? _driverLocationIcon;
-  Worker? _homeMapThemeWorker;
-  Worker? _driverLatLngWorker;
-  Worker? _driverHeadingWorker;
-  Worker? _driverPermissionWorker;
+  StreamSubscription<Position>? _positionSub;
+  Timer? _pollingTimer;
+  Timer? _locationPushTimer;
 
-  LatLng? _lastGeocodeAnchor;
-  DateTime _lastGeocodeAt = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _isOnline = false;
+  bool _loadingDashboard = true;
+  bool _updatingOnline = false;
+  bool _loadingRequests = false;
+  bool _bidEnabled = true;
+  bool _poolingEnabled = true;
+  bool _courierEnabled = true;
 
-  /// Last target we centered the home preview map on (avoids jitter; recenters on large moves).
-  LatLng? _lastHomeMapCameraLatLng;
+  num _todayEarnings = 0;
+  num _weekEarnings = 0;
+  num _rating = 0;
+  int _totalTrips = 0;
 
-  bool get _isDarkMode => AppConst.isDarkMode;
-  Color get _cardBackground =>
-      _isDarkMode ? const Color(0xFFEFEFEF) : AppConst.white;
-  Color get _screenBackground => AppConst.scaffoldBackground;
-  Color get _headerBackground => AppConst.brandedHeader;
-  Color get _primaryTextColor => Colors.black;
-  Color _textWithOpacity(double opacity) =>
-      _primaryTextColor.withValues(alpha: opacity);
-  bool get _hasCarInfo =>
-      _carModel.trim().isNotEmpty || _carPlate.trim().isNotEmpty;
+  LatLng? _driverLatLng;
+  double _heading = 0;
+  DriverRideRequest? _activeRide;
+  List<DriverRideRequest> _requests = [];
 
-  static const LatLng _defaultMapCenter = LatLng(6.5244, 3.3792);
+  static const LatLng _fallbackCenter = LatLng(41.2565, -95.9345);
+  static const double _startTripMaxMiles = 0.5;
 
-  /// Custom JSON style for normal / terrain map types only (no overlay on imagery).
-  String? get _homeMapStyleJson {
-    final styled =
-        _homeMapType != MapType.satellite && _homeMapType != MapType.hybrid;
-    if (!styled) return null;
-    return AppConst.isDarkMode
-        ? HomeMapStyles.darkUberLike
-        : HomeMapStyles.lightUberLike;
-  }
+  bool get _hasActiveRide => _activeRide != null;
+  DriverRideRequest? get _topRequest => _requests.isEmpty ? null : _requests.first;
 
   @override
   void initState() {
     super.initState();
-    _loadDriverDashboard();
-    _loadProfileHeader();
-    _loadLocalCarInfo();
-    _bindDriverLocationStream();
-    if (Get.isRegistered<AppThemeController>()) {
-      _homeMapThemeWorker = ever(
-        Get.find<AppThemeController>().themeMode,
-        (_) => _onHomeMapThemeChanged(),
-      );
-    }
+    _bootstrap();
   }
 
-  void _onHomeMapThemeChanged() {
-    if (mounted) setState(() {});
-    unawaited(_refreshDriverLocationIcon());
+  Future<void> _bootstrap() async {
+    await _startLocation();
+    await refreshDashboard();
+    await _loadActiveRide();
+    _configurePolling();
   }
 
-  Future<void> _refreshDriverLocationIcon() async {
+  Future<void> refreshDashboard() async {
+    setState(() => _loadingDashboard = true);
     try {
-      _driverLocationIcon = await buildDriverLocationMarkerBitmap(
-        darkVariant: AppConst.isDarkMode,
-      );
-      if (mounted) setState(() {});
-    } catch (_) {}
-  }
-
-  void _setHomeMapType(MapType type) {
-    setState(() => _homeMapType = type);
-  }
-
-  /// Centers the dashboard preview map on [_userLatLng] when the controller is ready.
-  Future<void> _syncHomeMapCameraToUser() async {
-    final c = _mapController;
-    final u = _userLatLng;
-    if (c == null || u == null) return;
-
-    final last = _lastHomeMapCameraLatLng;
-    if (last != null) {
-      final d = Geolocator.distanceBetween(
-        last.latitude,
-        last.longitude,
-        u.latitude,
-        u.longitude,
-      );
-      if (d < 100) return;
-    }
-
-    try {
-      await c.animateCamera(CameraUpdate.newLatLngZoom(u, 14));
-      if (!mounted) return;
-      _lastHomeMapCameraLatLng = u;
-    } catch (_) {}
-  }
-
-  Future<void> _onHomeMapCreated(GoogleMapController c) async {
-    _mapController = c;
-    await _refreshDriverLocationIcon();
-    if (!mounted) return;
-    setState(() {});
-    unawaited(_syncHomeMapCameraToUser());
-  }
-
-  Set<Marker> _allHomeMapMarkers() {
-    if (_userLatLng != null && _driverLocationIcon != null) {
-      return {
-        Marker(
-          markerId: const MarkerId('driver_location'),
-          position: _userLatLng!,
-          icon: _driverLocationIcon!,
-          anchor: const Offset(0.5, 0.5),
-          flat: true,
-          rotation: _userHeading,
-        ),
-      };
-    }
-    return {};
-  }
-
-  Future<void> _loadLocalCarInfo() async {
-    try {
-      final carInfo = await _secureStorageService.getCarInfo();
-      if (!mounted) return;
-      setState(() {
-        _carModel = (carInfo['model'] ?? '').trim();
-        _carPlate = (carInfo['plateNumber'] ?? '').trim();
-      });
-    } catch (_) {
-      // ignore; car info is optional local data
-    }
-  }
-
-  Future<void> _loadProfileHeader() async {
-    setState(() {
-      _profileLoading = true;
-    });
-    try {
-      final profile = await _profileRepository.getProfile();
-      if (!mounted) return;
-      setState(() {
-        _userName = profile.name ?? '—';
-        _userId = profile.id;
-        _userPhotoUrl = profile.photo;
-      });
-
-      // If backend provides lat/lng, use it only as a temporary fallback label.
-      final lat = profile.lat;
-      final lng = profile.lng;
-      if (lat != null && lng != null) {
-        final userLatLng = LatLng(lat, lng);
-        final label = await _reverseGeocodeLabel(lat, lng);
-        if (!mounted) return;
-        setState(() {
-          _userLatLng ??= userLatLng;
-          if (_locationLabel.isEmpty) {
-            _locationLabel = label;
-          }
-        });
-        unawaited(_syncHomeMapCameraToUser());
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _userName = _userName ?? '—';
-        _userId = null;
-        _profileLoading = false;
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _profileLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<String> _reverseGeocodeLabel(double lat, double lng) async {
-    try {
-      final placemarks = await placemarkFromCoordinates(lat, lng);
-      if (placemarks.isNotEmpty) {
-        final p = placemarks.first;
-        final street = (p.street?.isNotEmpty == true)
-            ? p.street
-            : (p.name?.isNotEmpty == true ? p.name : null);
-        final city = p.locality;
-        final state = p.administrativeArea;
-        final country = p.country;
-
-        final parts = <String>[];
-        if (street != null && street.isNotEmpty) parts.add(street);
-        if (city != null && city.isNotEmpty && !parts.contains(city)) {
-          parts.add(city);
-        }
-        if (state != null && state.isNotEmpty && !parts.contains(state)) {
-          parts.add(state);
-        }
-        if (country != null && country.isNotEmpty && !parts.contains(country)) {
-          parts.add(country);
-        }
-
-        if (parts.length > 3) return parts.sublist(0, 3).join(', ');
-        if (parts.isNotEmpty) return parts.join(', ');
-      }
-    } catch (_) {
-      // ignore; fallback below
-    }
-    return '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
-  }
-
-  void _bindDriverLocationStream() {
-    final loc = DriverMapLocationController.ensure();
-    void sync() => _syncFromDriverLocationController(loc);
-
-    _driverLatLngWorker = ever(loc.currentLatLng, (_) => sync());
-    _driverHeadingWorker = ever(loc.headingDeg, (_) => sync());
-    _driverPermissionWorker = ever(loc.permissionIssueKey, (_) => sync());
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => sync());
-  }
-
-  void _syncFromDriverLocationController(DriverMapLocationController loc) {
-    if (!mounted) return;
-    final issue = loc.permissionIssueKey.value?.trim();
-
-    final latLng = loc.currentLatLng.value;
-    final hd = loc.headingDeg.value;
-
-    if (issue != null && issue.isNotEmpty) {
-      setState(() {
-        _locationLoading = false;
-        _locationLabel = issue.tr;
-      });
-      return;
-    }
-
-    if (latLng != null) {
-      setState(() {
-        _locationLoading = false;
-        _userLatLng = latLng;
-        _userHeading = hd;
-      });
-      unawaited(_maybeReverseGeocodeForHome(latLng));
-      unawaited(_syncHomeMapCameraToUser());
-    }
-  }
-
-  Future<void> _maybeReverseGeocodeForHome(LatLng p) async {
-    final anchor = _lastGeocodeAnchor;
-    final now = DateTime.now();
-    if (anchor != null) {
-      final d = Geolocator.distanceBetween(
-        anchor.latitude,
-        anchor.longitude,
-        p.latitude,
-        p.longitude,
-      );
-      if (d < 40 &&
-          now.difference(_lastGeocodeAt) < const Duration(seconds: 45)) {
-        return;
-      }
-    }
-    _lastGeocodeAnchor = p;
-    _lastGeocodeAt = now;
-
-    final label = await _reverseGeocodeLabel(p.latitude, p.longitude);
-    if (!mounted) return;
-    setState(() {
-      _locationLabel = label;
-    });
-  }
-
-  LatLng get _mapTarget => _userLatLng ?? _defaultMapCenter;
-
-  /// Star row for 0–5 scale (dashboard [rating]).
-  Widget _ratingStarsRow(double value) {
-    final v = value.clamp(0.0, 5.0);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (i) {
-        final idx = i + 1;
-        IconData icon;
-        Color color;
-        if (v >= idx) {
-          icon = Icons.star_rounded;
-          color = _primaryTextColor;
-        } else if (v > i) {
-          icon = Icons.star_half_rounded;
-          color = _primaryTextColor;
-        } else {
-          icon = Icons.star_outline_rounded;
-          color = _textWithOpacity(0.22);
-        }
-        return Padding(
-          padding: EdgeInsets.only(right: i < 4 ? 2.w : 0),
-          child: Icon(icon, size: 18.sp, color: color),
-        );
-      }),
-    );
-  }
-
-  Widget _buildDriverRatingCard() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 14.h),
-      decoration: BoxDecoration(
-        color: _cardBackground,
-        borderRadius: AppConst.borderRadius,
-        boxShadow: [
-          BoxShadow(
-            color: _textWithOpacity(0.07),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: _onlineStatusLoading
-          ? Row(
-              children: [
-                Container(
-                  width: 48.w,
-                  height: 48.w,
-                  decoration: BoxDecoration(
-                    color: _textWithOpacity(0.06),
-                    borderRadius: BorderRadius.circular(14.r),
-                  ),
-                ),
-                SizedBox(width: 14.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 12.h,
-                        width: 100.w,
-                        decoration: BoxDecoration(
-                          color: _textWithOpacity(0.08),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                      SizedBox(height: 10.h),
-                      Container(
-                        height: 22.h,
-                        width: 72.w,
-                        decoration: BoxDecoration(
-                          color: _textWithOpacity(0.06),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 52.w,
-                  height: 52.w,
-                  decoration: BoxDecoration(
-                    color: AppConst.primaryColorWithOpacity(0.35),
-                    borderRadius: BorderRadius.circular(16.r),
-                  ),
-                  child: Icon(
-                    Icons.star_rounded,
-                    color: _primaryTextColor,
-                    size: 30.sp,
-                  ),
-                ),
-                SizedBox(width: 14.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'your_rating'.tr,
-                              style: TextStyle(
-                                color: _textWithOpacity(0.5),
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ),
-                          if (_hasCarInfo) ...[
-                            Container(
-                              constraints: BoxConstraints(maxWidth: 180.w),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 8.w,
-                                vertical: 4.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppConst.primaryColorWithOpacity(0.28),
-                                borderRadius: BorderRadius.circular(999.r),
-                                border: Border.all(
-                                  color: AppConst.primaryColorWithOpacity(0.55),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.directions_car_filled_rounded,
-                                    color: _primaryTextColor,
-                                    size: 13.sp,
-                                  ),
-                                  SizedBox(width: 4.w),
-                                  Flexible(
-                                    child: Text(
-                                      [
-                                        if (_carModel.isNotEmpty) _carModel,
-                                        if (_carPlate.isNotEmpty) _carPlate,
-                                      ].join(' • '),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: _primaryTextColor,
-                                        fontSize: 10.sp,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      SizedBox(height: 6.h),
-                      if (_driverRating != null) ...[
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              _driverRating!.toDouble().toStringAsFixed(1),
-                              style: TextStyle(
-                                color: _primaryTextColor,
-                                fontSize: 28.sp,
-                                fontWeight: FontWeight.w800,
-                                height: 1.05,
-                              ),
-                            ),
-                            Text(
-                              ' / 5',
-                              style: TextStyle(
-                                color: _textWithOpacity(0.45),
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (_totalTrips != null) ...[
-                              SizedBox(width: 10.w),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8.w,
-                                  vertical: 4.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _textWithOpacity(0.06),
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                                child: Text(
-                                  _totalTrips! == 1
-                                      ? '1 ${'trip'.tr}'
-                                      : '${_totalTrips!} ${'trips'.tr}',
-                                  style: TextStyle(
-                                    color: _textWithOpacity(0.65),
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        SizedBox(height: 8.h),
-                        _ratingStarsRow(_driverRating!.toDouble()),
-                        if (_driverRating == 0) ...[
-                          SizedBox(height: 8.h),
-                          Text(
-                            'complete_trips_to_earn_reviews'.tr,
-                            style: TextStyle(
-                              color: _textWithOpacity(0.42),
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w500,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ] else ...[
-                        Text(
-                          'unavailable'.tr,
-                          style: TextStyle(
-                            color: _textWithOpacity(0.45),
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          'switch_tab_retry'.tr,
-                          style: TextStyle(
-                            color: _textWithOpacity(0.45),
-                            fontSize: 12.sp,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-
-  String _formatEarningsAmount(num n) => n.toDouble().toStringAsFixed(2);
-
-  Widget _buildEarningsStatCell(String label, num amount) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: _textWithOpacity(0.48),
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-              height: 1.2,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            _formatEarningsAmount(amount),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: _primaryTextColor,
-              fontSize: 17.sp,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEarningsCard() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
-      decoration: BoxDecoration(
-        color: _cardBackground,
-        borderRadius: AppConst.borderRadius,
-        boxShadow: [
-          BoxShadow(
-            color: _textWithOpacity(0.07),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(9.r),
-                decoration: BoxDecoration(
-                  color: AppConst.primaryColorWithOpacity(0.35),
-                  borderRadius: BorderRadius.circular(14.r),
-                ),
-                child: Icon(
-                  Icons.payments_outlined,
-                  color: _primaryTextColor,
-                  size: 22.sp,
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Text(
-                'earnings'.tr,
-                style: TextStyle(
-                  color: _primaryTextColor,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16.h),
-          if (_onlineStatusLoading)
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 48.h,
-                    decoration: BoxDecoration(
-                      color: _textWithOpacity(0.06),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Container(
-                    height: 48.h,
-                    decoration: BoxDecoration(
-                      color: _textWithOpacity(0.06),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Container(
-                    height: 48.h,
-                    decoration: BoxDecoration(
-                      color: _textWithOpacity(0.06),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else if (_earningsToday != null)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildEarningsStatCell('today'.tr, _earningsToday!),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w),
-                  child: SizedBox(
-                    height: 44.h,
-                    child: VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      color: _textWithOpacity(0.08),
-                    ),
-                  ),
-                ),
-                _buildEarningsStatCell('this_week'.tr, _earningsWeekly!),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w),
-                  child: SizedBox(
-                    height: 44.h,
-                    child: VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      color: _textWithOpacity(0.08),
-                    ),
-                  ),
-                ),
-                _buildEarningsStatCell('this_month'.tr, _earningsMonthly!),
-              ],
-            )
-          else
-            Text(
-              'earnings_unavailable_retry'.tr,
-              style: TextStyle(
-                color: _textWithOpacity(0.45),
-                fontSize: 12.sp,
-                height: 1.35,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// Call when the Home tab becomes active again (see [Navbar]).
-  Future<void> refreshDashboard() => _loadDriverDashboard(silent: true);
-
-  /// Online status comes from `GET /api/app/driver/dashboard` only (not local storage).
-  Future<void> _loadDriverDashboard({bool silent = false}) async {
-    if (!silent) {
-      setState(() => _onlineStatusLoading = true);
-    }
-    try {
-      final dash = await _riderStatusRepository.fetchDriverDashboard();
+      final dash = await _statusRepository.fetchDriverDashboard();
       if (!mounted) return;
       setState(() {
         _isOnline = dash.isOnline;
-        _driverRating = dash.rating ?? 0;
-        _totalTrips = dash.totalTrips;
-        _earningsToday = dash.earningsToday;
-        _earningsWeekly = dash.earningsWeekly;
-        _earningsMonthly = dash.earningsMonthly;
-        _onlineStatusLoading = false;
+        _rating = dash.rating ?? 0;
+        _totalTrips = dash.totalTrips ?? 0;
+        _todayEarnings = dash.earningsToday;
+        _weekEarnings = dash.earningsWeekly;
+        _loadingDashboard = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingDashboard = false);
+    }
+  }
+
+  Future<void> _startLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final current = await Geolocator.getCurrentPosition();
+      _setPosition(current);
+
+      _positionSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 8,
+        ),
+      ).listen(_setPosition);
+    } catch (_) {
+      // Location can fail on web/emulator. Android APK is the real test.
+    }
+  }
+
+  void _setPosition(Position p) {
+    final next = LatLng(p.latitude, p.longitude);
+    setState(() {
+      _driverLatLng = next;
+      _heading = p.heading.isFinite ? p.heading : _heading;
+    });
+    _mapController?.animateCamera(CameraUpdate.newLatLng(next));
+  }
+
+  void _configurePolling() {
+    _pollingTimer?.cancel();
+    _locationPushTimer?.cancel();
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (_isOnline) _loadRequests(silent: true);
+      if (_hasActiveRide) _loadActiveRide(silent: true);
+    });
+
+    _locationPushTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (_isOnline) _pushDriverLocation();
+    });
+  }
+
+  Future<void> _pushDriverLocation() async {
+    final p = _driverLatLng;
+    if (p == null) return;
+    try {
+      await _driverRepository.updateLocation(
+        lat: p.latitude,
+        lng: p.longitude,
+        heading: _heading,
+        isOnline: _isOnline,
+      );
+    } catch (_) {
+      // Do not interrupt the driver UI because of one location sync failure.
+    }
+  }
+
+  Future<void> _loadActiveRide({bool silent = false}) async {
+    try {
+      final active = await _driverRepository.fetchActiveRide();
+      if (!mounted) return;
+      setState(() => _activeRide = active);
+    } catch (_) {
+      // New backend may not be ready yet. Keep UI ready without fake rides.
+    }
+  }
+
+  Future<void> _loadRequests({bool silent = false}) async {
+    if (!_isOnline) return;
+    if (!silent) setState(() => _loadingRequests = true);
+    try {
+      final p = _driverLatLng;
+      final requests = await _driverRepository.fetchRequests(
+        lat: p?.latitude,
+        lng: p?.longitude,
+        bid: _bidEnabled,
+        pooling: _poolingEnabled,
+      );
+      if (!mounted) return;
+      setState(() {
+        _requests = requests;
+        _loadingRequests = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isOnline = false;
-        if (!silent) {
-          _driverRating = null;
-          _totalTrips = null;
-          _earningsToday = null;
-          _earningsWeekly = null;
-          _earningsMonthly = null;
-        }
-        _onlineStatusLoading = false;
-      });
-      AppSnackbar.showApiError(
-        e,
-        fallbackMessage: 'could_not_load_driver_dashboard'.tr,
-      );
+      setState(() => _loadingRequests = false);
+      if (!silent) {
+        AppSnackbar.showApiError(e, fallbackMessage: 'Unable to load ride requests.');
+      }
     }
   }
 
-  Future<void> _onOnlineChanged(bool value) async {
-    if (_onlineStatusLoading || _togglingOnline) {
-      log(
-        'toggle ignored: _onlineStatusLoading=$_onlineStatusLoading '
-        '_togglingOnline=$_togglingOnline',
-        name: 'HomeScreen.online',
-      );
-      return;
-    }
+  Future<void> _toggleOnline(bool value) async {
+    if (_updatingOnline || _loadingDashboard) return;
     final previous = _isOnline;
     setState(() {
       _isOnline = value;
-      _togglingOnline = true;
+      _updatingOnline = true;
+      if (!value) _requests = [];
     });
-    log(
-      'calling updateOnlineStatus isOnline=$value',
-      name: 'HomeScreen.online',
-    );
     try {
-      final responseBody = await _riderStatusRepository.updateOnlineStatus(
-        isOnline: value,
-      );
-      log(
-        'updateOnlineStatus success: $responseBody',
-        name: 'HomeScreen.online',
-      );
+      await _statusRepository.updateOnlineStatus(isOnline: value);
+      await _pushDriverLocation();
+      if (value) await _loadRequests(silent: true);
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _togglingOnline = false);
-    } catch (e, st) {
-      log(
-        'updateOnlineStatus failed',
-        name: 'HomeScreen.online',
-        error: e,
-        stackTrace: st,
-      );
-      if (!mounted) return;
-      setState(() {
-        _isOnline = previous;
-        _togglingOnline = false;
-      });
-      AppSnackbar.showApiError(
-        e,
-        fallbackMessage: 'could_not_update_availability'.tr,
-      );
+      setState(() => _isOnline = previous);
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to update online status.');
+    } finally {
+      if (mounted) setState(() => _updatingOnline = false);
     }
   }
 
+  Future<void> _acceptRide(DriverRideRequest ride) async {
+    try {
+      final active = await _driverRepository.acceptRide(ride.id);
+      if (!mounted) return;
+      setState(() {
+        _activeRide = active ?? ride;
+        _requests.removeWhere((e) => e.id == ride.id);
+      });
+      _fitRideOnMap(_activeRide!);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to accept this ride.');
+    }
+  }
+
+  Future<void> _declineRide(DriverRideRequest ride) async {
+    setState(() => _requests.removeWhere((e) => e.id == ride.id));
+    try {
+      await _driverRepository.declineRide(ride.id);
+    } catch (_) {}
+  }
+
+  Future<void> _arrived() async {
+    final ride = _activeRide;
+    if (ride == null) return;
+    try {
+      final updated = await _driverRepository.arrived(ride.id);
+      if (mounted) setState(() => _activeRide = updated ?? ride);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to mark arrived.');
+    }
+  }
+
+  Future<void> _startTrip() async {
+    final ride = _activeRide;
+    final p = _driverLatLng;
+    if (ride == null || p == null) return;
+    final miles = _distanceMiles(p, ride.pickupLatLng);
+    if (miles > _startTripMaxMiles) {
+      AppSnackbar.showError(
+        message: 'You must be within 0.5 miles of the rider to start the trip.',
+      );
+      return;
+    }
+    try {
+      final updated = await _driverRepository.startRide(ride.id);
+      if (mounted) setState(() => _activeRide = updated ?? ride);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to start trip.');
+    }
+  }
+
+  Future<void> _completeTrip() async {
+    final ride = _activeRide;
+    if (ride == null) return;
+    try {
+      await _driverRepository.completeRide(ride.id);
+      if (!mounted) return;
+      setState(() => _activeRide = null);
+      await refreshDashboard();
+      await _loadRequests(silent: true);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to complete trip.');
+    }
+  }
+
+  Future<void> _submitBid(DriverRideRequest ride) async {
+    final controller = TextEditingController(
+      text: ride.estimatedFare == null ? '' : ride.estimatedFare!.toStringAsFixed(0),
+    );
+    final amount = await showModalBottomSheet<num>(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, MediaQuery.of(context).viewInsets.bottom + 20.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Submit your bid', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800)),
+            SizedBox(height: 12.h),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(prefixText: r'$ ', labelText: 'Your price'),
+            ),
+            SizedBox(height: 18.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, num.tryParse(controller.text.trim())),
+                child: const Text('Send bid'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (amount == null || amount <= 0) return;
+    try {
+      await _driverRepository.submitBid(rideId: ride.id, amount: amount);
+      if (mounted) AppSnackbar.showSuccess(title: 'Bid sent', message: 'Your offer was sent to the rider.');
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to send bid.');
+    }
+  }
+
+  double _distanceMiles(LatLng a, LatLng b) {
+    final meters = Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
+    return meters / 1609.344;
+  }
+
+  Future<void> _fitRideOnMap(DriverRideRequest ride) async {
+    final c = _mapController;
+    if (c == null) return;
+    final points = [if (_driverLatLng != null) _driverLatLng!, ride.pickupLatLng, ride.dropoffLatLng];
+    final minLat = points.map((e) => e.latitude).reduce(math.min);
+    final maxLat = points.map((e) => e.latitude).reduce(math.max);
+    final minLng = points.map((e) => e.longitude).reduce(math.min);
+    final maxLng = points.map((e) => e.longitude).reduce(math.max);
+    await c.animateCamera(CameraUpdate.newLatLngBounds(
+      LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)),
+      70,
+    ));
+  }
+
+  Set<Marker> _markers() {
+    final markers = <Marker>{};
+    final p = _driverLatLng;
+    if (p != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('driver'),
+        position: p,
+        rotation: _heading,
+        flat: true,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+        infoWindow: const InfoWindow(title: 'You'),
+      ));
+    }
+    final active = _activeRide;
+    if (active != null) {
+      markers.add(Marker(
+        markerId: MarkerId('pickup_${active.id}'),
+        position: active.pickupLatLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(title: 'Pickup', snippet: active.pickupAddress),
+      ));
+      markers.add(Marker(
+        markerId: MarkerId('dropoff_${active.id}'),
+        position: active.dropoffLatLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(title: 'Drop-off', snippet: active.dropoffAddress),
+      ));
+    } else {
+      for (final r in _requests.take(5)) {
+        markers.add(Marker(
+          markerId: MarkerId('request_${r.id}'),
+          position: r.pickupLatLng,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          infoWindow: InfoWindow(title: r.rideType.toUpperCase(), snippet: r.pickupAddress),
+        ));
+      }
+    }
+    return markers;
+  }
+
+  Set<Polyline> _polylines() {
+    final active = _activeRide;
+    final p = _driverLatLng;
+    if (active == null || p == null) return {};
+    final enRoute = active.status != 'in_progress' && active.status != 'started';
+    return {
+      Polyline(
+        polylineId: const PolylineId('active_route'),
+        points: enRoute ? [p, active.pickupLatLng] : [p, active.dropoffLatLng],
+        width: 5,
+        color: AppConst.primaryColor,
+      ),
+    };
+  }
+
+  String _money(num value) => '\$${value.toStringAsFixed(2)}';
+
   @override
   void dispose() {
-    _homeMapThemeWorker?.dispose();
-    _driverLatLngWorker?.dispose();
-    _driverHeadingWorker?.dispose();
-    _driverPermissionWorker?.dispose();
+    _positionSub?.cancel();
+    _pollingTimer?.cancel();
+    _locationPushTimer?.cancel();
     _mapController?.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final mapCenter = _driverLatLng ?? _fallbackCenter;
     return Scaffold(
-      backgroundColor: _screenBackground,
-      body: Column(
+      backgroundColor: Colors.white,
+      body: Stack(
         children: [
-          // Top Section - Dark Theme
-          Container(
-            decoration: BoxDecoration(
-              color: _headerBackground,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20.r),
-                bottomRight: Radius.circular(20.r),
-              ),
-            ),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top,
-              left: 20.w,
-              right: 20.w,
-              bottom: 20.h,
-            ),
-            child: Column(
-              children: [
-                // Header with back arrow and settings
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Get.to(() => const SettingScreen());
-                      },
-                      child: Icon(
-                        Icons.settings,
-                        color: Colors.white,
-                        size: 24.sp,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16.h),
-                // User Profile Section
-                Row(
-                  children: [
-                    // Profile Picture
-                    Container(
-                      width: 60.w,
-                      height: 60.w,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _cardBackground,
-                      ),
-                      child: ClipOval(
-                        child: _profileLoading
-                            ? Center(
-                                child: SizedBox(
-                                  width: 18.w,
-                                  height: 18.w,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              )
-                            : (_userPhotoUrl != null &&
-                                  _userPhotoUrl!.trim().isNotEmpty)
-                            ? Image.network(
-                                _userPhotoUrl!.trim().startsWith('http')
-                                    ? _userPhotoUrl!.trim()
-                                    : '${ApiUrls.baseUrl}${_userPhotoUrl!.trim()}',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(Icons.person, size: 30);
-                                },
-                              )
-                            : const Icon(Icons.person, size: 30),
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    // Greeting and Name
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'good_morning'.tr,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14.sp,
-                            ),
-                          ),
-
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  _profileLoading
-                                      ? 'loading'.tr
-                                      : (_userName ?? '—'),
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              SizedBox(width: 6.w),
-                              Icon(
-                                Icons.verified,
-                                color: AppConst.selectedBorderColor,
-                                size: 18.sp,
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            _profileLoading
-                                ? '${'driver_id_label'.tr}: …'
-                                : '${'driver_id_label'.tr}: ${_userId ?? '—'}',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.82),
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: Obx(() {
-                        const languages = <Map<String, String>>[
-                          {'code': 'en', 'short': 'EN', 'name': 'english'},
-                          {'code': 'ar', 'short': 'AR', 'name': 'arabic'},
-                          {'code': 'es', 'short': 'ES', 'name': 'spanish'},
-                          {'code': 'fr', 'short': 'FR', 'name': 'french'},
-                          {'code': 'zh', 'short': 'ZH', 'name': 'mandarin'},
-                        ];
-                        return DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _appLanguageController
-                                .locale
-                                .value
-                                .languageCode,
-                            dropdownColor: _headerBackground,
-                            iconEnabledColor: Colors.white,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            selectedItemBuilder: (context) {
-                              return languages
-                                  .map(
-                                    (lang) => Align(
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        lang['short']!,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13.sp,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                  .toList();
-                            },
-                            items: languages
-                                .map(
-                                  (lang) => DropdownMenuItem<String>(
-                                    value: lang['code'],
-                                    child: Text(lang['name']!.tr),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _appLanguageController.changeLanguage(value);
-                              }
-                            },
-                          ),
-                        );
-                      }),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16.h),
-                // Online Status Toggle
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16.w,
-                    vertical: 12.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _cardBackground,
-                    borderRadius: AppConst.borderRadius,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _isOnline ? 'online'.tr : 'offline'.tr,
-                              style: TextStyle(
-                                color: _primaryTextColor,
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              _isOnline
-                                  ? 'available_for_tasks'.tr
-                                  : 'not_receiving_tasks'.tr,
-                              style: TextStyle(
-                                color: _textWithOpacity(0.7),
-                                fontSize: 12.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_onlineStatusLoading)
-                        SizedBox(
-                          width: 24.w,
-                          height: 24.w,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        )
-                      else
-                        Switch(
-                          value: _isOnline,
-                          onChanged: _onOnlineChanged,
-                          // On: green track. Off: solid grey — reads as intentional off,
-                          // not a disabled / washed-out control.
-                          thumbColor: WidgetStateProperty.all<Color>(
-                            Colors.white,
-                          ),
-                          trackColor: WidgetStateProperty.resolveWith<Color>((
-                            states,
-                          ) {
-                            if (states.contains(WidgetState.selected)) {
-                              return Colors.green;
-                            }
-                            return AppConst.grey;
-                          }),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          GoogleMap(
+            initialCameraPosition: CameraPosition(target: mapCenter, zoom: 14),
+            markers: _markers(),
+            polylines: _polylines(),
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            compassEnabled: false,
+            style: AppConst.isDarkMode ? HomeMapStyles.darkUberLike : HomeMapStyles.lightUberLike,
+            onMapCreated: (controller) => _mapController = controller,
           ),
-          // Bottom Section - Yellow Themsplae
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Search Bar
-                  // CustomTextField(
-                  //   controller: _searchController,
-                  //   hintText: 'Search',
-                  //   keyboardType: TextInputType.text,
-                  //   prefixIcon: Icon(
-                  //     Icons.search,
-                  //     color: AppConst.blackWithOpacity(0.5),
-                  //     size: 24.sp,
-                  //   ),
-                  //   onChanged: (value) {
-                  //     // TODO: Handle search
-                  //   },
-                  //   onSubmitted: (value) {
-                  //     // TODO: Handle search submission
-                  //   },
-                  // ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Get.to(() => const NearbyFirestoreOrdersScreen());
-                      },
-                      icon: Icon(
-                        Icons.location_on_outlined,
-                        color: _primaryTextColor,
-                        size: 20.sp,
-                      ),
-                      label: Text(
-                        'available_orders'.tr,
-                        style: TextStyle(
-                          color: _primaryTextColor,
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: _cardBackground,
-                        foregroundColor: _primaryTextColor,
-                        side: BorderSide(color: _textWithOpacity(0.12)),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 14.h,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppConst.borderRadius,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  _buildDriverRatingCard(),
-                  SizedBox(height: 16.h),
-                  const ServiceModeTilesSection(),
-                  SizedBox(height: 20.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 16.w,
-                      vertical: 12.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _cardBackground,
-                      borderRadius: AppConst.borderRadius,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.only(top: 2.h),
-                          child: Icon(
-                            Icons.location_on,
-                            color: AppConst.primaryColor,
-                            size: 22.sp,
-                          ),
-                        ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: _locationLoading
-                              ? Text(
-                                  'getting_your_location'.tr,
-                                  style: TextStyle(
-                                    color: _textWithOpacity(0.6),
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                )
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'your_location'.tr,
-                                      style: TextStyle(
-                                        color: _textWithOpacity(0.55),
-                                        fontSize: 11.sp,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    SizedBox(height: 2.h),
-                                    Text(
-                                      _locationLabel.isEmpty
-                                          ? '—'
-                                          : _locationLabel,
-                                      style: TextStyle(
-                                        color: _primaryTextColor,
-                                        fontSize: 13.sp,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _topBar(),
                   SizedBox(height: 12.h),
-                  _buildEarningsCard(),
-                  SizedBox(height: 12.h),
-                  const ActiveOrdersSection(previewCardLimit: 3),
-                  SizedBox(height: 16.h),
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 8.h),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        'tap_map_live_orders_hint'.tr,
-                        style: TextStyle(
-                          color: _textWithOpacity(0.62),
-                          fontSize: 12.5.sp,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
-                        ),
-                      ),
-                    ),
-                  ),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 300.h,
-                      child: Stack(
-                        children: [
-                          GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: _mapTarget,
-                              zoom: 13.8,
-                            ),
-                            style: _homeMapStyleJson,
-                            mapType: _homeMapType,
-                            markers: _allHomeMapMarkers(),
-                            myLocationEnabled: false,
-                            myLocationButtonEnabled: false,
-                            zoomControlsEnabled: false,
-                            mapToolbarEnabled: false,
-                            compassEnabled: false,
-                            onTap: (_) {
-                              Get.to(
-                                () => FullScreenDashboardMapScreen(
-                                  seedLatLng: _userLatLng,
-                                  seedHeading: _userHeading,
-                                  seedMapType: _homeMapType,
-                                ),
-                              );
-                            },
-                            onMapCreated: _onHomeMapCreated,
-                            gestureRecognizers:
-                                <Factory<OneSequenceGestureRecognizer>>{
-                                  Factory<EagerGestureRecognizer>(
-                                    EagerGestureRecognizer.new,
-                                  ),
-                                },
-                          ),
-                          Positioned(
-                            top: 8.h,
-                            right: 8.w,
-                            child: Material(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              shape: const CircleBorder(),
-                              elevation: 2,
-                              child: PopupMenuButton<MapType>(
-                                tooltip: 'map_type'.tr,
-                                icon: Icon(
-                                  Icons.layers_rounded,
-                                  color: AppConst.black,
-                                  size: 22.sp,
-                                ),
-                                onSelected: _setHomeMapType,
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    value: MapType.normal,
-                                    child: Text('map_type_default'.tr),
-                                  ),
-                                  PopupMenuItem(
-                                    value: MapType.satellite,
-                                    child: Text('map_type_satellite'.tr),
-                                  ),
-                                  PopupMenuItem(
-                                    value: MapType.terrain,
-                                    child: Text('map_type_terrain'.tr),
-                                  ),
-                                  PopupMenuItem(
-                                    value: MapType.hybrid,
-                                    child: Text('map_type_hybrid'.tr),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  _earningsBar(),
+                  const Spacer(),
+                  if (_hasActiveRide) _activeTripCard() else _requestsPanel(),
                 ],
               ),
             ),
           ),
+          Positioned(
+            right: 16.w,
+            top: 178.h,
+            child: SafeArea(child: _quickModeRail()),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _topBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          Container(
+            width: 44.w,
+            height: 44.w,
+            decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+            child: Icon(Icons.local_taxi_rounded, color: AppConst.primaryColor, size: 22.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isOnline ? 'Online — receiving requests' : 'Offline',
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: Colors.black),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  _hasActiveRide ? 'Active trip in progress' : 'Ready for trips',
+                  style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          if (_loadingDashboard || _updatingOnline)
+            SizedBox(width: 28.w, height: 28.w, child: const CircularProgressIndicator(strokeWidth: 2))
+          else
+            Switch(
+              value: _isOnline,
+              activeColor: AppConst.primaryColor,
+              activeTrackColor: AppConst.primaryColor.withOpacity(0.55),
+              inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75),
+              inactiveTrackColor: AppConst.primaryColor.withOpacity(0.18),
+              onChanged: _toggleOnline,
+            ),
+          IconButton(
+            onPressed: () => Get.to(() => const SettingScreen()),
+            icon: const Icon(Icons.settings_rounded, color: AppConst.primaryColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _earningsBar() {
+    return Container(
+      padding: EdgeInsets.all(10.w),
+      decoration: _cardDecoration(),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _miniStat('Today', _money(_todayEarnings)),
+              _miniStat('Week', _money(_weekEarnings)),
+              _miniStat('Rating', _rating == 0 ? 'New' : _rating.toStringAsFixed(1)),
+              _miniStat('Trips', '$_totalTrips'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _quickModeRail() {
+    return Column(
+      children: [
+        _railButton(Icons.tune_rounded, 'Modes', _showDriverModesSheet),
+        SizedBox(height: 10.h),
+        _railButton(Icons.navigation_rounded, 'Navigate', () {
+          final ride = _activeRide;
+          if (ride != null) _fitRideOnMap(ride);
+        }),
+        SizedBox(height: 10.h),
+        _railButton(Icons.refresh_rounded, 'Refresh', () => _loadRequests()),
+      ],
+    );
+  }
+
+  Widget _railButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 54.w,
+        height: 54.w,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 18, offset: const Offset(0, 8))],
+        ),
+        child: Icon(icon, color: AppConst.primaryColor, size: 24.sp),
+      ),
+    );
+  }
+
+  void _showDriverModesSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28.r))),
+      builder: (_) => StatefulBuilder(
+        builder: (context, modalSetState) => Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 24.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44.w,
+                height: 5.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(999.r)),
+              ),
+              Text('Trip preferences', style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900)),
+              SizedBox(height: 6.h),
+              Text('Choose what type of requests you want to receive while online.', style: TextStyle(fontSize: 13.sp, color: Colors.black54, height: 1.35)),
+              SizedBox(height: 18.h),
+              _modeSwitchTile('Bid rides', 'Allow riders to send flexible-price requests.', Icons.price_change_rounded, _bidEnabled, (v) {
+                modalSetState(() => _bidEnabled = v);
+                setState(() => _bidEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+              _modeSwitchTile('Pooling', 'Accept shared trips when available.', Icons.groups_rounded, _poolingEnabled, (v) {
+                modalSetState(() => _poolingEnabled = v);
+                setState(() => _poolingEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+              _modeSwitchTile('Courier', 'Receive package delivery requests.', Icons.inventory_2_rounded, _courierEnabled, (v) {
+                modalSetState(() => _courierEnabled = v);
+                setState(() => _courierEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _modeSwitchTile(String title, String subtitle, IconData icon, bool value, ValueChanged<bool> onChanged) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(color: const Color(0xFFF6F6F6), borderRadius: BorderRadius.circular(18.r)),
+      child: Row(
+        children: [
+          Container(
+            width: 42.w,
+            height: 42.w,
+            decoration: BoxDecoration(color: value ? AppConst.primaryColor : Colors.white, borderRadius: BorderRadius.circular(14.r)),
+            child: Icon(icon, color: AppConst.primaryColor, size: 22.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
+                SizedBox(height: 2.h),
+                Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54, height: 1.25)),
+              ],
+            ),
+          ),
+          Switch(value: value, activeTrackColor: AppConst.primaryColor.withOpacity(0.55), activeColor: AppConst.primaryColor, inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75), onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
+          SizedBox(height: 2.h),
+          Text(label, style: TextStyle(fontSize: 10.sp, color: Colors.black54, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String label, bool selected, ValueChanged<bool> onChanged) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onChanged(!selected),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(vertical: 10.h),
+          decoration: BoxDecoration(
+            color: selected ? AppConst.primaryColor : Colors.white,
+            borderRadius: BorderRadius.circular(999.r),
+            border: Border.all(color: selected ? AppConst.primaryColor : AppConst.primaryColor.withOpacity(0.18)),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _requestsPanel() {
+    final request = _topRequest;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      padding: EdgeInsets.all(16.w),
+      decoration: _cardDecoration(radius: 26),
+      child: !_isOnline
+          ? _emptyPanel(Icons.power_settings_new_rounded, 'Go online to receive requests', 'Stay online and keep this screen open to receive trip offers.')
+          : _loadingRequests
+              ? const Center(child: CircularProgressIndicator())
+              : request == null
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _emptyPanel(Icons.radar_rounded, 'Waiting for requests', 'New ride, courier, bid and pooled trip offers will appear here.'),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _loadRequests(),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Refresh requests'),
+                          ),
+                        ),
+                      ],
+                    )
+                  : _requestCard(request),
+    );
+  }
+
+  Widget _emptyPanel(IconData icon, String title, String subtitle) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 54.w,
+          height: 54.w,
+          decoration: BoxDecoration(color: AppConst.primaryColor.withOpacity(0.22), shape: BoxShape.circle),
+          child: Icon(icon, color: AppConst.primaryColor, size: 26.sp),
+        ),
+        SizedBox(height: 12.h),
+        Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
+        SizedBox(height: 6.h),
+        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black54, height: 1.35)),
+      ],
+    );
+  }
+
+  Widget _requestCard(DriverRideRequest ride) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              decoration: BoxDecoration(color: AppConst.primaryColor, borderRadius: BorderRadius.circular(999.r)),
+              child: Text(ride.rideType.toUpperCase(), style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900)),
+            ),
+            if (ride.isPooling) ...[
+              SizedBox(width: 8.w),
+              _smallPill('POOLING'),
+            ],
+            if (ride.canBid) ...[
+              SizedBox(width: 8.w),
+              _smallPill('BID'),
+            ],
+            const Spacer(),
+            Text(ride.estimatedFare == null ? '—' : _money(ride.estimatedFare!), style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900)),
+          ],
+        ),
+        SizedBox(height: 14.h),
+        _locationRow(Icons.radio_button_checked_rounded, 'Pickup', ride.pickupAddress),
+        SizedBox(height: 10.h),
+        _locationRow(Icons.location_on_rounded, 'Drop-off', ride.dropoffAddress),
+        SizedBox(height: 14.h),
+        Row(
+          children: [
+            _meta(Icons.route_rounded, ride.distanceMiles == null ? 'Distance pending' : '${ride.distanceMiles!.toStringAsFixed(1)} mi'),
+            SizedBox(width: 10.w),
+            _meta(Icons.schedule_rounded, ride.durationMinutes == null ? 'ETA pending' : '${ride.durationMinutes!.round()} min'),
+          ],
+        ),
+        SizedBox(height: 16.h),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => _declineRide(ride),
+                style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                child: const Text('Decline'),
+              ),
+            ),
+            SizedBox(width: 10.w),
+            if (ride.canBid)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _submitBid(ride),
+                  style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                  child: const Text('Bid'),
+                ),
+              ),
+            if (ride.canBid) SizedBox(width: 10.w),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () => _acceptRide(ride),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                ),
+                child: const Text('Accept'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _activeTripCard() {
+    final ride = _activeRide!;
+    final status = ride.status.toLowerCase();
+    final toPickup = status != 'in_progress' && status != 'started';
+    final nextTitle = toPickup ? 'Drive to rider' : 'Trip in progress';
+    final nextSubtitle = toPickup ? ride.pickupAddress : ride.dropoffAddress;
+    final miles = _driverLatLng == null ? null : _distanceMiles(_driverLatLng!, ride.pickupLatLng);
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: _cardDecoration(radius: 26),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(color: Colors.green.withOpacity(0.14), borderRadius: BorderRadius.circular(999.r)),
+                child: Text(status.toUpperCase(), style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900, color: Colors.green.shade800)),
+              ),
+              const Spacer(),
+              Text(ride.estimatedFare == null ? '' : _money(ride.estimatedFare!), style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Text(nextTitle, style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+          SizedBox(height: 6.h),
+          Text(nextSubtitle, style: TextStyle(fontSize: 13.sp, color: Colors.black54, height: 1.35)),
+          if (miles != null && toPickup) ...[
+            SizedBox(height: 10.h),
+            Text('Distance to rider: ${miles.toStringAsFixed(2)} mi', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800)),
+          ],
+          SizedBox(height: 16.h),
+          Row(
+            children: [
+              if (toPickup) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _arrived,
+                    style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: const Text('Arrived'),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _startTrip,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: const Text('Start trip'),
+                  ),
+                ),
+              ] else
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _completeTrip,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: const Text('Complete trip'),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _smallPill(String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+      decoration: BoxDecoration(color: Colors.black.withOpacity(0.06), borderRadius: BorderRadius.circular(999.r)),
+      child: Text(text, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w900)),
+    );
+  }
+
+  Widget _locationRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18.sp, color: AppConst.primaryColor),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 11.sp, color: Colors.black45, fontWeight: FontWeight.w700)),
+              SizedBox(height: 2.h),
+              Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800, height: 1.25)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _meta(IconData icon, String text) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.04), borderRadius: BorderRadius.circular(12.r)),
+        child: Row(
+          children: [
+            Icon(icon, size: 16.sp, color: AppConst.primaryColor.withOpacity(0.85)),
+            SizedBox(width: 6.w),
+            Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration({double radius = 22}) {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(radius.r),
+      boxShadow: [
+        BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
+      ],
     );
   }
 }

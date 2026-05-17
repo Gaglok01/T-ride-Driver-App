@@ -8,14 +8,22 @@ import 'nearby_firestore_orders_screen.dart';
 import 'tasks_screen.dart';
 
 class Navbar extends StatefulWidget {
-  const Navbar({super.key});
+  final int initialIndex;
+
+  const Navbar({super.key, this.initialIndex = 0});
 
   @override
   State<Navbar> createState() => _NavbarState();
 }
 
 class _NavbarState extends State<Navbar> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   final GlobalKey<HomeScreenState> _homeScreenKey =
       GlobalKey<HomeScreenState>();
@@ -26,7 +34,7 @@ class _NavbarState extends State<Navbar> {
     const NearbyFirestoreOrdersScreen(),
     const GalleryScreen(),
     // Profile Screen
-    ProfileScreen(),
+    const ProfileScreen(),
   ];
 
   void _selectIndex(int index) {
@@ -84,7 +92,7 @@ class _NavbarState extends State<Navbar> {
         padding: EdgeInsets.all(8.w),
         child: Icon(
           icon,
-          color: isSelected ? AppConst.black : AppConst.blackWithOpacity(0.5),
+          color: isSelected ? AppConst.primaryColor : AppConst.primaryColor.withOpacity(0.55),
           size: 24.sp,
         ),
       ),
