@@ -3,7 +3,7 @@
 class ApiUrls {
   ApiUrls._();
 
-  static const String baseUrl = 'http://18.217.192.161/';
+  static const String baseUrl = 'http://3.140.253.81/';
 
   // Languages
   static const String languages = 'api/languages';
@@ -99,15 +99,18 @@ class ApiUrls {
   static const String rentalItemDetails = 'api/app/rental/item';
   static const String rentalBook = 'api/app/rental/book';
 
-
   // Driver realtime MVP endpoints (new Laravel backend can map to these)
   static const String driverRequests = 'api/app/driver/requests';
   static const String driverActiveRide = 'api/app/driver/ride/active';
   static const String driverLocationUpdate = 'api/app/driver/location';
-  static String driverDeclineRide(int rideId) => 'api/app/driver/ride/$rideId/decline';
-  static String driverArrivedRide(int rideId) => 'api/app/driver/ride/$rideId/arrived';
-  static String driverStartRide(int rideId) => 'api/app/driver/ride/$rideId/start';
-  static String driverCompleteRide(int rideId) => 'api/app/driver/ride/$rideId/complete';
+  static String driverDeclineRide(int rideId) =>
+      'api/app/driver/ride/$rideId/decline';
+  static String driverArrivedRide(int rideId) =>
+      'api/app/driver/ride/$rideId/arrived';
+  static String driverStartRide(int rideId) =>
+      'api/app/driver/ride/$rideId/start';
+  static String driverCompleteRide(int rideId) =>
+      'api/app/driver/ride/$rideId/complete';
   static String driverBidRide(int rideId) => 'api/app/driver/ride/$rideId/bid';
 
   // Add more endpoints as you integrate APIs

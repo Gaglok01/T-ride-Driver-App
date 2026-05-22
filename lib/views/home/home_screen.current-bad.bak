@@ -1,19 +1,19 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:t_rider_services_app/compat/google_maps_compat.dart';
 import 'package:t_rider_services_app/config/home_map_styles.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
+import 'package:t_rider_services_app/data/directions/google_directions_service.dart';
 import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart';
 import 'package:t_rider_services_app/data/repositories/driver_realtime_repository.dart';
 import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
+import 'package:t_rider_services_app/modules/navigation/navigation_screen.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -198,7 +198,9 @@ class HomeScreenState extends State<HomeScreen> {
 
     final status = ride.status.toLowerCase();
     final toPickup = status != 'in_progress' && status != 'started';
-    final target = toPickup ? ride.pickupLatLng : ride.dropoffLatLng;
+    final target = toPickup
+        ? LatLng(ride.pickupLatLng.latitude, ride.pickupLatLng.longitude)
+        : LatLng(ride.dropoffLatLng.latitude, ride.dropoffLatLng.longitude);
 
     final meters = Geolocator.distanceBetween(
       driver.latitude,
@@ -228,47 +230,48 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchGoogleRoute(LatLng origin, LatLng destination) async {
-    try {
-      final uri =
-          Uri.https('maps.googleapis.com', '/maps/api/directions/json', {
-            'origin': '${origin.latitude},${origin.longitude}',
-            'destination': '${destination.latitude},${destination.longitude}',
-            'mode': 'driving',
-            'key': _googleDirectionsApiKey,
-          });
+    final route = await GoogleDirectionsService.fetchDrivingRoute(
+      origin: origin,
+      destination: destination,
+    );
 
-      final response = await http.get(uri);
-      if (response.statusCode != 200) {
-        debugPrint('DIRECTIONS HTTP ERROR:  ');
-        return;
-      }
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final routes = data['routes'] as List<dynamic>?;
-      if (routes == null || routes.isEmpty) {
-        debugPrint('DIRECTIONS NO ROUTES: ');
-        return;
-      }
-
-      final encoded = routes.first['overview_polyline']?['points'] as String?;
-      if (encoded == null || encoded.isEmpty) {
-        debugPrint('DIRECTIONS NO POLYLINE: ');
-        return;
-      }
-
-      final points = _decodePolyline(encoded);
-
-      if (!mounted || points.isEmpty) {
-        debugPrint('DIRECTIONS DECODE EMPTY');
-        return;
-      }
-
-      setState(() {
-        _routePoints = points;
-      });
-    } catch (_) {
-      // Keep straight line fallback if Directions API fails.
+    if (!mounted || route == null || route.points.length < 2) {
+      debugPrint('T-RIDE NAVIGATION: Google route unavailable.');
+      return;
     }
+
+    final km = route.distanceMeters / 1000;
+    final minutes = (route.durationSeconds / 60).ceil();
+
+    setState(() {
+      _routePoints = route.points
+          .map((p) => LatLng(p.latitude, p.longitude))
+          .toList();
+      _remainingDistanceText = '${km.toStringAsFixed(1)} km remaining';
+      _remainingDurationText = '$minutes min remaining';
+    });
+
+    if (_mapController != null) {
+      _fitRouteOnMap(origin, destination);
+    }
+  }
+
+  Future<void> _fitRouteOnMap(LatLng origin, LatLng destination) async {
+    final controller = _mapController;
+    if (controller == null) return;
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        math.min(origin.latitude, destination.latitude),
+        math.min(origin.longitude, destination.longitude),
+      ),
+      northeast: LatLng(
+        math.max(origin.latitude, destination.latitude),
+        math.max(origin.longitude, destination.longitude),
+      ),
+    );
+
+    await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 90));
   }
 
   List<LatLng> _decodePolyline(String encoded) {
@@ -451,7 +454,10 @@ class HomeScreenState extends State<HomeScreen> {
     final p = _driverLatLng;
     if (ride == null || p == null) return;
 
-    final miles = _distanceMiles(p, ride.pickupLatLng);
+    final miles = _distanceMiles(
+      p,
+      LatLng(ride.pickupLatLng.latitude, ride.pickupLatLng.longitude),
+    );
     if (miles > _startTripMaxMiles) {
       AppSnackbar.showError(
         message: 'You must be within 0.5 miles of the rider to start the trip.',
@@ -653,8 +659,8 @@ class HomeScreenState extends State<HomeScreen> {
     if (c == null) return;
     final points = [
       if (_driverLatLng != null) _driverLatLng!,
-      ride.pickupLatLng,
-      ride.dropoffLatLng,
+      LatLng(ride.pickupLatLng.latitude, ride.pickupLatLng.longitude),
+      LatLng(ride.dropoffLatLng.latitude, ride.dropoffLatLng.longitude),
     ];
     final minLat = points.map((e) => e.latitude).reduce(math.min);
     final maxLat = points.map((e) => e.latitude).reduce(math.max);
@@ -693,7 +699,10 @@ class HomeScreenState extends State<HomeScreen> {
       markers.add(
         Marker(
           markerId: MarkerId('pickup_${active.id}'),
-          position: active.pickupLatLng,
+          position: LatLng(
+            active.pickupLatLng.latitude,
+            active.pickupLatLng.longitude,
+          ),
           icon: BitmapDescriptor.defaultMarkerWithHue(
             BitmapDescriptor.hueGreen,
           ),
@@ -706,7 +715,10 @@ class HomeScreenState extends State<HomeScreen> {
       markers.add(
         Marker(
           markerId: MarkerId('dropoff_${active.id}'),
-          position: active.dropoffLatLng,
+          position: LatLng(
+            active.dropoffLatLng.latitude,
+            active.dropoffLatLng.longitude,
+          ),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           infoWindow: InfoWindow(
             title: 'Drop-off',
@@ -719,7 +731,7 @@ class HomeScreenState extends State<HomeScreen> {
         markers.add(
           Marker(
             markerId: MarkerId('request_${r.id}'),
-            position: r.pickupLatLng,
+            position: LatLng(r.pickupLatLng.latitude, r.pickupLatLng.longitude),
             icon: BitmapDescriptor.defaultMarkerWithHue(
               BitmapDescriptor.hueOrange,
             ),
@@ -736,26 +748,27 @@ class HomeScreenState extends State<HomeScreen> {
 
   Set<Polyline> _polylines() {
     final active = _activeRide;
-    final p = _driverLatLng;
+    if (active == null || _routePoints.length < 2) {
+      debugPrint(
+        'NO POLYLINE: active=' +
+            (active != null).toString() +
+            ', points=' +
+            _routePoints.length.toString(),
+      );
+      return {};
+    }
 
-    if (active == null || p == null) return {};
-
-    final status = active.status.toLowerCase();
-    final toPickup = status != 'in_progress' && status != 'started';
-
-    final fallbackPoints = toPickup
-        ? <LatLng>[p, active.pickupLatLng]
-        : <LatLng>[p, active.dropoffLatLng];
-
-    final points = _routePoints.length >= 2 ? _routePoints : fallbackPoints;
+    debugPrint(
+      'DRAWING POLYLINE WITH ' + _routePoints.length.toString() + ' POINTS',
+    );
 
     return {
       Polyline(
         polylineId: const PolylineId('active_route'),
-        points: points,
-        width: 8,
-        color: AppConst.accentColor,
-        geodesic: true,
+        points: List<LatLng>.from(_routePoints),
+        width: 10,
+        color: Colors.black,
+        geodesic: false,
         startCap: Cap.roundCap,
         endCap: Cap.roundCap,
         jointType: JointType.round,
@@ -785,7 +798,7 @@ class HomeScreenState extends State<HomeScreen> {
           GoogleMap(
             initialCameraPosition: CameraPosition(target: mapCenter, zoom: 14),
             markers: _markers(),
-            polylines: _polylines(),
+            polylines: Set<Polyline>.of(_polylines()),
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
@@ -922,11 +935,29 @@ class HomeScreenState extends State<HomeScreen> {
         SizedBox(height: 10.h),
         _railButton(Icons.navigation_rounded, 'Navigate', () {
           final ride = _activeRide;
-          if (ride != null) {
-            _lastRouteFetchAt = null;
-            _refreshRemainingTripInfo();
-            _fitRideOnMap(ride);
-          }
+          final driver = _driverLatLng;
+
+          if (ride == null || driver == null) return;
+
+          final status = ride.status.toLowerCase();
+          final target = status == 'in_progress' || status == 'started'
+              ? LatLng(
+                  ride.dropoffLatLng.latitude,
+                  ride.dropoffLatLng.longitude,
+                )
+              : LatLng(ride.pickupLatLng.latitude, ride.pickupLatLng.longitude);
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NavigationScreen(
+                originLat: driver.latitude,
+                originLng: driver.longitude,
+                destLat: target.latitude,
+                destLng: target.longitude,
+              ),
+            ),
+          );
         }),
         SizedBox(height: 10.h),
         _railButton(Icons.refresh_rounded, 'Refresh', () => _loadRequests()),
@@ -1332,7 +1363,10 @@ class HomeScreenState extends State<HomeScreen> {
     final nextSubtitle = toPickup ? ride.pickupAddress : ride.dropoffAddress;
     final miles = _driverLatLng == null
         ? null
-        : _distanceMiles(_driverLatLng!, ride.pickupLatLng);
+        : _distanceMiles(
+            _driverLatLng!,
+            LatLng(ride.pickupLatLng.latitude, ride.pickupLatLng.longitude),
+          );
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: 310.h),
