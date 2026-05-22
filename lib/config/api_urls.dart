@@ -28,6 +28,9 @@ class ApiUrls {
 
   /// Driver online toggle — `POST` body: `{ "is_online": true }`.
   static const String updateOnlineStatus = 'api/app/driver/toggle-online';
+  static const String driverStatus = 'api/app/driver/status';
+  static const String driverProfileSetup = 'api/app/driver/profile-setup';
+  static const String driverUploadDocuments = 'api/app/driver/upload-docs';
 
   // Feedback
   static const String submitFeedback = 'api/app/submit-feedback';

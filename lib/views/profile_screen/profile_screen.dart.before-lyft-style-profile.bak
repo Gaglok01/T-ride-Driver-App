@@ -254,6 +254,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SizedBox(height: 14.h),
                     _profileHero(p),
                     SizedBox(height: 14.h),
+                    _stats(),
+                    SizedBox(height: 14.h),
                     _statusCard(),
                     SizedBox(height: 14.h),
                     _vehicleCard(),
@@ -305,203 +307,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: EdgeInsets.all(18.w),
       decoration: _decoration(),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: _pickPhoto,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 42.r,
-                      backgroundColor: AppConst.primaryColor.withOpacity(0.15),
-                      backgroundImage: _selectedPhoto != null
-                          ? FileImage(_selectedPhoto!)
-                          : (_photoUrl == null
-                                ? null
-                                : NetworkImage(_photoUrl!) as ImageProvider),
-                      child: _selectedPhoto == null && _photoUrl == null
-                          ? Icon(
-                              Icons.person_rounded,
-                              size: 40.sp,
-                              color: AppConst.primaryColor,
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: EdgeInsets.all(6.w),
-                        decoration: const BoxDecoration(
+          GestureDetector(
+            onTap: _pickPhoto,
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 40.r,
+                  backgroundColor: AppConst.primaryColor.withOpacity(0.25),
+                  backgroundImage: _selectedPhoto != null
+                      ? FileImage(_selectedPhoto!)
+                      : (_photoUrl == null
+                            ? null
+                            : NetworkImage(_photoUrl!) as ImageProvider),
+                  child: _selectedPhoto == null && _photoUrl == null
+                      ? Icon(
+                          Icons.person_rounded,
+                          size: 38.sp,
                           color: AppConst.primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.camera_alt_rounded,
-                          size: 14.sp,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                  ],
+                        )
+                      : null,
                 ),
-              ),
-              SizedBox(width: 14.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: EdgeInsets.all(6.w),
+                    decoration: const BoxDecoration(
+                      color: AppConst.primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      size: 14.sp,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 14.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            p?.name ?? 'Driver',
-                            style: TextStyle(
-                              fontSize: 24.sp,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
+                    Expanded(
+                      child: Text(
+                        p?.name?.trim().isEmpty == false
+                            ? p!.name!
+                            : 'T-Ride Driver',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 21.sp,
+                          fontWeight: FontWeight.w900,
                         ),
-                        Icon(
-                          Icons.verified_rounded,
-                          color: Colors.green,
-                          size: 22.sp,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      p?.email ?? '',
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      p?.phoneNumber ?? '',
-                      style: TextStyle(fontSize: 13.sp, color: Colors.black54),
-                    ),
-                    SizedBox(height: 12.h),
-                    Wrap(
-                      spacing: 8.w,
-                      runSpacing: 8.h,
-                      children: [
-                        _badge('Verified', Colors.green.shade100),
-                        _badge('Silver tier', const Color(0xFFF3F3F3)),
-                        _badge(
-                          _accountStatus.toUpperCase(),
-                          AppConst.primaryColor.withOpacity(0.22),
-                        ),
-                      ],
+                    Icon(
+                      Icons.verified_rounded,
+                      color: Colors.green,
+                      size: 20.sp,
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 18.h),
-          Row(
-            children: [
-              Expanded(
-                child: _premiumStat(
-                  '4.85',
-                  'Rating',
-                  Icons.star_rounded,
-                  '128 reviews',
+                SizedBox(height: 4.h),
+                Text(
+                  p?.email ?? p?.phoneNumber ?? 'Driver account',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _premiumStat(
-                  '328',
-                  'Trips',
-                  Icons.local_taxi_rounded,
-                  'All time',
+                SizedBox(height: 10.h),
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 6.h,
+                  children: [
+                    _pill('Verified'),
+                    _pill('Silver tier'),
+                    _pill('Active'),
+                  ],
                 ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _premiumStat(
-                  '98%',
-                  'Acceptance',
-                  Icons.access_time_filled_rounded,
-                  'Rate',
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: _premiumStat(
-                  '\$256',
-                  'Wallet',
-                  Icons.account_balance_wallet_rounded,
-                  'Balance',
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _badge(String text, Color bg) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(40.r),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
-      ),
-    );
-  }
-
-  Widget _premiumStat(
-    String value,
-    String title,
-    IconData icon,
-    String subtitle,
-  ) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+  Widget _stats() {
+    return Row(
+      children: [
+        Expanded(child: _statBox('Rating', 'New')),
+        SizedBox(width: 10.w),
+        Expanded(child: _statBox('Trips', '0')),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: _statBox(
+            'Wallet',
+            _profile?.walletBalance == null
+                ? '\$0.00'
+                : '\$${_profile!.walletBalance}',
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: AppConst.primaryColor),
-          SizedBox(height: 8.h),
-          Text(
-            value,
-            style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            title,
-            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 10.sp, color: Colors.black54),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
