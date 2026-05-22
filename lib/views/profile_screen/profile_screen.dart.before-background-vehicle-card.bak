@@ -566,87 +566,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _vehicleCard() {
     final hasVehicle =
         _carModel.isNotEmpty || _carPlate.isNotEmpty || _carColor.isNotEmpty;
-
     return _sectionCard(
-      title: 'Vehicle information',
+      title: 'Vehicle',
       icon: Icons.directions_car_filled_rounded,
       action: TextButton(onPressed: _openEditSheet, child: const Text('Edit')),
-      children: [
-        Container(
-          padding: EdgeInsets.all(14.w),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8F8F8),
-            borderRadius: BorderRadius.circular(18.r),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 58.w,
-                height: 58.w,
-                decoration: BoxDecoration(
-                  color: AppConst.primaryColor.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(18.r),
+      children: hasVehicle
+          ? [
+              _infoRow('Model', _carModel.isEmpty ? 'Not set' : _carModel),
+              _infoRow('Plate', _carPlate.isEmpty ? 'Not set' : _carPlate),
+              _infoRow('Color', _carColor.isEmpty ? 'Not set' : _carColor),
+              _infoRow('Type', 'Economy'),
+            ]
+          : [
+              Text(
+                'Add vehicle details before accepting live trips.',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: Colors.black54,
+                  height: 1.35,
                 ),
-                child: Icon(
-                  Icons.directions_car_rounded,
-                  color: AppConst.black,
-                  size: 30.sp,
-                ),
-              ),
-              SizedBox(width: 14.w),
-              Expanded(
-                child: hasVehicle
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _carModel.isEmpty
-                                ? 'Vehicle model not set'
-                                : _carModel,
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            'Plate: ${_carPlate.isEmpty ? 'Not set' : _carPlate}',
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            'Color: ${_carColor.isEmpty ? 'Not set' : _carColor}',
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      )
-                    : Text(
-                        'Add vehicle details before accepting live trips.',
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: Colors.black54,
-                          height: 1.35,
-                        ),
-                      ),
               ),
             ],
-          ),
-        ),
-        SizedBox(height: 12.h),
-        _checkItem(
-          'Vehicle registration uploaded',
-          _vehicleRegistration != null,
-        ),
-        _checkItem('Insurance uploaded', _insurance != null),
-        _checkItem('Vehicle photo uploaded', _vehiclePhoto != null),
-        _checkItem('Inspection required for ride service', false),
-      ],
     );
   }
 
@@ -802,199 +742,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _backgroundCheckCard() {
-    return _sectionCard(
-      title: 'Background check',
-      icon: Icons.verified_user_rounded,
-      children: [
-        Container(
-          padding: EdgeInsets.all(18.w),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [const Color(0xFF1E1E1E), const Color(0xFF2A2A2A)],
-            ),
-            borderRadius: BorderRadius.circular(24.r),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.16),
-                      borderRadius: BorderRadius.circular(16.r),
-                    ),
-                    child: Icon(
-                      Icons.manage_search_rounded,
-                      color: Colors.orange,
-                      size: 26.sp,
-                    ),
-                  ),
-                  SizedBox(width: 14.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pending review',
-                          style: TextStyle(
-                            fontSize: 17.sp,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 3.h),
-                        Text(
-                          'Powered by Checkr',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 7.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(40.r),
-                    ),
-                    child: Text(
-                      'IN REVIEW',
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 10.sp,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 18.h),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(40.r),
-                child: LinearProgressIndicator(
-                  value: 0.48,
-                  minHeight: 8.h,
-                  backgroundColor: Colors.white12,
-                  valueColor: AlwaysStoppedAnimation(AppConst.primaryColor),
-                ),
-              ),
-              SizedBox(height: 10.h),
-              Text(
-                'Estimated completion: 1-2 business days',
-                style: TextStyle(fontSize: 11.sp, color: Colors.white70),
-              ),
-              SizedBox(height: 18.h),
-              _bgStep('Identity verification', true),
-              _bgStep('Driving record / MVR', false),
-              _bgStep('Criminal background check', false),
-              _bgStep('T-Ride final approval', _accountStatus == 'approved'),
-              SizedBox(height: 18.h),
-              Container(
-                padding: EdgeInsets.all(14.w),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(18.r),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.shield_moon_rounded,
-                      color: AppConst.primaryColor,
-                      size: 22.sp,
-                    ),
-                    SizedBox(width: 10.w),
-                    Expanded(
-                      child: Text(
-                        'T-Ride verifies all active drivers to help keep the platform safe for riders and drivers.',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: Colors.white70,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _bgStep(String title, bool done) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
-      child: Row(
-        children: [
-          Container(
-            width: 24.w,
-            height: 24.w,
-            decoration: BoxDecoration(
-              color: done
-                  ? Colors.green.withOpacity(0.18)
-                  : Colors.white.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              done ? Icons.check_rounded : Icons.radio_button_unchecked_rounded,
-              size: 15.sp,
-              color: done ? Colors.green : Colors.orange,
-            ),
-          ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _checkItem(String title, bool done) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 9.h),
-      child: Row(
-        children: [
-          Icon(
-            done
-                ? Icons.check_circle_rounded
-                : Icons.radio_button_unchecked_rounded,
-            color: done ? Colors.green : Colors.orange,
-            size: 20.sp,
-          ),
-          SizedBox(width: 9.w),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
