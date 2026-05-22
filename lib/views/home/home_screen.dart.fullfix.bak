@@ -1,0 +1,902 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:t_rider_services_app/config/home_map_styles.dart';
+import 'package:t_rider_services_app/consts/appConst.dart';
+import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart';
+import 'package:t_rider_services_app/data/repositories/driver_realtime_repository.dart';
+import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
+import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
+import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  final RiderStatusRepository _statusRepository = RiderStatusRepository();
+  final DriverRealtimeRepository _driverRepository = DriverRealtimeRepository();
+
+  GoogleMapController? _mapController;
+  StreamSubscription<Position>? _positionSub;
+  Timer? _pollingTimer;
+  Timer? _locationPushTimer;
+
+  bool _isOnline = false;
+  bool _loadingDashboard = true;
+  bool _updatingOnline = false;
+  bool _loadingRequests = false;
+  bool _bidEnabled = true;
+  bool _poolingEnabled = true;
+  bool _courierEnabled = true;
+
+  num _todayEarnings = 0;
+  num _weekEarnings = 0;
+  num _rating = 0;
+  int _totalTrips = 0;
+
+  LatLng? _driverLatLng;
+  double _heading = 0;
+  DriverRideRequest? _activeRide;
+  List<DriverRideRequest> _requests = [];
+
+  static const LatLng _fallbackCenter = LatLng(41.2565, -95.9345);
+  static const double _startTripMaxMiles = 0.5;
+
+  bool get _hasActiveRide => _activeRide != null;
+  DriverRideRequest? get _topRequest => _requests.isEmpty ? null : _requests.first;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await _startLocation();
+    await refreshDashboard();
+    await _loadActiveRide();
+    _configurePolling();
+  }
+
+  Future<void> refreshDashboard() async {
+    setState(() => _loadingDashboard = true);
+    try {
+      final dash = await _statusRepository.fetchDriverDashboard();
+      if (!mounted) return;
+      setState(() {
+        _isOnline = dash.isOnline;
+        _rating = dash.rating ?? 0;
+        _totalTrips = dash.totalTrips ?? 0;
+        _todayEarnings = dash.earningsToday;
+        _weekEarnings = dash.earningsWeekly;
+        _loadingDashboard = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingDashboard = false);
+    }
+  }
+
+  Future<void> _startLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final current = await Geolocator.getCurrentPosition();
+      _setPosition(current);
+
+      _positionSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 8,
+        ),
+      ).listen(_setPosition);
+    } catch (_) {
+      // Location can fail on web/emulator. Android APK is the real test.
+    }
+  }
+
+  void _setPosition(Position p) {
+    final next = LatLng(p.latitude, p.longitude);
+    setState(() {
+      _driverLatLng = next;
+      _heading = p.heading.isFinite ? p.heading : _heading;
+    });
+    _mapController?.animateCamera(CameraUpdate.newLatLng(next));
+  }
+
+  void _configurePolling() {
+    _pollingTimer?.cancel();
+    _locationPushTimer?.cancel();
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (_isOnline) _loadRequests(silent: true);
+      if (_hasActiveRide) _loadActiveRide(silent: true);
+    });
+
+    _locationPushTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (_isOnline) _pushDriverLocation();
+    });
+  }
+
+  Future<void> _pushDriverLocation() async {
+    final p = _driverLatLng;
+    if (p == null) return;
+    try {
+      await _driverRepository.updateLocation(
+        lat: p.latitude,
+        lng: p.longitude,
+        heading: _heading,
+        isOnline: _isOnline,
+      );
+    } catch (_) {
+      // Do not interrupt the driver UI because of one location sync failure.
+    }
+  }
+
+  Future<void> _loadActiveRide({bool silent = false}) async {
+    try {
+      final active = await _driverRepository.fetchActiveRide();
+      if (!mounted) return;
+      setState(() => _activeRide = active);
+    } catch (_) {
+      // New backend may not be ready yet. Keep UI ready without fake rides.
+    }
+  }
+
+  Future<void> _loadRequests({bool silent = false}) async {
+    if (!_isOnline) return;
+    if (!silent) setState(() => _loadingRequests = true);
+    try {
+      final p = _driverLatLng;
+      final requests = await _driverRepository.fetchRequests(
+        lat: p?.latitude,
+        lng: p?.longitude,
+        bid: _bidEnabled,
+        pooling: _poolingEnabled,
+      );
+      if (!mounted) return;
+      setState(() {
+        _requests = requests;
+        _loadingRequests = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingRequests = false);
+      if (!silent) {
+        AppSnackbar.showApiError(e, fallbackMessage: 'Unable to load ride requests.');
+      }
+    }
+  }
+
+  Future<void> _toggleOnline(bool value) async {
+    if (_updatingOnline || _loadingDashboard) return;
+    final previous = _isOnline;
+    setState(() {
+      _isOnline = value;
+      _updatingOnline = true;
+      if (!value) _requests = [];
+    });
+    try {
+      await _statusRepository.updateOnlineStatus(isOnline: value);
+      await _pushDriverLocation();
+      if (value) await _loadRequests(silent: true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isOnline = previous);
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to update online status.');
+    } finally {
+      if (mounted) setState(() => _updatingOnline = false);
+    }
+  }
+
+  Future<void> _acceptRide(DriverRideRequest ride) async {
+    try {
+      final active = await _driverRepository.acceptRide(ride.id);
+      if (!mounted) return;
+      setState(() {
+        _activeRide = active ?? ride;
+        _requests.removeWhere((e) => e.id == ride.id);
+      });
+      _fitRideOnMap(_activeRide!);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to accept this ride.');
+    }
+  }
+
+  Future<void> _declineRide(DriverRideRequest ride) async {
+    setState(() => _requests.removeWhere((e) => e.id == ride.id));
+    try {
+      await _driverRepository.declineRide(ride.id);
+    } catch (_) {}
+  }
+
+  Future<void> _arrived() async {
+    final ride = _activeRide;
+    if (ride == null) return;
+    try {
+      final updated = await _driverRepository.arrived(ride.id);
+      if (mounted) setState(() => _activeRide = updated ?? ride);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to mark arrived.');
+    }
+  }
+
+  Future<void> _startTrip() async {
+    final ride = _activeRide;
+    final p = _driverLatLng;
+    if (ride == null || p == null) return;
+    final miles = _distanceMiles(p, ride.pickupLatLng);
+    if (miles > _startTripMaxMiles) {
+      AppSnackbar.showError(
+        message: 'You must be within 0.5 miles of the rider to start the trip.',
+      );
+      return;
+    }
+    try {
+      final updated = await _driverRepository.startRide(ride.id);
+      if (mounted) setState(() => _activeRide = updated ?? ride);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to start trip.');
+    }
+  }
+
+  Future<void> _completeTrip() async {
+    final ride = _activeRide;
+    if (ride == null) return;
+    try {
+      await _driverRepository.completeRide(ride.id);
+      if (!mounted) return;
+      setState(() => _activeRide = null);
+      await refreshDashboard();
+      await _loadRequests(silent: true);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to complete trip.');
+    }
+  }
+
+  Future<void> _submitBid(DriverRideRequest ride) async {
+    final controller = TextEditingController(
+      text: ride.estimatedFare == null ? '' : ride.estimatedFare!.toStringAsFixed(0),
+    );
+    final amount = await showModalBottomSheet<num>(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, MediaQuery.of(context).viewInsets.bottom + 20.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Submit your bid', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800)),
+            SizedBox(height: 12.h),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(prefixText: r'$ ', labelText: 'Your price'),
+            ),
+            SizedBox(height: 18.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, num.tryParse(controller.text.trim())),
+                child: const Text('Send bid'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (amount == null || amount <= 0) return;
+    try {
+      await _driverRepository.submitBid(rideId: ride.id, amount: amount);
+      if (mounted) AppSnackbar.showSuccess(title: 'Bid sent', message: 'Your offer was sent to the rider.');
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to send bid.');
+    }
+  }
+
+  double _distanceMiles(LatLng a, LatLng b) {
+    final meters = Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
+    return meters / 1609.344;
+  }
+
+  Future<void> _fitRideOnMap(DriverRideRequest ride) async {
+    final c = _mapController;
+    if (c == null) return;
+    final points = [if (_driverLatLng != null) _driverLatLng!, ride.pickupLatLng, ride.dropoffLatLng];
+    final minLat = points.map((e) => e.latitude).reduce(math.min);
+    final maxLat = points.map((e) => e.latitude).reduce(math.max);
+    final minLng = points.map((e) => e.longitude).reduce(math.min);
+    final maxLng = points.map((e) => e.longitude).reduce(math.max);
+    await c.animateCamera(CameraUpdate.newLatLngBounds(
+      LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)),
+      70,
+    ));
+  }
+
+  Set<Marker> _markers() {
+    final markers = <Marker>{};
+    final p = _driverLatLng;
+    if (p != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('driver'),
+        position: p,
+        rotation: _heading,
+        flat: true,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+        infoWindow: const InfoWindow(title: 'You'),
+      ));
+    }
+    final active = _activeRide;
+    if (active != null) {
+      markers.add(Marker(
+        markerId: MarkerId('pickup_${active.id}'),
+        position: active.pickupLatLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(title: 'Pickup', snippet: active.pickupAddress),
+      ));
+      markers.add(Marker(
+        markerId: MarkerId('dropoff_${active.id}'),
+        position: active.dropoffLatLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(title: 'Drop-off', snippet: active.dropoffAddress),
+      ));
+    } else {
+      for (final r in _requests.take(5)) {
+        markers.add(Marker(
+          markerId: MarkerId('request_${r.id}'),
+          position: r.pickupLatLng,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          infoWindow: InfoWindow(title: r.rideType.toUpperCase(), snippet: r.pickupAddress),
+        ));
+      }
+    }
+    return markers;
+  }
+
+  Set<Polyline> _polylines() {
+    final active = _activeRide;
+    final p = _driverLatLng;
+    if (active == null || p == null) return {};
+    final enRoute = active.status != 'in_progress' && active.status != 'started';
+    return {
+      Polyline(
+        polylineId: const PolylineId('active_route'),
+        points: enRoute ? [p, active.pickupLatLng] : [p, active.dropoffLatLng],
+        width: 5,
+        color: AppConst.primaryColor,
+      ),
+    };
+  }
+
+  String _money(num value) => '\$${value.toStringAsFixed(2)}';
+
+  @override
+  void dispose() {
+    _positionSub?.cancel();
+    _pollingTimer?.cancel();
+    _locationPushTimer?.cancel();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mapCenter = _driverLatLng ?? _fallbackCenter;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          GoogleMap(
+            initialCameraPosition: CameraPosition(target: mapCenter, zoom: 14),
+            markers: _markers(),
+            polylines: _polylines(),
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            compassEnabled: false,
+            style: AppConst.isDarkMode ? HomeMapStyles.darkUberLike : HomeMapStyles.lightUberLike,
+            onMapCreated: (controller) => _mapController = controller,
+          ),
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Column(
+                children: [
+                  _topBar(),
+                  SizedBox(height: 12.h),
+                  _earningsBar(),
+                  const Spacer(),
+                  if (_hasActiveRide) _activeTripCard() else _requestsPanel(),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            right: 16.w,
+            top: 178.h,
+            child: SafeArea(child: _quickModeRail()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _topBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          Container(
+            width: 44.w,
+            height: 44.w,
+            decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+            child: Icon(Icons.local_taxi_rounded, color: AppConst.primaryColor, size: 22.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isOnline ? 'Online — receiving requests' : 'Offline',
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: Colors.black),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  _hasActiveRide ? 'Active trip in progress' : 'Ready for trips',
+                  style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          if (_loadingDashboard || _updatingOnline)
+            SizedBox(width: 28.w, height: 28.w, child: const CircularProgressIndicator(strokeWidth: 2))
+          else
+            Switch(
+              value: _isOnline,
+              activeColor: AppConst.primaryColor,
+              activeTrackColor: AppConst.primaryColor.withOpacity(0.55),
+              inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75),
+              inactiveTrackColor: AppConst.primaryColor.withOpacity(0.18),
+              onChanged: _toggleOnline,
+            ),
+          IconButton(
+            onPressed: () => Get.to(() => const SettingScreen()),
+            icon: const Icon(Icons.settings_rounded, color: AppConst.primaryColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _earningsBar() {
+    return Container(
+      padding: EdgeInsets.all(10.w),
+      decoration: _cardDecoration(),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _miniStat('Today', _money(_todayEarnings)),
+              _miniStat('Week', _money(_weekEarnings)),
+              _miniStat('Rating', _rating == 0 ? 'New' : _rating.toStringAsFixed(1)),
+              _miniStat('Trips', '$_totalTrips'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _quickModeRail() {
+    return Column(
+      children: [
+        _railButton(Icons.tune_rounded, 'Modes', _showDriverModesSheet),
+        SizedBox(height: 10.h),
+        _railButton(Icons.navigation_rounded, 'Navigate', () {
+          final ride = _activeRide;
+          if (ride != null) _fitRideOnMap(ride);
+        }),
+        SizedBox(height: 10.h),
+        _railButton(Icons.refresh_rounded, 'Refresh', () => _loadRequests()),
+      ],
+    );
+  }
+
+  Widget _railButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 54.w,
+        height: 54.w,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 18, offset: const Offset(0, 8))],
+        ),
+        child: Icon(icon, color: AppConst.primaryColor, size: 24.sp),
+      ),
+    );
+  }
+
+  void _showDriverModesSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28.r))),
+      builder: (_) => StatefulBuilder(
+        builder: (context, modalSetState) => Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 24.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44.w,
+                height: 5.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(999.r)),
+              ),
+              Text('Trip preferences', style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900)),
+              SizedBox(height: 6.h),
+              Text('Choose what type of requests you want to receive while online.', style: TextStyle(fontSize: 13.sp, color: Colors.black54, height: 1.35)),
+              SizedBox(height: 18.h),
+              _modeSwitchTile('Bid rides', 'Allow riders to send flexible-price requests.', Icons.price_change_rounded, _bidEnabled, (v) {
+                modalSetState(() => _bidEnabled = v);
+                setState(() => _bidEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+              _modeSwitchTile('Pooling', 'Accept shared trips when available.', Icons.groups_rounded, _poolingEnabled, (v) {
+                modalSetState(() => _poolingEnabled = v);
+                setState(() => _poolingEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+              _modeSwitchTile('Courier', 'Receive package delivery requests.', Icons.inventory_2_rounded, _courierEnabled, (v) {
+                modalSetState(() => _courierEnabled = v);
+                setState(() => _courierEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _modeSwitchTile(String title, String subtitle, IconData icon, bool value, ValueChanged<bool> onChanged) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(color: const Color(0xFFF6F6F6), borderRadius: BorderRadius.circular(18.r)),
+      child: Row(
+        children: [
+          Container(
+            width: 42.w,
+            height: 42.w,
+            decoration: BoxDecoration(color: value ? AppConst.primaryColor : Colors.white, borderRadius: BorderRadius.circular(14.r)),
+            child: Icon(icon, color: AppConst.primaryColor, size: 22.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
+                SizedBox(height: 2.h),
+                Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54, height: 1.25)),
+              ],
+            ),
+          ),
+          Switch(value: value, activeTrackColor: AppConst.primaryColor.withOpacity(0.55), activeColor: AppConst.primaryColor, inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75), onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
+          SizedBox(height: 2.h),
+          Text(label, style: TextStyle(fontSize: 10.sp, color: Colors.black54, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String label, bool selected, ValueChanged<bool> onChanged) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onChanged(!selected),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(vertical: 10.h),
+          decoration: BoxDecoration(
+            color: selected ? AppConst.primaryColor : Colors.white,
+            borderRadius: BorderRadius.circular(999.r),
+            border: Border.all(color: selected ? AppConst.primaryColor : AppConst.primaryColor.withOpacity(0.18)),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _requestsPanel() {
+    final request = _topRequest;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      padding: EdgeInsets.all(16.w),
+      decoration: _cardDecoration(radius: 26),
+      child: !_isOnline
+          ? _emptyPanel(Icons.power_settings_new_rounded, 'Go online to receive requests', 'Stay online and keep this screen open to receive trip offers.')
+          : _loadingRequests
+              ? const Center(child: CircularProgressIndicator())
+              : request == null
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _emptyPanel(Icons.radar_rounded, 'Waiting for requests', 'New ride, courier, bid and pooled trip offers will appear here.'),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _loadRequests(),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Refresh requests'),
+                          ),
+                        ),
+                      ],
+                    )
+                  : _requestCard(request),
+    );
+  }
+
+  Widget _emptyPanel(IconData icon, String title, String subtitle) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 54.w,
+          height: 54.w,
+          decoration: BoxDecoration(color: AppConst.primaryColor.withOpacity(0.22), shape: BoxShape.circle),
+          child: Icon(icon, color: AppConst.primaryColor, size: 26.sp),
+        ),
+        SizedBox(height: 12.h),
+        Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
+        SizedBox(height: 6.h),
+        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black54, height: 1.35)),
+      ],
+    );
+  }
+
+  Widget _requestCard(DriverRideRequest ride) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              decoration: BoxDecoration(color: AppConst.primaryColor, borderRadius: BorderRadius.circular(999.r)),
+              child: Text(ride.rideType.toUpperCase(), style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900)),
+            ),
+            if (ride.isPooling) ...[
+              SizedBox(width: 8.w),
+              _smallPill('POOLING'),
+            ],
+            if (ride.canBid) ...[
+              SizedBox(width: 8.w),
+              _smallPill('BID'),
+            ],
+            const Spacer(),
+            Text(ride.estimatedFare == null ? '—' : _money(ride.estimatedFare!), style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900)),
+          ],
+        ),
+        SizedBox(height: 14.h),
+        _locationRow(Icons.radio_button_checked_rounded, 'Pickup', ride.pickupAddress),
+        SizedBox(height: 10.h),
+        _locationRow(Icons.location_on_rounded, 'Drop-off', ride.dropoffAddress),
+        SizedBox(height: 14.h),
+        Row(
+          children: [
+            _meta(Icons.route_rounded, ride.distanceMiles == null ? 'Distance pending' : '${ride.distanceMiles!.toStringAsFixed(1)} mi'),
+            SizedBox(width: 10.w),
+            _meta(Icons.schedule_rounded, ride.durationMinutes == null ? 'ETA pending' : '${ride.durationMinutes!.round()} min'),
+          ],
+        ),
+        SizedBox(height: 16.h),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => _declineRide(ride),
+                style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                child: const Text('Decline'),
+              ),
+            ),
+            SizedBox(width: 10.w),
+            if (ride.canBid)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _submitBid(ride),
+                  style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                  child: const Text('Bid'),
+                ),
+              ),
+            if (ride.canBid) SizedBox(width: 10.w),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () => _acceptRide(ride),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                ),
+                child: const Text('Accept'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _activeTripCard() {
+    final ride = _activeRide!;
+    final status = ride.status.toLowerCase();
+    final toPickup = status != 'in_progress' && status != 'started';
+    final nextTitle = toPickup ? 'Drive to rider' : 'Trip in progress';
+    final nextSubtitle = toPickup ? ride.pickupAddress : ride.dropoffAddress;
+    final miles = _driverLatLng == null ? null : _distanceMiles(_driverLatLng!, ride.pickupLatLng);
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: _cardDecoration(radius: 26),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(color: Colors.green.withOpacity(0.14), borderRadius: BorderRadius.circular(999.r)),
+                child: Text(status.toUpperCase(), style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900, color: Colors.green.shade800)),
+              ),
+              const Spacer(),
+              Text(ride.estimatedFare == null ? '' : _money(ride.estimatedFare!), style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Text(nextTitle, style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+          SizedBox(height: 6.h),
+          Text(nextSubtitle, style: TextStyle(fontSize: 13.sp, color: Colors.black54, height: 1.35)),
+          if (miles != null && toPickup) ...[
+            SizedBox(height: 10.h),
+            Text('Distance to rider: ${miles.toStringAsFixed(2)} mi', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800)),
+          ],
+          SizedBox(height: 16.h),
+          Row(
+            children: [
+              if (toPickup) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _arrived,
+                    style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: const Text('Arrived'),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _startTrip,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: const Text('Start trip'),
+                  ),
+                ),
+              ] else
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _completeTrip,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: const Text('Complete trip'),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _smallPill(String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+      decoration: BoxDecoration(color: Colors.black.withOpacity(0.06), borderRadius: BorderRadius.circular(999.r)),
+      child: Text(text, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w900)),
+    );
+  }
+
+  Widget _locationRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18.sp, color: AppConst.primaryColor),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 11.sp, color: Colors.black45, fontWeight: FontWeight.w700)),
+              SizedBox(height: 2.h),
+              Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800, height: 1.25)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _meta(IconData icon, String text) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.04), borderRadius: BorderRadius.circular(12.r)),
+        child: Row(
+          children: [
+            Icon(icon, size: 16.sp, color: AppConst.primaryColor.withOpacity(0.85)),
+            SizedBox(width: 6.w),
+            Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration({double radius = 22}) {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(radius.r),
+      boxShadow: [
+        BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
+      ],
+    );
+  }
+}
+

@@ -1,0 +1,65 @@
+import 'package:flutter/material.dart';
+import 'package:t_rider_services_app/consts/appConst.dart';
+import 'package:t_rider_services_app/views/profile_screen/profile_screen.dart';
+import 'home_screen_for_navbar.dart';
+import 'boost/boost_screen.dart';
+import 'support/support_screen.dart';
+
+class Navbar extends StatefulWidget {
+  final int initialIndex;
+
+  const Navbar({super.key, this.initialIndex = 0});
+
+  @override
+  State<Navbar> createState() => _NavbarState();
+}
+
+class _NavbarState extends State<Navbar> {
+  late int _currentIndex;
+
+  late final List<Widget> _screens = [
+    const HomeScreen(),
+    const BoostScreen(),
+    const SupportScreen(),
+    const ProfileScreen(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: AppConst.white,
+        selectedItemColor: AppConst.accentColor,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bolt_rounded),
+            label: 'Boost',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.support_agent_rounded),
+            label: 'Support',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,129 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:t_rider_services_app/consts/appConst.dart';
+import 'package:t_rider_services_app/views/profile_screen/profile_screen.dart';
+import 'home_screen.dart';
+import 'boost/boost_screen.dart';
+import 'support/support_screen.dart';
+
+class Navbar extends StatefulWidget {
+  final int initialIndex;
+
+  const Navbar({super.key, this.initialIndex = 0});
+
+  @override
+  State<Navbar> createState() => _NavbarState();
+}
+
+class _NavbarState extends State<Navbar> {
+  late int _currentIndex;
+  final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
+
+  late final List<Widget> _screens = [
+    HomeScreen(key: _homeScreenKey),
+    const BoostScreen(),
+    const SupportScreen(),
+    const ProfileScreen(),
+  ];
+
+  void _selectIndex(int index) {
+    final switchedTab = _currentIndex != index;
+    setState(() => _currentIndex = index);
+    if (index == 0 && switchedTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _homeScreenKey.currentState?.refreshDashboard();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: AppConst.white,
+          boxShadow: [
+            BoxShadow(
+              color: AppConst.blackWithOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Container(
+            height: 66.h,
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(icon: Icons.home_rounded, label: 'Home', index: 0),
+                _buildNavItem(icon: Icons.bolt_rounded, label: 'Boost', index: 1),
+                _buildNavItem(icon: Icons.support_agent_rounded, label: 'Support', index: 2),
+                _buildNavItem(icon: Icons.person_rounded, label: 'Profile', index: 3),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({required IconData icon, required String label, required int index}) {
+    final isSelected = _currentIndex == index;
+    final active = AppConst.accentColor;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18.r),
+      onTap: () => _selectIndex(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        width: 76.w,
+        padding: EdgeInsets.symmetric(vertical: 5.h),
+        decoration: BoxDecoration(
+          color: AppConst.white,
+          borderRadius: BorderRadius.circular(18.r),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: isSelected ? active : AppConst.black.withOpacity(0.42), size: 23.sp),
+            SizedBox(height: 3.h),
+            Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                color: isSelected ? active : AppConst.black.withOpacity(0.48),
+                fontSize: 10.5.sp,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: 3.h),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: isSelected ? 18.w : 0,
+              height: 3.h,
+              decoration: BoxDecoration(
+                color: active,
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+

@@ -9,7 +9,9 @@ class AppConst {
   static const String NewLogo =
       'assets/WhatsApp_Image_2025-12-31_at_2.44.07_AM-removebg-preview.png';
   static const Color primaryColor = Color(0xffFDC700);
+  static const Color accentColor = primaryColor;
   static const Color transparent = Colors.transparent;
+
   /// Surface (card) color in the default Yellow Theme.
   static const Color _lightBackground = Color(0xffffffff);
 

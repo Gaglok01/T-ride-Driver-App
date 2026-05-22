@@ -1,20 +1,19 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:t_rider_services_app/compat/google_maps_compat.dart';
 import 'package:t_rider_services_app/config/home_map_styles.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
+import 'package:t_rider_services_app/data/directions/google_directions_service.dart';
 import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart';
 import 'package:t_rider_services_app/data/repositories/driver_realtime_repository.dart';
 import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
+import 'package:t_rider_services_app/modules/navigation/navigation_screen.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -57,8 +56,6 @@ class HomeScreenState extends State<HomeScreen> {
   double _heading = 0;
   DriverRideRequest? _activeRide;
   List<DriverRideRequest> _requests = [];
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  int _lastRequestCount = 0;
 
   static const LatLng _fallbackCenter = LatLng(41.2565, -95.9345);
   static const double _startTripMaxMiles = 0.5;
@@ -80,13 +77,6 @@ class HomeScreenState extends State<HomeScreen> {
     await refreshDashboard();
     await _loadActiveRide();
     _configurePolling();
-  }
-
-  Future<void> _playRequestSound() async {
-    try {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(AssetSource('sounds/request.mp3'));
-    } catch (_) {}
   }
 
   Future<void> refreshDashboard() async {
@@ -144,7 +134,29 @@ class HomeScreenState extends State<HomeScreen> {
     });
 
     _refreshRemainingTripInfo();
-    _mapController?.animateCamera(CameraUpdate.newLatLng(next));
+
+    final ride = _activeRide;
+
+    if (_mapController != null) {
+      if (ride != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: next,
+              zoom: 17.2,
+              tilt: 50,
+              bearing: _heading,
+            ),
+          ),
+        );
+      } else {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: next, zoom: 15),
+          ),
+        );
+      }
+    }
   }
 
   void _startArrivalCountdown() {
@@ -216,35 +228,46 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchGoogleRoute(LatLng origin, LatLng destination) async {
-    try {
-      final uri =
-          Uri.https('maps.googleapis.com', '/maps/api/directions/json', {
-            'origin': '${origin.latitude},${origin.longitude}',
-            'destination': '${destination.latitude},${destination.longitude}',
-            'mode': 'driving',
-            'key': _googleDirectionsApiKey,
-          });
+    final route = await GoogleDirectionsService.fetchDrivingRoute(
+      origin: origin,
+      destination: destination,
+    );
 
-      final response = await http.get(uri);
-      if (response.statusCode != 200) return;
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final routes = data['routes'] as List<dynamic>?;
-      if (routes == null || routes.isEmpty) return;
-
-      final encoded = routes.first['overview_polyline']?['points'] as String?;
-      if (encoded == null || encoded.isEmpty) return;
-
-      final points = _decodePolyline(encoded);
-
-      if (!mounted || points.isEmpty) return;
-
-      setState(() {
-        _routePoints = points;
-      });
-    } catch (_) {
-      // Keep straight line fallback if Directions API fails.
+    if (!mounted || route == null || route.points.length < 2) {
+      debugPrint('T-RIDE NAVIGATION: Google route unavailable.');
+      return;
     }
+
+    final km = route.distanceMeters / 1000;
+    final minutes = (route.durationSeconds / 60).ceil();
+
+    setState(() {
+      _routePoints = route.points;
+      _remainingDistanceText = '${km.toStringAsFixed(1)} km remaining';
+      _remainingDurationText = '$minutes min remaining';
+    });
+
+    if (_mapController != null) {
+      _fitRouteOnMap(origin, destination);
+    }
+  }
+
+  Future<void> _fitRouteOnMap(LatLng origin, LatLng destination) async {
+    final controller = _mapController;
+    if (controller == null) return;
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        math.min(origin.latitude, destination.latitude),
+        math.min(origin.longitude, destination.longitude),
+      ),
+      northeast: LatLng(
+        math.max(origin.latitude, destination.latitude),
+        math.max(origin.longitude, destination.longitude),
+      ),
+    );
+
+    await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 90));
   }
 
   List<LatLng> _decodePolyline(String encoded) {
@@ -319,7 +342,6 @@ class HomeScreenState extends State<HomeScreen> {
       final active = await _driverRepository.fetchActiveRide();
       if (!mounted) return;
       setState(() => _activeRide = active);
-      _lastRouteFetchAt = null;
       await _refreshRemainingTripInfo();
     } catch (_) {
       // New backend may not be ready yet. Keep UI ready without fake rides.
@@ -386,7 +408,6 @@ class HomeScreenState extends State<HomeScreen> {
         _activeRide = active ?? ride;
         _requests.removeWhere((e) => e.id == ride.id);
       });
-      _lastRouteFetchAt = null;
       await _refreshRemainingTripInfo();
       _fitRideOnMap(_activeRide!);
     } catch (e) {
@@ -418,7 +439,6 @@ class HomeScreenState extends State<HomeScreen> {
         _activeRide = updated ?? ride;
       });
 
-      _lastRouteFetchAt = null;
       await _refreshRemainingTripInfo();
     } catch (e) {
       AppSnackbar.showApiError(e, fallbackMessage: 'Unable to mark arrived.');
@@ -449,7 +469,6 @@ class HomeScreenState extends State<HomeScreen> {
         _activeRide = updated ?? ride;
       });
 
-      _lastRouteFetchAt = null;
       await _refreshRemainingTripInfo();
     } catch (e) {
       AppSnackbar.showApiError(e, fallbackMessage: 'Unable to start trip.');
@@ -716,26 +735,30 @@ class HomeScreenState extends State<HomeScreen> {
 
   Set<Polyline> _polylines() {
     final active = _activeRide;
-    final p = _driverLatLng;
+    if (active == null || _routePoints.length < 2) {
+      debugPrint(
+        'NO POLYLINE: active=' +
+            (active != null).toString() +
+            ', points=' +
+            _routePoints.length.toString(),
+      );
+      return {};
+    }
 
-    if (active == null || p == null) return {};
-
-    final status = active.status.toLowerCase();
-    final toPickup = status != 'in_progress' && status != 'started';
-
-    final fallbackPoints = toPickup
-        ? <LatLng>[p, active.pickupLatLng]
-        : <LatLng>[p, active.dropoffLatLng];
-
-    final points = _routePoints.length >= 2 ? _routePoints : fallbackPoints;
+    debugPrint(
+      'DRAWING POLYLINE WITH ' + _routePoints.length.toString() + ' POINTS',
+    );
 
     return {
       Polyline(
         polylineId: const PolylineId('active_route'),
-        points: points,
-        width: 6,
-        color: AppConst.primaryColor,
-        geodesic: true,
+        points: List<LatLng>.from(_routePoints),
+        width: 10,
+        color: Colors.black,
+        geodesic: false,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        jointType: JointType.round,
       ),
     };
   }
@@ -748,7 +771,6 @@ class HomeScreenState extends State<HomeScreen> {
     _pollingTimer?.cancel();
     _locationPushTimer?.cancel();
     _arrivalCountdownTimer?.cancel();
-    _audioPlayer.dispose();
     _mapController?.dispose();
     super.dispose();
   }
@@ -763,7 +785,7 @@ class HomeScreenState extends State<HomeScreen> {
           GoogleMap(
             initialCameraPosition: CameraPosition(target: mapCenter, zoom: 14),
             markers: _markers(),
-            polylines: _polylines(),
+            polylines: Set<Polyline>.of(_polylines()),
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
@@ -900,11 +922,26 @@ class HomeScreenState extends State<HomeScreen> {
         SizedBox(height: 10.h),
         _railButton(Icons.navigation_rounded, 'Navigate', () {
           final ride = _activeRide;
-          if (ride != null) {
-            _lastRouteFetchAt = null;
-            _refreshRemainingTripInfo();
-            _fitRideOnMap(ride);
-          }
+          final driver = _driverLatLng;
+
+          if (ride == null || driver == null) return;
+
+          final status = ride.status.toLowerCase();
+          final target = status == 'in_progress' || status == 'started'
+              ? ride.dropoffLatLng
+              : ride.pickupLatLng;
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NavigationScreen(
+                originLat: driver.latitude,
+                originLng: driver.longitude,
+                destLat: target.latitude,
+                destLng: target.longitude,
+              ),
+            ),
+          );
         }),
         SizedBox(height: 10.h),
         _railButton(Icons.refresh_rounded, 'Refresh', () => _loadRequests()),

@@ -62,12 +62,10 @@ class HomeScreenState extends State<HomeScreen> {
 
   static const LatLng _fallbackCenter = LatLng(41.2565, -95.9345);
   static const double _startTripMaxMiles = 0.5;
-  static const String _googleDirectionsApiKey =
-      'AIzaSyCXpA-QVjMCk9Q6KWONfDKvPlMx0jidrR0';
+  static const String _googleDirectionsApiKey = 'AIzaSyCXpA-QVjMCk9Q6KWONfDKvPlMx0jidrR0';
 
   bool get _hasActiveRide => _activeRide != null;
-  DriverRideRequest? get _topRequest =>
-      _requests.isEmpty ? null : _requests.first;
+  DriverRideRequest? get _topRequest => _requests.isEmpty ? null : _requests.first;
 
   @override
   void initState() {
@@ -116,8 +114,7 @@ class HomeScreenState extends State<HomeScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
         return;
       }
 
@@ -154,9 +151,7 @@ class HomeScreenState extends State<HomeScreen> {
       _arrivalCountdownSeconds = 300;
     });
 
-    _arrivalCountdownTimer = Timer.periodic(const Duration(seconds: 1), (
-      timer,
-    ) {
+    _arrivalCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -217,13 +212,16 @@ class HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchGoogleRoute(LatLng origin, LatLng destination) async {
     try {
-      final uri =
-          Uri.https('maps.googleapis.com', '/maps/api/directions/json', {
-            'origin': '${origin.latitude},${origin.longitude}',
-            'destination': '${destination.latitude},${destination.longitude}',
-            'mode': 'driving',
-            'key': _googleDirectionsApiKey,
-          });
+      final uri = Uri.https(
+        'maps.googleapis.com',
+        '/maps/api/directions/json',
+        {
+          'origin': '${origin.latitude},${origin.longitude}',
+          'destination': '${destination.latitude},${destination.longitude}',
+          'mode': 'driving',
+          'key': _googleDirectionsApiKey,
+        },
+      );
 
       final response = await http.get(uri);
       if (response.statusCode != 200) return;
@@ -346,10 +344,7 @@ class HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() => _loadingRequests = false);
       if (!silent) {
-        AppSnackbar.showApiError(
-          e,
-          fallbackMessage: 'Unable to load ride requests.',
-        );
+        AppSnackbar.showApiError(e, fallbackMessage: 'Unable to load ride requests.');
       }
     }
   }
@@ -369,10 +364,7 @@ class HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isOnline = previous);
-      AppSnackbar.showApiError(
-        e,
-        fallbackMessage: 'Unable to update online status.',
-      );
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to update online status.');
     } finally {
       if (mounted) setState(() => _updatingOnline = false);
     }
@@ -390,10 +382,7 @@ class HomeScreenState extends State<HomeScreen> {
       await _refreshRemainingTripInfo();
       _fitRideOnMap(_activeRide!);
     } catch (e) {
-      AppSnackbar.showApiError(
-        e,
-        fallbackMessage: 'Unable to accept this ride.',
-      );
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to accept this ride.');
     }
   }
 
@@ -478,13 +467,7 @@ class HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Review trip',
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                  Text('Review trip', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
                   SizedBox(height: 12.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -493,9 +476,7 @@ class HomeScreenState extends State<HomeScreen> {
                       return IconButton(
                         onPressed: () => modalSetState(() => stars = index + 1),
                         icon: Icon(
-                          selected
-                              ? Icons.star_rounded
-                              : Icons.star_border_rounded,
+                          selected ? Icons.star_rounded : Icons.star_border_rounded,
                           color: Colors.orange,
                           size: 34.sp,
                         ),
@@ -556,9 +537,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   Future<void> _submitBid(DriverRideRequest ride) async {
     final controller = TextEditingController(
-      text: ride.estimatedFare == null
-          ? ''
-          : ride.estimatedFare!.toStringAsFixed(0),
+      text: ride.estimatedFare == null ? '' : ride.estimatedFare!.toStringAsFixed(0),
     );
     final amount = await showModalBottomSheet<num>(
       context: context,
@@ -567,37 +546,23 @@ class HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          20.w,
-          20.h,
-          20.w,
-          MediaQuery.of(context).viewInsets.bottom + 20.h,
-        ),
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, MediaQuery.of(context).viewInsets.bottom + 20.h),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Submit your bid',
-              style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800),
-            ),
+            Text('Submit your bid', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800)),
             SizedBox(height: 12.h),
             TextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                prefixText: r'$ ',
-                labelText: 'Your price',
-              ),
+              decoration: const InputDecoration(prefixText: r'$ ', labelText: 'Your price'),
             ),
             SizedBox(height: 18.h),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.pop(
-                  context,
-                  num.tryParse(controller.text.trim()),
-                ),
+                onPressed: () => Navigator.pop(context, num.tryParse(controller.text.trim())),
                 child: const Text('Send bid'),
               ),
             ),
@@ -608,107 +573,66 @@ class HomeScreenState extends State<HomeScreen> {
     if (amount == null || amount <= 0) return;
     try {
       await _driverRepository.submitBid(rideId: ride.id, amount: amount);
-      if (mounted)
-        AppSnackbar.showSuccess(
-          title: 'Bid sent',
-          message: 'Your offer was sent to the rider.',
-        );
+      if (mounted) AppSnackbar.showSuccess(title: 'Bid sent', message: 'Your offer was sent to the rider.');
     } catch (e) {
       AppSnackbar.showApiError(e, fallbackMessage: 'Unable to send bid.');
     }
   }
 
   double _distanceMiles(LatLng a, LatLng b) {
-    final meters = Geolocator.distanceBetween(
-      a.latitude,
-      a.longitude,
-      b.latitude,
-      b.longitude,
-    );
+    final meters = Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
     return meters / 1609.344;
   }
 
   Future<void> _fitRideOnMap(DriverRideRequest ride) async {
     final c = _mapController;
     if (c == null) return;
-    final points = [
-      if (_driverLatLng != null) _driverLatLng!,
-      ride.pickupLatLng,
-      ride.dropoffLatLng,
-    ];
+    final points = [if (_driverLatLng != null) _driverLatLng!, ride.pickupLatLng, ride.dropoffLatLng];
     final minLat = points.map((e) => e.latitude).reduce(math.min);
     final maxLat = points.map((e) => e.latitude).reduce(math.max);
     final minLng = points.map((e) => e.longitude).reduce(math.min);
     final maxLng = points.map((e) => e.longitude).reduce(math.max);
-    await c.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(minLat, minLng),
-          northeast: LatLng(maxLat, maxLng),
-        ),
-        70,
-      ),
-    );
+    await c.animateCamera(CameraUpdate.newLatLngBounds(
+      LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng)),
+      70,
+    ));
   }
 
   Set<Marker> _markers() {
     final markers = <Marker>{};
     final p = _driverLatLng;
     if (p != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('driver'),
-          position: p,
-          rotation: _heading,
-          flat: true,
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueYellow,
-          ),
-          infoWindow: const InfoWindow(title: 'You'),
-        ),
-      );
+      markers.add(Marker(
+        markerId: const MarkerId('driver'),
+        position: p,
+        rotation: _heading,
+        flat: true,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+        infoWindow: const InfoWindow(title: 'You'),
+      ));
     }
     final active = _activeRide;
     if (active != null) {
-      markers.add(
-        Marker(
-          markerId: MarkerId('pickup_${active.id}'),
-          position: active.pickupLatLng,
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueGreen,
-          ),
-          infoWindow: InfoWindow(
-            title: 'Pickup',
-            snippet: active.pickupAddress,
-          ),
-        ),
-      );
-      markers.add(
-        Marker(
-          markerId: MarkerId('dropoff_${active.id}'),
-          position: active.dropoffLatLng,
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-          infoWindow: InfoWindow(
-            title: 'Drop-off',
-            snippet: active.dropoffAddress,
-          ),
-        ),
-      );
+      markers.add(Marker(
+        markerId: MarkerId('pickup_${active.id}'),
+        position: active.pickupLatLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(title: 'Pickup', snippet: active.pickupAddress),
+      ));
+      markers.add(Marker(
+        markerId: MarkerId('dropoff_${active.id}'),
+        position: active.dropoffLatLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(title: 'Drop-off', snippet: active.dropoffAddress),
+      ));
     } else {
       for (final r in _requests.take(5)) {
-        markers.add(
-          Marker(
-            markerId: MarkerId('request_${r.id}'),
-            position: r.pickupLatLng,
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-              BitmapDescriptor.hueOrange,
-            ),
-            infoWindow: InfoWindow(
-              title: r.rideType.toUpperCase(),
-              snippet: r.pickupAddress,
-            ),
-          ),
-        );
+        markers.add(Marker(
+          markerId: MarkerId('request_${r.id}'),
+          position: r.pickupLatLng,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          infoWindow: InfoWindow(title: r.rideType.toUpperCase(), snippet: r.pickupAddress),
+        ));
       }
     }
     return markers;
@@ -734,7 +658,7 @@ class HomeScreenState extends State<HomeScreen> {
         polylineId: const PolylineId('active_route'),
         points: points,
         width: 6,
-        color: AppConst.primaryColor,
+        color: AppConst.accentColor,
         geodesic: true,
       ),
     };
@@ -769,9 +693,7 @@ class HomeScreenState extends State<HomeScreen> {
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
             compassEnabled: false,
-            style: AppConst.isDarkMode
-                ? HomeMapStyles.darkUberLike
-                : HomeMapStyles.lightUberLike,
+            style: AppConst.isDarkMode ? HomeMapStyles.darkUberLike : HomeMapStyles.lightUberLike,
             onMapCreated: (controller) => _mapController = controller,
           ),
           SafeArea(
@@ -807,15 +729,8 @@ class HomeScreenState extends State<HomeScreen> {
           Container(
             width: 44.w,
             height: 44.w,
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.local_taxi_rounded,
-              color: AppConst.primaryColor,
-              size: 22.sp,
-            ),
+            decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+            child: Icon(Icons.local_taxi_rounded, color: AppConst.primaryColor, size: 22.sp),
           ),
           SizedBox(width: 12.w),
           Expanded(
@@ -824,32 +739,18 @@ class HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   _isOnline ? 'Online — receiving requests' : 'Offline',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
-                  ),
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: Colors.black),
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  _hasActiveRide
-                      ? 'Active trip in progress'
-                      : 'Ready for trips',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black54,
-                  ),
+                  _hasActiveRide ? 'Active trip in progress' : 'Ready for trips',
+                  style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: Colors.black54),
                 ),
               ],
             ),
           ),
           if (_loadingDashboard || _updatingOnline)
-            SizedBox(
-              width: 28.w,
-              height: 28.w,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            )
+            SizedBox(width: 28.w, height: 28.w, child: const CircularProgressIndicator(strokeWidth: 2))
           else
             Switch(
               value: _isOnline,
@@ -861,10 +762,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
           IconButton(
             onPressed: () => Get.to(() => const SettingScreen()),
-            icon: const Icon(
-              Icons.settings_rounded,
-              color: AppConst.primaryColor,
-            ),
+            icon: const Icon(Icons.settings_rounded, color: AppConst.primaryColor),
           ),
         ],
       ),
@@ -881,10 +779,7 @@ class HomeScreenState extends State<HomeScreen> {
             children: [
               _miniStat('Today', _money(_todayEarnings)),
               _miniStat('Week', _money(_weekEarnings)),
-              _miniStat(
-                'Rating',
-                _rating == 0 ? 'New' : _rating.toStringAsFixed(1),
-              ),
+              _miniStat('Rating', _rating == 0 ? 'New' : _rating.toStringAsFixed(1)),
               _miniStat('Trips', '$_totalTrips'),
             ],
           ),
@@ -893,6 +788,7 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   Widget _quickModeRail() {
     return Column(
       children: [
@@ -900,11 +796,7 @@ class HomeScreenState extends State<HomeScreen> {
         SizedBox(height: 10.h),
         _railButton(Icons.navigation_rounded, 'Navigate', () {
           final ride = _activeRide;
-          if (ride != null) {
-            _lastRouteFetchAt = null;
-            _refreshRemainingTripInfo();
-            _fitRideOnMap(ride);
-          }
+          if (ride != null) { _lastRouteFetchAt = null; _refreshRemainingTripInfo(); _fitRideOnMap(ride); }
         }),
         SizedBox(height: 10.h),
         _railButton(Icons.refresh_rounded, 'Refresh', () => _loadRequests()),
@@ -921,13 +813,7 @@ class HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.14),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 18, offset: const Offset(0, 8))],
         ),
         child: Icon(icon, color: AppConst.primaryColor, size: 24.sp),
       ),
@@ -938,9 +824,7 @@ class HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28.r))),
       builder: (_) => StatefulBuilder(
         builder: (context, modalSetState) => Padding(
           padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 24.h),
@@ -952,58 +836,27 @@ class HomeScreenState extends State<HomeScreen> {
                 width: 44.w,
                 height: 5.h,
                 margin: EdgeInsets.only(bottom: 16.h),
-                decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.circular(999.r),
-                ),
+                decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(999.r)),
               ),
-              Text(
-                'Trip preferences',
-                style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900),
-              ),
+              Text('Trip preferences', style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900)),
               SizedBox(height: 6.h),
-              Text(
-                'Choose what type of requests you want to receive while online.',
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  color: Colors.black54,
-                  height: 1.35,
-                ),
-              ),
+              Text('Choose what type of requests you want to receive while online.', style: TextStyle(fontSize: 13.sp, color: Colors.black54, height: 1.35)),
               SizedBox(height: 18.h),
-              _modeSwitchTile(
-                'Bid rides',
-                'Allow riders to send flexible-price requests.',
-                Icons.price_change_rounded,
-                _bidEnabled,
-                (v) {
-                  modalSetState(() => _bidEnabled = v);
-                  setState(() => _bidEnabled = v);
-                  if (_isOnline) _loadRequests(silent: true);
-                },
-              ),
-              _modeSwitchTile(
-                'Pooling',
-                'Accept shared trips when available.',
-                Icons.groups_rounded,
-                _poolingEnabled,
-                (v) {
-                  modalSetState(() => _poolingEnabled = v);
-                  setState(() => _poolingEnabled = v);
-                  if (_isOnline) _loadRequests(silent: true);
-                },
-              ),
-              _modeSwitchTile(
-                'Courier',
-                'Receive package delivery requests.',
-                Icons.inventory_2_rounded,
-                _courierEnabled,
-                (v) {
-                  modalSetState(() => _courierEnabled = v);
-                  setState(() => _courierEnabled = v);
-                  if (_isOnline) _loadRequests(silent: true);
-                },
-              ),
+              _modeSwitchTile('Bid rides', 'Allow riders to send flexible-price requests.', Icons.price_change_rounded, _bidEnabled, (v) {
+                modalSetState(() => _bidEnabled = v);
+                setState(() => _bidEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+              _modeSwitchTile('Pooling', 'Accept shared trips when available.', Icons.groups_rounded, _poolingEnabled, (v) {
+                modalSetState(() => _poolingEnabled = v);
+                setState(() => _poolingEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+              _modeSwitchTile('Courier', 'Receive package delivery requests.', Icons.inventory_2_rounded, _courierEnabled, (v) {
+                modalSetState(() => _courierEnabled = v);
+                setState(() => _courierEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
             ],
           ),
         ),
@@ -1011,29 +864,17 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _modeSwitchTile(
-    String title,
-    String subtitle,
-    IconData icon,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
+  Widget _modeSwitchTile(String title, String subtitle, IconData icon, bool value, ValueChanged<bool> onChanged) {
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(18.r),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFFF6F6F6), borderRadius: BorderRadius.circular(18.r)),
       child: Row(
         children: [
           Container(
             width: 42.w,
             height: 42.w,
-            decoration: BoxDecoration(
-              color: value ? AppConst.primaryColor : Colors.white,
-              borderRadius: BorderRadius.circular(14.r),
-            ),
+            decoration: BoxDecoration(color: value ? AppConst.primaryColor : Colors.white, borderRadius: BorderRadius.circular(14.r)),
             child: Icon(icon, color: AppConst.primaryColor, size: 22.sp),
           ),
           SizedBox(width: 12.w),
@@ -1041,32 +882,13 @@ class HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                Text(title, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
                 SizedBox(height: 2.h),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    color: Colors.black54,
-                    height: 1.25,
-                  ),
-                ),
+                Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54, height: 1.25)),
               ],
             ),
           ),
-          Switch(
-            value: value,
-            activeTrackColor: AppConst.primaryColor.withOpacity(0.55),
-            activeColor: AppConst.primaryColor,
-            inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75),
-            onChanged: onChanged,
-          ),
+          Switch(value: value, activeTrackColor: AppConst.primaryColor.withOpacity(0.55), activeColor: AppConst.primaryColor, inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75), onChanged: onChanged),
         ],
       ),
     );
@@ -1076,21 +898,9 @@ class HomeScreenState extends State<HomeScreen> {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900),
-          ),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
           SizedBox(height: 2.h),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.sp,
-              color: Colors.black54,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 10.sp, color: Colors.black54, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -1106,11 +916,7 @@ class HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             color: selected ? AppConst.primaryColor : Colors.white,
             borderRadius: BorderRadius.circular(999.r),
-            border: Border.all(
-              color: selected
-                  ? AppConst.primaryColor
-                  : AppConst.primaryColor.withOpacity(0.18),
-            ),
+            border: Border.all(color: selected ? AppConst.primaryColor : AppConst.primaryColor.withOpacity(0.18)),
           ),
           child: Text(
             label,
@@ -1133,34 +939,26 @@ class HomeScreenState extends State<HomeScreen> {
       padding: EdgeInsets.all(16.w),
       decoration: _cardDecoration(radius: 26),
       child: !_isOnline
-          ? _emptyPanel(
-              Icons.power_settings_new_rounded,
-              'Go online to receive requests',
-              'Stay online and keep this screen open to receive trip offers.',
-            )
+          ? _emptyPanel(Icons.power_settings_new_rounded, 'Go online to receive requests', 'Stay online and keep this screen open to receive trip offers.')
           : _loadingRequests
-          ? const Center(child: CircularProgressIndicator())
-          : request == null
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _emptyPanel(
-                  Icons.radar_rounded,
-                  'Waiting for requests',
-                  'New ride, courier, bid and pooled trip offers will appear here.',
-                ),
-                SizedBox(height: 12.h),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _loadRequests(),
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Refresh requests'),
-                  ),
-                ),
-              ],
-            )
-          : _requestCard(request),
+              ? const Center(child: CircularProgressIndicator())
+              : request == null
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _emptyPanel(Icons.radar_rounded, 'Waiting for requests', 'New ride, courier, bid and pooled trip offers will appear here.'),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _loadRequests(),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Refresh requests'),
+                          ),
+                        ),
+                      ],
+                    )
+                  : _requestCard(request),
     );
   }
 
@@ -1171,28 +969,13 @@ class HomeScreenState extends State<HomeScreen> {
         Container(
           width: 54.w,
           height: 54.w,
-          decoration: BoxDecoration(
-            color: AppConst.primaryColor.withOpacity(0.22),
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: AppConst.primaryColor.withOpacity(0.22), shape: BoxShape.circle),
           child: Icon(icon, color: AppConst.primaryColor, size: 26.sp),
         ),
         SizedBox(height: 12.h),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900),
-        ),
+        Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
         SizedBox(height: 6.h),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12.sp,
-            color: Colors.black54,
-            height: 1.35,
-          ),
-        ),
+        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black54, height: 1.35)),
       ],
     );
   }
@@ -1206,55 +989,31 @@ class HomeScreenState extends State<HomeScreen> {
           children: [
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-              decoration: BoxDecoration(
-                color: AppConst.primaryColor,
-                borderRadius: BorderRadius.circular(999.r),
-              ),
-              child: Text(
-                ride.rideType.toUpperCase(),
-                style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900),
-              ),
+              decoration: BoxDecoration(color: AppConst.primaryColor, borderRadius: BorderRadius.circular(999.r)),
+              child: Text(ride.rideType.toUpperCase(), style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900)),
             ),
             if (ride.isPooling) ...[
               SizedBox(width: 8.w),
               _smallPill('POOLING'),
             ],
-            if (ride.canBid) ...[SizedBox(width: 8.w), _smallPill('BID')],
+            if (ride.canBid) ...[
+              SizedBox(width: 8.w),
+              _smallPill('BID'),
+            ],
             const Spacer(),
-            Text(
-              ride.estimatedFare == null ? '—' : _money(ride.estimatedFare!),
-              style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900),
-            ),
+            Text(ride.estimatedFare == null ? '—' : _money(ride.estimatedFare!), style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900)),
           ],
         ),
         SizedBox(height: 14.h),
-        _locationRow(
-          Icons.radio_button_checked_rounded,
-          'Pickup',
-          ride.pickupAddress,
-        ),
+        _locationRow(Icons.radio_button_checked_rounded, 'Pickup', ride.pickupAddress),
         SizedBox(height: 10.h),
-        _locationRow(
-          Icons.location_on_rounded,
-          'Drop-off',
-          ride.dropoffAddress,
-        ),
+        _locationRow(Icons.location_on_rounded, 'Drop-off', ride.dropoffAddress),
         SizedBox(height: 14.h),
         Row(
           children: [
-            _meta(
-              Icons.route_rounded,
-              ride.distanceMiles == null
-                  ? 'Distance pending'
-                  : '${ride.distanceMiles!.toStringAsFixed(1)} mi',
-            ),
+            _meta(Icons.route_rounded, ride.distanceMiles == null ? 'Distance pending' : '${ride.distanceMiles!.toStringAsFixed(1)} mi'),
             SizedBox(width: 10.w),
-            _meta(
-              Icons.schedule_rounded,
-              ride.durationMinutes == null
-                  ? 'ETA pending'
-                  : '${ride.durationMinutes!.round()} min',
-            ),
+            _meta(Icons.schedule_rounded, ride.durationMinutes == null ? 'ETA pending' : '${ride.durationMinutes!.round()} min'),
           ],
         ),
         SizedBox(height: 16.h),
@@ -1263,9 +1022,7 @@ class HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: OutlinedButton(
                 onPressed: () => _declineRide(ride),
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                ),
+                style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
                 child: const Text('Decline'),
               ),
             ),
@@ -1274,9 +1031,7 @@ class HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => _submitBid(ride),
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                  ),
+                  style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
                   child: const Text('Bid'),
                 ),
               ),
@@ -1289,9 +1044,7 @@ class HomeScreenState extends State<HomeScreen> {
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(vertical: 14.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
                 ),
                 child: const Text('Accept'),
               ),
@@ -1308,9 +1061,7 @@ class HomeScreenState extends State<HomeScreen> {
     final toPickup = status != 'in_progress' && status != 'started';
     final nextTitle = toPickup ? 'Drive to rider' : 'Trip in progress';
     final nextSubtitle = toPickup ? ride.pickupAddress : ride.dropoffAddress;
-    final miles = _driverLatLng == null
-        ? null
-        : _distanceMiles(_driverLatLng!, ride.pickupLatLng);
+    final miles = _driverLatLng == null ? null : _distanceMiles(_driverLatLng!, ride.pickupLatLng);
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: 310.h),
@@ -1325,84 +1076,48 @@ class HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 6.h,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                     decoration: BoxDecoration(
                       color: Colors.green.withOpacity(0.14),
                       borderRadius: BorderRadius.circular(999.r),
                     ),
                     child: Text(
                       status.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.green.shade800,
-                      ),
+                      style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900, color: Colors.green.shade800),
                     ),
                   ),
                   const Spacer(),
                   Text(
-                    ride.estimatedFare == null
-                        ? ''
-                        : _money(ride.estimatedFare!),
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    ride.estimatedFare == null ? '' : _money(ride.estimatedFare!),
+                    style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
                   ),
                 ],
               ),
               SizedBox(height: 10.h),
-              Text(
-                nextTitle,
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900),
-              ),
+              Text(nextTitle, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
               SizedBox(height: 4.h),
-              Text(
-                nextSubtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: Colors.black54,
-                  height: 1.25,
-                ),
-              ),
+              Text(nextSubtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, color: Colors.black54, height: 1.25)),
 
               if (miles != null && toPickup) ...[
                 SizedBox(height: 8.h),
-                Text(
-                  'Distance to rider: ${miles.toStringAsFixed(2)} mi',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                Text('Distance to rider: ${miles.toStringAsFixed(2)} mi', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800)),
               ],
 
               if (_arrivalCountdownSeconds > 0) ...[
                 SizedBox(height: 8.h),
                 Text(
                   'Waiting time: ${_formatCountdown(_arrivalCountdownSeconds)}',
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.orange,
-                  ),
+                  style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900, color: Colors.orange),
                 ),
               ],
 
-              if (_remainingDistanceText.isNotEmpty ||
-                  _remainingDurationText.isNotEmpty) ...[
+              if (_remainingDistanceText.isNotEmpty || _remainingDurationText.isNotEmpty) ...[
                 SizedBox(height: 8.h),
                 Row(
                   children: [
                     if (_remainingDistanceText.isNotEmpty)
                       _meta(Icons.route_rounded, _remainingDistanceText),
-                    if (_remainingDistanceText.isNotEmpty &&
-                        _remainingDurationText.isNotEmpty)
+                    if (_remainingDistanceText.isNotEmpty && _remainingDurationText.isNotEmpty)
                       SizedBox(width: 8.w),
                     if (_remainingDurationText.isNotEmpty)
                       _meta(Icons.schedule_rounded, _remainingDurationText),
@@ -1417,9 +1132,7 @@ class HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _arrived,
-                        style: OutlinedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 13.h),
-                        ),
+                        style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 13.h)),
                         child: const Text('Arrived'),
                       ),
                     ),
@@ -1459,14 +1172,8 @@ class HomeScreenState extends State<HomeScreen> {
   Widget _smallPill(String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(999.r),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w900),
-      ),
+      decoration: BoxDecoration(color: Colors.black.withOpacity(0.06), borderRadius: BorderRadius.circular(999.r)),
+      child: Text(text, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w900)),
     );
   }
 
@@ -1480,25 +1187,9 @@ class HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  color: Colors.black45,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text(label, style: TextStyle(fontSize: 11.sp, color: Colors.black45, fontWeight: FontWeight.w700)),
               SizedBox(height: 2.h),
-              Text(
-                value,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w800,
-                  height: 1.25,
-                ),
-              ),
+              Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800, height: 1.25)),
             ],
           ),
         ),
@@ -1510,26 +1201,12 @@ class HomeScreenState extends State<HomeScreen> {
     return Expanded(
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.04), borderRadius: BorderRadius.circular(12.r)),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 16.sp,
-              color: AppConst.primaryColor.withOpacity(0.85),
-            ),
+            Icon(icon, size: 16.sp, color: AppConst.primaryColor.withOpacity(0.85)),
             SizedBox(width: 6.w),
-            Expanded(
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
-              ),
-            ),
+            Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800))),
           ],
         ),
       ),
@@ -1541,12 +1218,14 @@ class HomeScreenState extends State<HomeScreen> {
       color: Colors.white,
       borderRadius: BorderRadius.circular(radius.r),
       boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.12),
-          blurRadius: 24,
-          offset: const Offset(0, 8),
-        ),
+        BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
       ],
     );
   }
 }
+
+
+
+
+
+

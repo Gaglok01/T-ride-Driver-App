@@ -1,0 +1,1397 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
+import 'package:t_rider_services_app/compat/google_maps_compat.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:t_rider_services_app/config/home_map_styles.dart';
+import 'package:t_rider_services_app/consts/appConst.dart';
+import 'package:t_rider_services_app/config/maps_config.dart';
+import 'package:t_rider_services_app/data/directions/google_directions_service.dart';
+import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart';
+import 'package:t_rider_services_app/data/repositories/driver_realtime_repository.dart';
+import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
+import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
+import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  final RiderStatusRepository _statusRepository = RiderStatusRepository();
+  final DriverRealtimeRepository _driverRepository = DriverRealtimeRepository();
+
+  GoogleMapController? _mapController;
+  StreamSubscription<Position>? _positionSub;
+  Timer? _pollingTimer;
+  Timer? _locationPushTimer;
+  Timer? _waitingTimer;
+  DateTime? _waitingStartedAt;
+  int _waitingSeconds = 0;
+  static const int _freeWaitingSeconds = 360;
+
+  bool _isOnline = false;
+  bool _loadingDashboard = true;
+  bool _updatingOnline = false;
+  bool _loadingRequests = false;
+  bool _bidEnabled = true;
+  bool _poolingEnabled = true;
+  bool _courierEnabled = true;
+
+  num _todayEarnings = 0;
+  num _weekEarnings = 0;
+  num _rating = 0;
+  int _totalTrips = 0;
+
+  LatLng? _driverLatLng;
+  double _heading = 0;
+  DriverRideRequest? _activeRide;
+  List<DriverRideRequest> _requests = [];
+  List<LatLng> _drivingRoutePoints = [];
+  String? _lastRouteKey;
+  LatLng? _lastRouteOrigin;
+  DateTime? _lastRouteRefreshAt;
+  num? _activeRouteDistanceMiles;
+  int? _activeRouteDurationMinutes;
+
+  static const LatLng _fallbackCenter = LatLng(41.2565, -95.9345);
+  static const double _startTripMaxMiles = 0.5;
+
+  bool get _hasActiveRide => _activeRide != null;
+  DriverRideRequest? get _topRequest => _requests.isEmpty ? null : _requests.first;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await _startLocation();
+    await refreshDashboard();
+    await _loadActiveRide();
+    _configurePolling();
+  }
+
+  Future<void> refreshDashboard() async {
+    setState(() => _loadingDashboard = true);
+    try {
+      final dash = await _statusRepository.fetchDriverDashboard();
+      if (!mounted) return;
+      setState(() {
+        _isOnline = dash.isOnline;
+        _rating = dash.rating ?? 0;
+        _totalTrips = dash.totalTrips ?? 0;
+        _todayEarnings = dash.earningsToday;
+        _weekEarnings = dash.earningsWeekly;
+        _loadingDashboard = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingDashboard = false);
+    }
+  }
+
+  Future<void> _startLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final current = await Geolocator.getCurrentPosition();
+      _setPosition(current);
+
+      _positionSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 8,
+        ),
+      ).listen(_setPosition);
+    } catch (_) {
+      // Location can fail on web/emulator. Android APK is the real test.
+    }
+  }
+
+  void _setPosition(Position p) {
+    final next = LatLng(p.latitude, p.longitude);
+    setState(() {
+      _driverLatLng = next;
+      _heading = p.heading.isFinite ? p.heading : _heading;
+    });
+    final active = _activeRide;
+    if (active == null) {
+      _mapController?.animateCamera(CameraUpdate.newLatLng(next));
+    } else {
+      _followDriverOnActiveRoute(next);
+      _maybeRefreshActiveRoute(active, next);
+    }
+  }
+
+  void _configurePolling() {
+    _pollingTimer?.cancel();
+    _locationPushTimer?.cancel();
+    _waitingTimer?.cancel();
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (_isOnline) _loadRequests(silent: true);
+      if (_hasActiveRide) _loadActiveRide(silent: true);
+    });
+
+    _locationPushTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (_isOnline) _pushDriverLocation();
+    });
+  }
+
+  Future<void> _pushDriverLocation() async {
+    final p = _driverLatLng;
+    if (p == null) return;
+    try {
+      await _driverRepository.updateLocation(
+        lat: p.latitude,
+        lng: p.longitude,
+        heading: _heading,
+        isOnline: _isOnline,
+      );
+    } catch (_) {
+      // Do not interrupt the driver UI because of one location sync failure.
+    }
+  }
+
+  Future<void> _loadActiveRide({bool silent = false}) async {
+    try {
+      final active = await _driverRepository.fetchActiveRide();
+      if (!mounted) return;
+      setState(() => _activeRide = active);
+    } catch (_) {
+      // New backend may not be ready yet. Keep UI ready without fake rides.
+    }
+  }
+
+  Future<void> _loadRequests({bool silent = false}) async {
+    if (!_isOnline) return;
+    if (!silent) setState(() => _loadingRequests = true);
+    try {
+      final p = _driverLatLng;
+      final requests = await _driverRepository.fetchRequests(
+        lat: p?.latitude,
+        lng: p?.longitude,
+        bid: _bidEnabled,
+        pooling: _poolingEnabled,
+      );
+      if (!mounted) return;
+      setState(() {
+        _requests = requests;
+        _loadingRequests = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingRequests = false);
+      if (!silent) {
+        AppSnackbar.showApiError(e, fallbackMessage: 'Unable to load ride requests.');
+      }
+    }
+  }
+
+  Future<void> _toggleOnline(bool value) async {
+    if (_updatingOnline || _loadingDashboard) return;
+    final previous = _isOnline;
+    setState(() {
+      _isOnline = value;
+      _updatingOnline = true;
+      if (!value) _requests = [];
+    });
+    try {
+      await _statusRepository.updateOnlineStatus(isOnline: value);
+      await _pushDriverLocation();
+      if (value) await _loadRequests(silent: true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isOnline = previous);
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to update online status.');
+    } finally {
+      if (mounted) setState(() => _updatingOnline = false);
+    }
+  }
+
+  Future<void> _acceptRide(DriverRideRequest ride) async {
+    try {
+      final active = await _driverRepository.acceptRide(ride.id);
+      if (!mounted) return;
+      setState(() {
+        _activeRide = active ?? ride;
+        _requests.removeWhere((e) => e.id == ride.id);
+      });
+      await _loadDrivingRouteForActiveRide(_activeRide!);
+      _fitRideOnMap(_activeRide!);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to accept this ride.');
+    }
+  }
+
+  Future<void> _declineRide(DriverRideRequest ride) async {
+    setState(() => _requests.removeWhere((e) => e.id == ride.id));
+    try {
+      await _driverRepository.declineRide(ride.id);
+    } catch (_) {}
+  }
+
+  Future<void> _arrived() async {
+    final ride = _activeRide;
+    if (ride == null) return;
+    try {
+      final updated = await _driverRepository.arrived(ride.id);
+      if (mounted) {
+        setState(() => _activeRide = updated ?? ride);
+        _startWaitingCountdown();
+        await _loadDrivingRouteForActiveRide(_activeRide!);
+        await _fitRideOnMap(_activeRide!);
+      }
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to mark arrived.');
+    }
+  }
+
+  Future<void> _startTrip() async {
+    final ride = _activeRide;
+    final p = _driverLatLng;
+    if (ride == null || p == null) return;
+    final miles = _distanceMiles(p, ride.pickupLatLng);
+    if (miles > _startTripMaxMiles) {
+      AppSnackbar.showError(
+        message: 'You must be within 0.5 miles of the rider to start the trip.',
+      );
+      return;
+    }
+    try {
+      _stopWaitingCountdown();
+      final updated = await _driverRepository.startRide(ride.id);
+      if (mounted) {
+        setState(() => _activeRide = updated ?? ride);
+        _startWaitingCountdown();
+        await _loadDrivingRouteForActiveRide(_activeRide!);
+        await _fitRideOnMap(_activeRide!);
+      }
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to start trip.');
+    }
+  }
+
+  Future<void> _completeTrip() async {
+    final ride = _activeRide;
+    if (ride == null) return;
+    try {
+      await _driverRepository.completeRide(ride.id);
+      if (!mounted) return;
+      await _showRateRiderSheet(ride);
+      if (!mounted) return;
+      setState(() => _activeRide = null);
+      await refreshDashboard();
+      await _loadRequests(silent: true);
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to complete trip.');
+    }
+  }
+
+  void _startWaitingCountdown() {
+    _waitingTimer?.cancel();
+    _waitingStartedAt = DateTime.now();
+    _waitingSeconds = 0;
+
+    _waitingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || _waitingStartedAt == null) return;
+      setState(() {
+        _waitingSeconds = DateTime.now().difference(_waitingStartedAt!).inSeconds;
+      });
+    });
+  }
+
+  void _stopWaitingCountdown() {
+    _waitingTimer?.cancel();
+    _waitingTimer = null;
+    _waitingStartedAt = null;
+    _waitingSeconds = 0;
+  }
+
+  String _formatWaitingTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  bool get _canMarkNoShow => _waitingSeconds >= _freeWaitingSeconds;
+
+  Future<void> _markRiderNoShow() async {
+    final ride = _activeRide;
+    if (ride == null) return;
+
+    if (!_canMarkNoShow) {
+      AppSnackbar.showError(message: 'No-show is available after 6 minutes of waiting.');
+      return;
+    }
+
+    try {
+      // Temporary backend-safe behavior:
+      // This cancels locally through existing decline endpoint.
+      // Later backend should create a true no-show endpoint and charge 70%.
+      await _driverRepository.declineRide(ride.id);
+      if (!mounted) return;
+      _stopWaitingCountdown();
+      setState(() {
+        _activeRide = null;
+        _drivingRoutePoints = [];
+      });
+      await refreshDashboard();
+      await _loadRequests(silent: true);
+      AppSnackbar.showSuccess(message: 'Rider marked as no-show. Fee rule should be finalized on backend.');
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to mark rider no-show.');
+    }
+  }
+
+  Future<void> _showRateRiderSheet(DriverRideRequest ride) async {
+    int rating = 5;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Rate rider',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    ride.riderName == null || ride.riderName!.trim().isEmpty
+                        ? 'How was this rider?'
+                        : 'How was ${ride.riderName}?',
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      final value = index + 1;
+                      return IconButton(
+                        onPressed: () => setModalState(() => rating = value),
+                        icon: Icon(
+                          value <= rating ? Icons.star : Icons.star_border,
+                          size: 38,
+                          color: Colors.amber,
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                      child: Text('Submit $rating-star review'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _waitingForRiderCard() {
+    final extraSeconds = (_waitingSeconds - _freeWaitingSeconds).clamp(0, 999999);
+    final freeLeft = (_freeWaitingSeconds - _waitingSeconds).clamp(0, _freeWaitingSeconds);
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 12.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: Colors.orange.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Waiting for rider',
+            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900, color: Colors.black),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            _canMarkNoShow
+                ? 'Free wait ended. No-show is now available.'
+                : 'Free wait left: ${_formatWaitingTime(freeLeft)}',
+            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700, color: Colors.black54),
+          ),
+          if (extraSeconds > 0) ...[
+            SizedBox(height: 4.h),
+            Text(
+              'Extra waiting: ${_formatWaitingTime(extraSeconds)}',
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800, color: Colors.orange.shade900),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitBid(DriverRideRequest ride) async {
+    final controller = TextEditingController(
+      text: ride.estimatedFare == null ? '' : ride.estimatedFare!.toStringAsFixed(0),
+    );
+    final amount = await showModalBottomSheet<num>(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, MediaQuery.of(context).viewInsets.bottom + 20.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Submit your bid', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w800)),
+            SizedBox(height: 12.h),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(prefixText: r'$ ', labelText: 'Your price'),
+            ),
+            SizedBox(height: 18.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, num.tryParse(controller.text.trim())),
+                child: const Text('Send bid'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (amount == null || amount <= 0) return;
+    try {
+      await _driverRepository.submitBid(rideId: ride.id, amount: amount);
+      if (mounted) AppSnackbar.showSuccess(title: 'Bid sent', message: 'Your offer was sent to the rider.');
+    } catch (e) {
+      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to send bid.');
+    }
+  }
+
+  Future<void> _openNavigationTo(LatLng target) async {
+    final uri = Uri.parse(
+      'google.navigation:q=${target.latitude},${target.longitude}&mode=d',
+    );
+
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      final webUri = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=${target.latitude},${target.longitude}&travelmode=driving',
+      );
+      await launchUrl(webUri, mode: LaunchMode.externalApplication);
+    }
+  }
+  double _distanceMiles(LatLng a, LatLng b) {
+    final meters = Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
+    return meters / 1609.344;
+  }
+
+  Future<void> _navigateActiveRideOnMap(DriverRideRequest ride) async {
+    final c = _mapController;
+    if (c == null) return;
+
+    final status = ride.status.toLowerCase();
+    final toPickup = status != 'in_progress' && status != 'started';
+    final target = toPickup ? ride.pickupLatLng : ride.dropoffLatLng;
+
+    await c.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: target,
+          zoom: 17,
+          tilt: 45,
+          bearing: _heading,
+        ),
+      ),
+    );
+
+    AppSnackbar.showSuccess(
+      message: toPickup ? 'Navigating to rider pickup' : 'Navigating to destination',
+    );
+  }
+  Future<void> _loadDrivingRouteForActiveRide(DriverRideRequest ride) async {
+    final origin = _driverLatLng;
+    if (origin == null) return;
+
+    final status = ride.status.toLowerCase();
+    final toPickup = status != 'in_progress' && status != 'started';
+    final destination = toPickup ? ride.pickupLatLng : ride.dropoffLatLng;
+
+    final key = '${ride.id}-${ride.status}-${origin.latitude.toStringAsFixed(4)}-${origin.longitude.toStringAsFixed(4)}-${destination.latitude}-${destination.longitude}';
+    if (_lastRouteKey == key && _drivingRoutePoints.isNotEmpty) return;
+
+    final route = await GoogleDirectionsService.fetchDrivingRoute(
+      origin: origin,
+      destination: destination,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _lastRouteKey = key;
+      _drivingRoutePoints = route?.points ?? [origin, destination];
+      _activeRouteDistanceMiles = route == null ? _distanceMiles(origin, destination) : route.distanceMeters / 1609.344;
+      _activeRouteDurationMinutes = route == null ? null : (route.durationSeconds / 60).ceil();
+    });
+  }
+  Future<void> _fitRideOnMap(DriverRideRequest ride) async {
+    final c = _mapController;
+    if (c == null) return;
+
+    final driver = _driverLatLng;
+    final status = ride.status.toLowerCase();
+    final toPickup = status != 'in_progress' && status != 'started';
+
+    final target = toPickup ? ride.pickupLatLng : ride.dropoffLatLng;
+    final points = [
+      if (driver != null) driver,
+      target,
+    ];
+
+    if (points.length == 1) {
+      await c.animateCamera(CameraUpdate.newLatLngZoom(target, 15));
+      return;
+    }
+
+    final minLat = points.map((e) => e.latitude).reduce(math.min);
+    final maxLat = points.map((e) => e.latitude).reduce(math.max);
+    final minLng = points.map((e) => e.longitude).reduce(math.min);
+    final maxLng = points.map((e) => e.longitude).reduce(math.max);
+
+    await c.animateCamera(CameraUpdate.newLatLngBounds(
+      LatLngBounds(
+        southwest: LatLng(minLat, minLng),
+        northeast: LatLng(maxLat, maxLng),
+      ),
+      70,
+    ));
+  }
+
+  Set<Marker> _markers() {
+    final markers = <Marker>{};
+    final p = _driverLatLng;
+    if (p != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('driver'),
+        position: p,
+        rotation: _heading,
+        flat: true,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+        infoWindow: const InfoWindow(title: 'You'),
+      ));
+    }
+    final active = _activeRide;
+    if (active != null) {
+      markers.add(Marker(
+        markerId: MarkerId('pickup_${active.id}'),
+        position: active.pickupLatLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(title: 'Pickup', snippet: active.pickupAddress),
+      ));
+      markers.add(Marker(
+        markerId: MarkerId('dropoff_${active.id}'),
+        position: active.dropoffLatLng,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(title: 'Drop-off', snippet: active.dropoffAddress),
+      ));
+    } else {
+      for (final r in _requests.take(5)) {
+        markers.add(Marker(
+          markerId: MarkerId('request_${r.id}'),
+          position: r.pickupLatLng,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+          infoWindow: InfoWindow(title: r.rideType.toUpperCase(), snippet: r.pickupAddress),
+        ));
+      }
+    }
+    return markers;
+  }
+
+  Set<Polyline> _polylines() {
+    final active = _activeRide;
+    if (active == null) return {};
+    final points = _drivingRoutePoints;
+    if (points.length < 2) return {};
+    return {
+      Polyline(
+        polylineId: const PolylineId('active_route'),
+        points: points,
+        width: 7,
+        color: AppConst.accentColor,
+        geodesic: true,
+        jointType: JointType.round,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+      ),
+    };
+  }
+
+  String _money(num value) => '\$${value.toStringAsFixed(2)}';
+
+  
+void _followDriverOnActiveRoute(dynamic ride) {
+  if (_driverLatLng == null || _mapController == null) return;
+
+  _mapController!.animateCamera(
+    CameraUpdate.newLatLng(_driverLatLng!),
+  );
+}
+
+Future<void> _maybeRefreshActiveRoute(dynamic origin, dynamic destination) async {
+  final start = origin is LatLng ? origin : _driverLatLng;
+  final end = destination is LatLng
+      ? destination
+      : (_activeRide != null ? _activeRide!.pickupLatLng : null);
+
+  if (start == null || end == null) return;
+
+  await _loadRoadRoute(start, end);
+}
+
+Future<void> _loadRoadRoute(LatLng origin, LatLng destination) async {
+  final apiKey = MapsConfig.googleMapsApiKey.trim();
+
+  if (apiKey.isEmpty) {
+    if (mounted) {
+      setState(() {
+        _drivingRoutePoints = [origin, destination];
+      });
+    }
+    return;
+  }
+
+  final uri = Uri.https(
+    'maps.googleapis.com',
+    '/maps/api/directions/json',
+    {
+      'origin': '${origin.latitude},${origin.longitude}',
+      'destination': '${destination.latitude},${destination.longitude}',
+      'mode': 'driving',
+      'key': apiKey,
+    },
+  );
+
+  try {
+    final response = await http.get(uri);
+    if (response.statusCode != 200) return;
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final routes = data['routes'] as List<dynamic>?;
+
+    if (routes == null || routes.isEmpty) return;
+
+    final overview = routes.first['overview_polyline'] as Map<String, dynamic>?;
+    final encoded = overview?['points'] as String?;
+
+    if (encoded == null || encoded.isEmpty) return;
+
+    final points = _decodePolyline(encoded);
+
+    if (!mounted || points.length < 2) return;
+
+    setState(() {
+      _drivingRoutePoints = points;
+    });
+
+    await _fitRouteToMap(points);
+  } catch (_) {
+    if (mounted) {
+      setState(() {
+        _drivingRoutePoints = [origin, destination];
+      });
+    }
+  }
+}
+
+List<LatLng> _decodePolyline(String encoded) {
+  final points = <LatLng>[];
+  int index = 0;
+  int lat = 0;
+  int lng = 0;
+
+  while (index < encoded.length) {
+    int b;
+    int shift = 0;
+    int result = 0;
+
+    do {
+      b = encoded.codeUnitAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+
+    final dlat = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+
+    do {
+      b = encoded.codeUnitAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+
+    final dlng = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+    lng += dlng;
+
+    points.add(LatLng(lat / 1E5, lng / 1E5));
+  }
+
+  return points;
+}
+
+Future<void> _fitRouteToMap(List<LatLng> points) async {
+  if (_mapController == null || points.isEmpty) return;
+
+  double minLat = points.first.latitude;
+  double maxLat = points.first.latitude;
+  double minLng = points.first.longitude;
+  double maxLng = points.first.longitude;
+
+  for (final p in points) {
+    if (p.latitude < minLat) minLat = p.latitude;
+    if (p.latitude > maxLat) maxLat = p.latitude;
+    if (p.longitude < minLng) minLng = p.longitude;
+    if (p.longitude > maxLng) maxLng = p.longitude;
+  }
+
+  await _mapController!.animateCamera(
+    CameraUpdate.newLatLngBounds(
+      LatLngBounds(
+        southwest: LatLng(minLat, minLng),
+        northeast: LatLng(maxLat, maxLng),
+      ),
+      80,
+    ),
+  );
+}
+
+
+@override
+  void dispose() {
+    _positionSub?.cancel();
+    _pollingTimer?.cancel();
+    _locationPushTimer?.cancel();
+    _waitingTimer?.cancel();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mapCenter = _driverLatLng ?? _fallbackCenter;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          GoogleMap(
+            initialCameraPosition: CameraPosition(target: mapCenter, zoom: 14),
+            markers: _markers(),
+            polylines: _polylines(),
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            compassEnabled: false,
+            mapType: MapType.normal,
+            trafficEnabled: true,
+            buildingsEnabled: true,
+            onMapCreated: (controller) {
+              _mapController = controller;
+              if (_driverLatLng != null) {
+                controller.animateCamera(
+                  CameraUpdate.newCameraPosition(
+                    CameraPosition(
+                      target: _driverLatLng!,
+                      zoom: 16,
+                      tilt: 45,
+                      bearing: _heading,
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Column(
+                children: [
+                  _topBar(),
+                  SizedBox(height: 12.h),
+                  _earningsBar(),
+                  const Spacer(),
+                  if (_hasActiveRide) _activeTripCard() else _requestsPanel(),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            right: 16.w,
+            top: 178.h,
+            child: SafeArea(child: _quickModeRail()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _topBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          Container(
+            width: 44.w,
+            height: 44.w,
+            decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+            child: Icon(Icons.local_taxi_rounded, color: AppConst.accentColor, size: 22.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isOnline ? 'Online — receiving requests' : 'Offline',
+                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900, color: Colors.black),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  _hasActiveRide ? 'Active trip in progress' : 'Ready for trips',
+                  style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          if (_loadingDashboard || _updatingOnline)
+            SizedBox(width: 28.w, height: 28.w, child: const CircularProgressIndicator(strokeWidth: 2))
+          else
+            Switch(
+              value: _isOnline,
+              activeColor: AppConst.accentColor,
+              activeTrackColor: AppConst.accentColor.withOpacity(0.55),
+              inactiveThumbColor: AppConst.accentColor.withOpacity(0.75),
+              inactiveTrackColor: AppConst.accentColor.withOpacity(0.18),
+              onChanged: _toggleOnline,
+            ),
+          IconButton(
+            onPressed: () => Get.to(() => const SettingScreen()),
+            icon: Icon(Icons.settings_rounded, color: AppConst.accentColor),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _earningsBar() {
+    return Container(
+      padding: EdgeInsets.all(10.w),
+      decoration: _cardDecoration(),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _miniStat('Today', _money(_todayEarnings)),
+              _miniStat('Week', _money(_weekEarnings)),
+              _miniStat('Rating', _rating == 0 ? 'New' : _rating.toStringAsFixed(1)),
+              _miniStat('Trips', '$_totalTrips'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _quickModeRail() {
+    return Column(
+      children: [
+        _railButton(Icons.tune_rounded, 'Modes', _showDriverModesSheet),
+        SizedBox(height: 10.h),
+        _railButton(Icons.navigation_rounded, 'Navigate', () {
+          final ride = _activeRide;
+          if (ride != null) _fitRideOnMap(ride);
+        }),
+        SizedBox(height: 10.h),
+        _railButton(Icons.refresh_rounded, 'Refresh', () => _loadRequests()),
+      ],
+    );
+  }
+
+  Widget _railButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 54.w,
+        height: 54.w,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 18, offset: const Offset(0, 8))],
+        ),
+        child: Icon(icon, color: AppConst.accentColor, size: 24.sp),
+      ),
+    );
+  }
+
+  void _showDriverModesSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28.r))),
+      builder: (_) => StatefulBuilder(
+        builder: (context, modalSetState) => Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 24.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44.w,
+                height: 5.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(999.r)),
+              ),
+              Text('Trip preferences', style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900)),
+              SizedBox(height: 6.h),
+              Text('Choose what type of requests you want to receive while online.', style: TextStyle(fontSize: 13.sp, color: Colors.black54, height: 1.35)),
+              SizedBox(height: 18.h),
+              _modeSwitchTile('Bid rides', 'Allow riders to send flexible-price requests.', Icons.price_change_rounded, _bidEnabled, (v) {
+                modalSetState(() => _bidEnabled = v);
+                setState(() => _bidEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+              _modeSwitchTile('Pooling', 'Accept shared trips when available.', Icons.groups_rounded, _poolingEnabled, (v) {
+                modalSetState(() => _poolingEnabled = v);
+                setState(() => _poolingEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+              _modeSwitchTile('Courier', 'Receive package delivery requests.', Icons.inventory_2_rounded, _courierEnabled, (v) {
+                modalSetState(() => _courierEnabled = v);
+                setState(() => _courierEnabled = v);
+                if (_isOnline) _loadRequests(silent: true);
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _modeSwitchTile(String title, String subtitle, IconData icon, bool value, ValueChanged<bool> onChanged) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(color: const Color(0xFFF6F6F6), borderRadius: BorderRadius.circular(18.r)),
+      child: Row(
+        children: [
+          Container(
+            width: 42.w,
+            height: 42.w,
+            decoration: BoxDecoration(color: value ? AppConst.accentColor : Colors.white, borderRadius: BorderRadius.circular(14.r)),
+            child: Icon(icon, color: AppConst.accentColor, size: 22.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
+                SizedBox(height: 2.h),
+                Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54, height: 1.25)),
+              ],
+            ),
+          ),
+          Switch(value: value, activeTrackColor: AppConst.accentColor.withOpacity(0.55), activeColor: AppConst.accentColor, inactiveThumbColor: AppConst.accentColor.withOpacity(0.75), onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900)),
+          SizedBox(height: 2.h),
+          Text(label, style: TextStyle(fontSize: 10.sp, color: Colors.black54, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String label, bool selected, ValueChanged<bool> onChanged) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onChanged(!selected),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(vertical: 10.h),
+          decoration: BoxDecoration(
+            color: selected ? AppConst.accentColor : Colors.white,
+            borderRadius: BorderRadius.circular(999.r),
+            border: Border.all(color: selected ? AppConst.accentColor : AppConst.accentColor.withOpacity(0.18)),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _requestsPanel() {
+    final request = _topRequest;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      padding: EdgeInsets.all(16.w),
+      decoration: _cardDecoration(radius: 26),
+      child: !_isOnline
+          ? _emptyPanel(Icons.power_settings_new_rounded, 'Go online to receive requests', 'Stay online and keep this screen open to receive trip offers.')
+          : _loadingRequests
+              ? const Center(child: CircularProgressIndicator())
+              : request == null
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _emptyPanel(Icons.radar_rounded, 'Waiting for requests', 'New ride, courier, bid and pooled trip offers will appear here.'),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _loadRequests(),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Refresh requests'),
+                          ),
+                        ),
+                      ],
+                    )
+                  : _requestCard(request),
+    );
+  }
+
+  Widget _emptyPanel(IconData icon, String title, String subtitle) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 54.w,
+          height: 54.w,
+          decoration: BoxDecoration(color: AppConst.accentColor.withOpacity(0.22), shape: BoxShape.circle),
+          child: Icon(icon, color: AppConst.accentColor, size: 26.sp),
+        ),
+        SizedBox(height: 12.h),
+        Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
+        SizedBox(height: 6.h),
+        Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black54, height: 1.35)),
+      ],
+    );
+  }
+
+  Widget _requestCard(DriverRideRequest ride) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              decoration: BoxDecoration(color: AppConst.accentColor, borderRadius: BorderRadius.circular(999.r)),
+              child: Text(ride.rideType.toUpperCase(), style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900)),
+            ),
+            if (ride.isPooling) ...[
+              SizedBox(width: 8.w),
+              _smallPill('POOLING'),
+            ],
+            if (ride.canBid) ...[
+              SizedBox(width: 8.w),
+              _smallPill('BID'),
+            ],
+            const Spacer(),
+            Text(ride.estimatedFare == null ? '—' : _money(ride.estimatedFare!), style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900)),
+          ],
+        ),
+        SizedBox(height: 14.h),
+        _locationRow(Icons.radio_button_checked_rounded, 'Pickup', ride.pickupAddress),
+        SizedBox(height: 10.h),
+        _locationRow(Icons.location_on_rounded, 'Drop-off', ride.dropoffAddress),
+        SizedBox(height: 14.h),
+          SizedBox(height: 14.h),
+          Row(
+          children: [
+            _meta(Icons.route_rounded, ride.distanceMiles == null ? 'Distance pending' : '${ride.distanceMiles!.toStringAsFixed(1)} mi'),
+            SizedBox(width: 10.w),
+            _meta(Icons.schedule_rounded, ride.durationMinutes == null ? 'ETA pending' : '${ride.durationMinutes!.round()} min'),
+          ],
+        ),
+        SizedBox(height: 14.h),
+          SizedBox(height: 14.h),
+          Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => _declineRide(ride),
+                style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                child: const Text('Decline'),
+              ),
+            ),
+            SizedBox(width: 10.w),
+            if (ride.canBid)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _submitBid(ride),
+                  style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                  child: const Text('Bid'),
+                ),
+              ),
+            if (ride.canBid) SizedBox(width: 10.w),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () => _acceptRide(ride),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                ),
+                child: const Text('Accept'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _activeTripCard() {
+    final ride = _activeRide!;
+    final status = ride.status.toLowerCase();
+    final isAccepted = status == 'accepted';
+    final isArrived = status == 'arrived';
+    final isInProgress = status == 'in_progress' || status == 'started';
+    final toPickup = isAccepted || isArrived;
+    final riderLabel = (ride.riderName == null || ride.riderName!.trim().isEmpty) ? 'rider' : ride.riderName!.trim();
+    final nextTitle = toPickup ? 'Drive to $riderLabel' : 'Trip in progress';
+    final nextSubtitle = toPickup ? ride.pickupAddress : ride.dropoffAddress;
+    final target = toPickup ? ride.pickupLatLng : ride.dropoffLatLng;
+    final miles = _activeRouteDistanceMiles ?? (_driverLatLng == null ? null : _distanceMiles(_driverLatLng!, target));
+    final etaMinutes = _activeRouteDurationMinutes;
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: _cardDecoration(radius: 26),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(color: Colors.green.withOpacity(0.14), borderRadius: BorderRadius.circular(999.r)),
+                child: Text(status.toUpperCase(), style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900, color: Colors.green.shade800)),
+              ),
+              const Spacer(),
+              Text(ride.estimatedFare == null ? '' : _money(ride.estimatedFare!), style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Text(nextTitle, style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+          SizedBox(height: 6.h),
+          Text(nextSubtitle, style: TextStyle(fontSize: 13.sp, color: Colors.black54, height: 1.35)),
+          if (miles != null && toPickup) ...[
+            SizedBox(height: 10.h),
+            Text('Distance: ${miles.toStringAsFixed(2)} mi', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800)),
+            if (etaMinutes != null) ...[
+              SizedBox(height: 4.h),
+              Text('ETA: $etaMinutes min', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800)),
+            ],
+          ],
+
+          SizedBox(height: 12.h),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _navigateActiveRideOnMap(ride),
+              icon: const Icon(Icons.navigation_rounded),
+              label: Text(toPickup ? 'Navigate to $riderLabel' : 'Navigate to Destination'),
+            ),
+          ),
+          SizedBox(height: 14.h),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              if (isAccepted)
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _arrived,
+                    style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: const Text('Arrived at pickup'),
+                  ),
+                )
+              else if (isArrived) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _canMarkNoShow ? _markRiderNoShow : null,
+                    style: OutlinedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: Text(_canMarkNoShow ? 'No-show' : 'No-show in '),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _startTrip,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: Text(_canMarkNoShow ? 'Start trip' : 'Start trip � wait '),
+                  ),
+                )
+              ]
+              else if (isInProgress)
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _completeTrip,
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 14.h)),
+                    child: const Text('Complete trip'),
+                  ),
+                )
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _smallPill(String text) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+      decoration: BoxDecoration(color: Colors.black.withOpacity(0.06), borderRadius: BorderRadius.circular(999.r)),
+      child: Text(text, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w900)),
+    );
+  }
+
+  Widget _locationRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18.sp, color: AppConst.accentColor),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 11.sp, color: Colors.black45, fontWeight: FontWeight.w700)),
+              SizedBox(height: 2.h),
+              Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w800, height: 1.25)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _meta(IconData icon, String text) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.04), borderRadius: BorderRadius.circular(12.r)),
+        child: Row(
+          children: [
+            Icon(icon, size: 16.sp, color: AppConst.accentColor.withOpacity(0.85)),
+            SizedBox(width: 6.w),
+            Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration({double radius = 22}) {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(radius.r),
+      boxShadow: [
+        BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 24, offset: const Offset(0, 8)),
+      ],
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
