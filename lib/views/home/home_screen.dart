@@ -1162,7 +1162,9 @@ class HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   height: 52.h,
                   child: ElevatedButton.icon(
-                    onPressed: () => _toggleOnline(true),
+                    onPressed: _accountStatus == 'approved'
+                        ? () => _toggleOnline(true)
+                        : null,
                     icon: const Icon(Icons.power_settings_new_rounded),
                     label: const Text('Go Online'),
                     style: ElevatedButton.styleFrom(
@@ -1240,6 +1242,51 @@ class HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _approvalBanner() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7D6),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: AppConst.primaryColor.withOpacity(0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.verified_user_rounded,
+            color: Colors.orange.shade700,
+            size: 28.sp,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Complete onboarding',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Your driver account is pending approval. Complete onboarding documents to start receiving trips.',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.black54,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
