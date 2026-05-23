@@ -14,6 +14,7 @@ import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart'
 import 'package:t_rider_services_app/data/repositories/driver_realtime_repository.dart';
 import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
+import 'package:t_rider_services_app/views/profile_screen/profile_screen.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -88,6 +89,7 @@ class HomeScreenState extends State<HomeScreen> {
       final dash = await _statusRepository.fetchDriverDashboard();
       if (!mounted) return;
       setState(() {
+        _accountStatus = dash.accountStatus ?? 'pending';
         _isOnline = dash.isOnline;
         _rating = dash.rating ?? 0;
         _totalTrips = dash.totalTrips ?? 0;
@@ -805,6 +807,10 @@ class HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   _topBar(),
+                  if (_accountStatus != 'approved') ...[
+                    _approvalBanner(),
+                    SizedBox(height: 12.h),
+                  ],
                   SizedBox(height: 12.h),
                   _earningsBar(),
                   const Spacer(),
@@ -1246,46 +1252,99 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _approvalBanner() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF7D6),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: AppConst.primaryColor.withOpacity(0.35)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.verified_user_rounded,
-            color: Colors.orange.shade700,
-            size: 28.sp,
+    return InkWell(
+      borderRadius: BorderRadius.circular(26.r),
+      onTap: () => Get.to(() => ProfileScreen()),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(18.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFF8DE), Color(0xFFFFF1B8)],
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Complete onboarding',
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  'Your driver account is pending approval. Complete onboarding documents to start receiving trips.',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.black54,
-                    height: 1.35,
-                  ),
-                ),
-              ],
+          borderRadius: BorderRadius.circular(26.r),
+          border: Border.all(color: AppConst.primaryColor, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 58.w,
+              height: 58.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.65),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange.shade800,
+                size: 34.sp,
+              ),
+            ),
+            SizedBox(width: 14.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Account pending approval',
+                    style: TextStyle(
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 5.h),
+                  Text(
+                    'Complete your onboarding documents to start receiving trip requests.',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.black87,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 8.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppConst.primaryColor,
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Complete onboarding',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                          ),
+                        ),
+                        SizedBox(width: 6.w),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 16.sp,
+                          color: Colors.black,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
