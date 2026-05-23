@@ -551,34 +551,6 @@ class HomeScreenState extends State<HomeScreen> {
     return result == true;
   }
 
-  Future<void> _cancelTrip() async {
-    final ride = _activeRide;
-    if (ride == null) return;
-
-    try {
-      await _driverRepository.declineRide(ride.id);
-
-      if (!mounted) return;
-
-      _arrivalCountdownTimer?.cancel();
-
-      setState(() {
-        _activeRide = null;
-        _arrivalCountdownSeconds = 0;
-        _remainingDistanceText = '';
-        _remainingDurationText = '';
-        _routePoints = [];
-      });
-
-      await refreshDashboard();
-      await _loadRequests(silent: true);
-
-      AppSnackbar.showSuccess(message: 'Trip cancelled.');
-    } catch (e) {
-      AppSnackbar.showApiError(e, fallbackMessage: 'Unable to cancel trip.');
-    }
-  }
-
   Future<void> _completeTrip() async {
     final ride = _activeRide;
     if (ride == null) return;
@@ -1593,7 +1565,7 @@ class HomeScreenState extends State<HomeScreen> {
               SizedBox(height: 12.h),
               Row(
                 children: [
-                  if (status == 'accepted') ...[
+                  if (toPickup) ...[
                     Expanded(
                       child: OutlinedButton(
                         onPressed: _arrived,
