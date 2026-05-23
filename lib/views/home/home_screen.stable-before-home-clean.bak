@@ -813,6 +813,11 @@ class HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          Positioned(
+            right: 16.w,
+            top: 178.h,
+            child: SafeArea(child: _quickModeRail()),
+          ),
         ],
       ),
     );
