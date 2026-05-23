@@ -1149,10 +1149,32 @@ class HomeScreenState extends State<HomeScreen> {
       padding: EdgeInsets.all(16.w),
       decoration: _cardDecoration(radius: 26),
       child: !_isOnline
-          ? _emptyPanel(
-              Icons.power_settings_new_rounded,
-              'Go online to receive requests',
-              'Stay online and keep this screen open to receive trip offers.',
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _emptyPanel(
+                  Icons.power_settings_new_rounded,
+                  'Go online to receive requests',
+                  'Tap below to start receiving ride, courier, delivery and bid requests.',
+                ),
+                SizedBox(height: 14.h),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52.h,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _toggleOnline(true),
+                    icon: const Icon(Icons.power_settings_new_rounded),
+                    label: const Text('Go Online'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConst.primaryColor,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18.r),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             )
           : _loadingRequests
           ? const Center(child: CircularProgressIndicator())
@@ -1163,15 +1185,23 @@ class HomeScreenState extends State<HomeScreen> {
                 _emptyPanel(
                   Icons.radar_rounded,
                   'Waiting for requests',
-                  'New ride, courier, bid and pooled trip offers will appear here.',
+                  'You are online. New ride, courier, delivery and bid requests will appear here.',
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 14.h),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _loadRequests(),
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Refresh requests'),
+                  height: 52.h,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _toggleOnline(false),
+                    icon: const Icon(Icons.power_settings_new_rounded),
+                    label: const Text('Go Offline'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: AppConst.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18.r),
+                      ),
+                    ),
                   ),
                 ),
               ],
