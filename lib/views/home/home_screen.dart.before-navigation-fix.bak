@@ -827,7 +827,7 @@ class HomeScreenState extends State<HomeScreen> {
           GoogleMap(
             initialCameraPosition: CameraPosition(target: mapCenter, zoom: 14),
             markers: _markers(),
-            polylines: {},
+            polylines: _polylines(),
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
@@ -1601,7 +1601,13 @@ class HomeScreenState extends State<HomeScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _openNavigationForActiveRide,
+                  onPressed: () {
+                    final ride = _activeRide;
+                    if (ride == null) return;
+                    _lastRouteFetchAt = null;
+                    _refreshRemainingTripInfo();
+                    _fitRideOnMap(ride);
+                  },
                   icon: const Icon(Icons.navigation_rounded),
                   label: const Text('Navigate'),
                 ),
