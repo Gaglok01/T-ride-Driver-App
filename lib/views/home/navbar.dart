@@ -71,10 +71,26 @@ class _NavbarState extends State<Navbar> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(icon: Icons.home, index: 0),
-                _buildNavItem(icon: Icons.list, index: 1),
-                _buildNavItem(icon: Icons.grid_view, index: 3),
-                _buildNavItem(icon: Icons.person, index: 4),
+                _buildNavItem(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  index: 0,
+                ),
+                _buildNavItem(
+                  icon: Icons.format_list_bulleted_rounded,
+                  label: 'My trips',
+                  index: 1,
+                ),
+                _buildNavItem(
+                  icon: Icons.account_balance_wallet_rounded,
+                  label: 'Earnings',
+                  index: 3,
+                ),
+                _buildNavItem(
+                  icon: Icons.person_rounded,
+                  label: 'Profile',
+                  index: 4,
+                ),
               ],
             ),
           ),
@@ -83,17 +99,48 @@ class _NavbarState extends State<Navbar> {
     );
   }
 
-  Widget _buildNavItem({required IconData icon, required int index}) {
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
     final isSelected = _currentIndex == index;
 
-    return GestureDetector(
-      onTap: () => _selectIndex(index),
-      child: Container(
-        padding: EdgeInsets.all(8.w),
-        child: Icon(
-          icon,
-          color: isSelected ? AppConst.primaryColor : AppConst.primaryColor.withOpacity(0.55),
-          size: 24.sp,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _selectIndex(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: EdgeInsets.symmetric(vertical: 3.h),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppConst.primaryColor.withOpacity(0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(18.r),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: isSelected
+                    ? AppConst.primaryColor
+                    : AppConst.black.withOpacity(0.45),
+                size: 21.sp,
+              ),
+              SizedBox(height: 1.h),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 8.sp,
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                  color: isSelected
+                      ? AppConst.primaryColor
+                      : AppConst.black.withOpacity(0.45),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
