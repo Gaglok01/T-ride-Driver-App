@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
 import 'package:t_rider_services_app/views/profile_screen/profile_screen.dart';
 import 'home_screen.dart';
-import 'gallery_screen.dart';
+import 'earnings_screen.dart';
 import 'nearby_firestore_orders_screen.dart';
 import 'tasks_screen.dart';
 
@@ -32,7 +32,7 @@ class _NavbarState extends State<Navbar> {
     HomeScreen(key: _homeScreenKey),
     const TasksScreen(),
     const NearbyFirestoreOrdersScreen(),
-    const GalleryScreen(),
+    const EarningsScreen(),
     // Profile Screen
     const ProfileScreen(),
   ];
