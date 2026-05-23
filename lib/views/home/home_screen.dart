@@ -901,10 +901,6 @@ class HomeScreenState extends State<HomeScreen> {
             children: [
               _miniStat('Today', _money(_todayEarnings)),
               _miniStat('Week', _money(_weekEarnings)),
-              _miniStat(
-                'Rating',
-                _rating == 0 ? 'New' : _rating.toStringAsFixed(1),
-              ),
               _miniStat('Trips', '$_totalTrips'),
             ],
           ),
