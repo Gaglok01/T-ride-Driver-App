@@ -246,14 +246,35 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
           Expanded(
             child: OutlinedButton(
               onPressed: _cancelRide,
-              child: const Text('Cancel'),
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 15.h),
+                side: const BorderSide(color: Colors.red, width: 1.8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18.r),
+                ),
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
           ),
           SizedBox(width: 12.w),
           Expanded(
             child: ElevatedButton(
               onPressed: _arrived,
-              child: const Text('Arrived'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 15.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18.r),
+                ),
+              ),
+              child: const Text(
+                'Arrived',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
           ),
         ],
