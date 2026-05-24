@@ -1495,160 +1495,165 @@ class HomeScreenState extends State<HomeScreen> {
     final ride = _activeRide!;
     final status = ride.status.toLowerCase();
     final toPickup = status != 'in_progress' && status != 'started';
-    final title = toPickup ? 'Drive to rider' : 'Trip in progress';
-    final address = toPickup ? ride.pickupAddress : ride.dropoffAddress;
+    final nextTitle = toPickup ? 'Drive to rider' : 'Trip in progress';
+    final nextSubtitle = toPickup ? ride.pickupAddress : ride.dropoffAddress;
     final miles = _driverLatLng == null
         ? null
         : _distanceMiles(_driverLatLng!, ride.pickupLatLng);
 
-    Widget primaryButton() {
-      if (status == 'accepted') {
-        return ElevatedButton(
-          onPressed: _arrived,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(vertical: 12.h),
-          ),
-          child: const Text('Arrived'),
-        );
-      }
-
-      if (status == 'arrived') {
-        return ElevatedButton(
-          onPressed: _startTrip,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(vertical: 12.h),
-          ),
-          child: const Text('Start trip'),
-        );
-      }
-
-      return ElevatedButton(
-        onPressed: _completeTrip,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(vertical: 12.h),
-        ),
-        child: const Text('Complete'),
-      );
-    }
-
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: _cardDecoration(radius: 26),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: 310.h),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: _cardDecoration(radius: 26),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.14),
-                  borderRadius: BorderRadius.circular(999.r),
-                ),
-                child: Text(
-                  status.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.green.shade800,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              if (ride.estimatedFare != null)
-                Text(
-                  _money(ride.estimatedFare!),
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Row(
-            children: [
-              Icon(Icons.navigation_rounded, size: 22.sp, color: Colors.black),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(999.r),
+                    ),
+                    child: Text(
+                      status.toUpperCase(),
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w900,
+                        color: Colors.green.shade800,
                       ),
                     ),
-                    SizedBox(height: 2.h),
-                    Text(
-                      address,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12.sp, color: Colors.black54),
+                  ),
+                  const Spacer(),
+                  Text(
+                    ride.estimatedFare == null
+                        ? ''
+                        : _money(ride.estimatedFare!),
+                    style: TextStyle(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w900,
                     ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 10.h),
+              Text(
+                nextTitle,
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                nextSubtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.black54,
+                  height: 1.25,
+                ),
+              ),
+
+              if (miles != null && toPickup) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  'Distance to rider: ${miles.toStringAsFixed(2)} mi',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+
+              if (_arrivalCountdownSeconds > 0) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  'Waiting time: ${_formatCountdown(_arrivalCountdownSeconds)}',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
+
+              if (_remainingDistanceText.isNotEmpty ||
+                  _remainingDurationText.isNotEmpty) ...[
+                SizedBox(height: 8.h),
+                Row(
+                  children: [
+                    if (_remainingDistanceText.isNotEmpty)
+                      _meta(Icons.route_rounded, _remainingDistanceText),
+                    if (_remainingDistanceText.isNotEmpty &&
+                        _remainingDurationText.isNotEmpty)
+                      SizedBox(width: 8.w),
+                    if (_remainingDurationText.isNotEmpty)
+                      _meta(Icons.schedule_rounded, _remainingDurationText),
                   ],
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10.h),
-          Row(
-            children: [
-              if (miles != null && toPickup)
-                Expanded(
-                  child: _meta(
-                    Icons.social_distance_rounded,
-                    '${miles.toStringAsFixed(2)} mi',
-                  ),
-                ),
-              if (_remainingDurationText.isNotEmpty) ...[
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: _meta(Icons.schedule_rounded, _remainingDurationText),
-                ),
               ],
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            children: [
-              Expanded(
+              SizedBox(
+                width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: _openNavigationForActiveRide,
-                  icon: const Icon(Icons.near_me_rounded),
+                  icon: const Icon(Icons.navigation_rounded),
                   label: const Text('Navigate'),
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                  ),
                 ),
               ),
-              SizedBox(width: 10.w),
-              if (status == 'accepted' || status == 'arrived') ...[
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _cancelTrip,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      padding: EdgeInsets.symmetric(vertical: 12.h),
+              SizedBox(height: 10.h),
+
+              SizedBox(height: 12.h),
+              Row(
+                children: [
+                  if (status == 'accepted') ...[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _arrived,
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 13.h),
+                        ),
+                        child: const Text('Arrived'),
+                      ),
                     ),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                SizedBox(width: 10.w),
-              ],
-              Expanded(child: primaryButton()),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _startTrip,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 13.h),
+                        ),
+                        child: const Text('Start trip'),
+                      ),
+                    ),
+                  ] else
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: status == 'arrived'
+                            ? _startTrip
+                            : _completeTrip,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 13.h),
+                        ),
+                        child: Text(
+                          status == 'arrived' ? 'Start trip' : 'Complete trip',
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

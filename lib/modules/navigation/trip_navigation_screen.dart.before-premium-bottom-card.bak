@@ -279,30 +279,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 
-  Widget _navChip(IconData icon, String text) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 17.sp, color: Colors.black87),
-          SizedBox(width: 6.w),
-          Flexible(
-            child: Text(
-              text,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final status = _ride.status.toLowerCase();
@@ -367,171 +343,53 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
           SafeArea(
             child: Align(
               alignment: Alignment.bottomCenter,
-              child: Container(
-                margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
-                padding: EdgeInsets.all(14.w),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28.r),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 30,
-                      offset: Offset(0, 12),
-                      color: Colors.black26,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 50.w,
-                          height: 50.w,
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(18.r),
-                          ),
-                          child: const Icon(
-                            Icons.navigation_rounded,
-                            color: Colors.white,
-                          ),
-                        ),
-
-                        SizedBox(width: 12.w),
-
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-
-                              SizedBox(height: 3.h),
-
-                              Text(
-                                _address,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 14.h),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(18.r),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  _eta,
-                                  style: TextStyle(
-                                    fontSize: 18.sp,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                SizedBox(height: 2.h),
-                                Text(
-                                  'ETA',
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(width: 10.w),
-
-                        Expanded(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(18.r),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  _distance,
-                                  style: TextStyle(
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                SizedBox(height: 2.h),
-                                Text(
-                                  'Distance',
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    if (status == 'arrived') ...[
-                      SizedBox(height: 10.h),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 10.h),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(16.r),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.timer_rounded,
-                              color: Colors.orange.shade800,
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              _waitText,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                color: Colors.orange.shade900,
-                              ),
-                            ),
-                          ],
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
+                child: Container(
+                  padding: EdgeInsets.all(18.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(26.r),
+                    boxShadow: const [
+                      BoxShadow(blurRadius: 18, color: Colors.black26),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _title,
+                        style: TextStyle(
+                          fontSize: 23.sp,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                      SizedBox(height: 6.h),
+                      Text(
+                        _address,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 14.h),
+                      Row(
+                        children: [
+                          Chip(label: Text(_distance)),
+                          SizedBox(width: 10.w),
+                          Chip(label: Text(_eta)),
+                        ],
+                      ),
+                      if (status == 'arrived') ...[
+                        SizedBox(height: 10.h),
+                        Chip(
+                          avatar: const Icon(Icons.timer, size: 18),
+                          label: Text(_waitText),
+                        ),
+                      ],
+                      SizedBox(height: 14.h),
+                      _actionButton(status),
                     ],
-
-                    SizedBox(height: 14.h),
-
-                    _actionButton(status),
-                  ],
+                  ),
                 ),
               ),
             ),
