@@ -862,348 +862,279 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _topBar() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: _cardDecoration(),
-      child: Row(
-        children: [
-          Container(
-            width: 44.w,
-            height: 44.w,
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.local_taxi_rounded,
-              color: AppConst.primaryColor,
-              size: 22.sp,
-            ),
+    return Row(
+      children: [
+        Container(
+          width: 58.w,
+          height: 58.w,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.92),
+            borderRadius: BorderRadius.circular(20.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _isOnline ? 'Online — receiving requests' : 'Offline',
+          child: const Icon(Icons.menu_rounded, color: Colors.white),
+        ),
+
+        SizedBox(width: 12.w),
+
+        Container(
+          width: 60.w,
+          height: 60.w,
+          decoration: BoxDecoration(
+            color: AppConst.primaryColor,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: AppConst.primaryColor.withOpacity(0.45),
+                blurRadius: 18,
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.local_taxi_rounded,
+            color: Colors.black,
+            size: 30.sp,
+          ),
+        ),
+
+        SizedBox(width: 12.w),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hello, Driver',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w900,
+                  color: const Color.fromARGB(255, 8, 8, 8),
+                ),
+              ),
+
+              SizedBox(height: 5.h),
+
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
+                decoration: BoxDecoration(
+                  color: AppConst.primaryColor,
+                  borderRadius: BorderRadius.circular(999.r),
+                ),
+                child: Text(
+                  _isOnline ? 'ONLINE' : 'OFFLINE',
                   style: TextStyle(
-                    fontSize: 16.sp,
+                    fontSize: 11.sp,
                     fontWeight: FontWeight.w900,
                     color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 2.h),
-                Text(
-                  _hasActiveRide
-                      ? 'Active trip in progress'
-                      : 'Ready for trips',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black54,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          if (_loadingDashboard || _updatingOnline)
-            SizedBox(
-              width: 28.w,
-              height: 28.w,
-              child: const CircularProgressIndicator(strokeWidth: 2),
-            ),
-          IconButton(
+        ),
+
+        Container(
+          width: 58.w,
+          height: 58.w,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.92),
+            borderRadius: BorderRadius.circular(20.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: IconButton(
             onPressed: () => Get.to(() => const SettingScreen()),
-            icon: const Icon(
-              Icons.settings_rounded,
+            icon: Icon(
+              Icons.notifications_none_rounded,
               color: AppConst.primaryColor,
+              size: 28.sp,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _earningsBar() {
     return Container(
-      padding: EdgeInsets.all(10.w),
-      decoration: _cardDecoration(),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _miniStat('Today', _money(_todayEarnings)),
-              _miniStat('Week', _money(_weekEarnings)),
-              _miniStat('Trips', '$_totalTrips'),
-            ],
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.94),
+        borderRadius: BorderRadius.circular(32.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.24),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _quickModeRail() {
-    return Column(
-      children: [
-        _railButton(Icons.tune_rounded, 'Modes', _showDriverModesSheet),
-        SizedBox(height: 10.h),
-        _railButton(Icons.navigation_rounded, 'Navigate', () {
-          final ride = _activeRide;
-          if (ride != null) {
-            _lastRouteFetchAt = null;
-            _refreshRemainingTripInfo();
-            _fitRideOnMap(ride);
-          }
-        }),
-        SizedBox(height: 10.h),
-        _railButton(Icons.refresh_rounded, 'Refresh', () => _loadRequests()),
-      ],
-    );
-  }
-
-  Widget _railButton(IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 54.w,
-        height: 54.w,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.14),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Icon(icon, color: AppConst.primaryColor, size: 24.sp),
-      ),
-    );
-  }
-
-  void _showDriverModesSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-      ),
-      builder: (_) => StatefulBuilder(
-        builder: (context, modalSetState) => Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 24.h),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 44.w,
-                height: 5.h,
-                margin: EdgeInsets.only(bottom: 16.h),
-                decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.circular(999.r),
-                ),
-              ),
-              Text(
-                'Trip preferences',
-                style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 6.h),
-              Text(
-                'Choose what type of requests you want to receive while online.',
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  color: Colors.black54,
-                  height: 1.35,
-                ),
-              ),
-              SizedBox(height: 18.h),
-              _modeSwitchTile(
-                'Bid rides',
-                'Allow riders to send flexible-price requests.',
-                Icons.price_change_rounded,
-                _bidEnabled,
-                (v) {
-                  modalSetState(() => _bidEnabled = v);
-                  setState(() => _bidEnabled = v);
-                  if (_isOnline) _loadRequests(silent: true);
-                },
-              ),
-              _modeSwitchTile(
-                'Pooling',
-                'Accept shared trips when available.',
-                Icons.groups_rounded,
-                _poolingEnabled,
-                (v) {
-                  modalSetState(() => _poolingEnabled = v);
-                  setState(() => _poolingEnabled = v);
-                  if (_isOnline) _loadRequests(silent: true);
-                },
-              ),
-              _modeSwitchTile(
-                'Courier',
-                'Receive package delivery requests.',
-                Icons.inventory_2_rounded,
-                _courierEnabled,
-                (v) {
-                  modalSetState(() => _courierEnabled = v);
-                  setState(() => _courierEnabled = v);
-                  if (_isOnline) _loadRequests(silent: true);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _modeSwitchTile(
-    String title,
-    String subtitle,
-    IconData icon,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(24.r),
       ),
       child: Row(
         children: [
           Container(
-            width: 42.w,
-            height: 42.w,
+            width: 64.w,
+            height: 64.w,
             decoration: BoxDecoration(
-              color: value ? AppConst.primaryColor : Colors.white,
-              borderRadius: BorderRadius.circular(14.r),
+              color: AppConst.primaryColor.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(20.r),
             ),
-            child: Icon(icon, color: AppConst.primaryColor, size: 22.sp),
+            child: Icon(
+              Icons.account_balance_wallet_rounded,
+              color: AppConst.primaryColor,
+              size: 32.sp,
+            ),
           ),
-          SizedBox(width: 12.w),
+
+          SizedBox(width: 14.w),
+
           Expanded(
+            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  'Earnings today',
                   style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w900,
+                    color: Colors.white70,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: 2.h),
+
+                SizedBox(height: 5.h),
+
                 Text(
-                  subtitle,
+                  _money(_todayEarnings),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    color: Colors.black54,
-                    height: 1.25,
+                    color: Colors.white,
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
           ),
-          Switch(
-            value: value,
-            activeTrackColor: AppConst.primaryColor.withOpacity(0.55),
-            activeColor: AppConst.primaryColor,
-            inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75),
-            onChanged: onChanged,
+
+          Container(width: 1, height: 46.h, color: Colors.white12),
+
+          SizedBox(width: 12.w),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Trips',
+                style: TextStyle(color: Colors.white60, fontSize: 11.sp),
+              ),
+
+              SizedBox(height: 5.h),
+
+              Text(
+                '$_totalTrips',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(width: 14.w),
+
+          Container(width: 1, height: 46.h, color: Colors.white12),
+
+          SizedBox(width: 14.w),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Status',
+                style: TextStyle(color: Colors.white60, fontSize: 11.sp),
+              ),
+
+              SizedBox(height: 5.h),
+
+              Text(
+                _isOnline ? 'Active' : 'Offline',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _miniStat(String label, String value) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900),
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.sp,
-              color: Colors.black54,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(String label, bool selected, ValueChanged<bool> onChanged) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => onChanged(!selected),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.symmetric(vertical: 10.h),
-          decoration: BoxDecoration(
-            color: selected ? AppConst.primaryColor : Colors.white,
-            borderRadius: BorderRadius.circular(999.r),
-            border: Border.all(
-              color: selected
-                  ? AppConst.primaryColor
-                  : AppConst.primaryColor.withOpacity(0.18),
-            ),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
       ),
     );
   }
 
   Widget _requestsPanel() {
     final request = _topRequest;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 260),
       padding: EdgeInsets.all(18.w),
-      decoration: _cardDecoration(radius: 26),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(34.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 30,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
       child: !_isOnline
           ? Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 _emptyPanel(
                   Icons.radio_button_checked_rounded,
-                  'Go online to receive requests',
-                  'Tap below to start receiving ride, courier, delivery and bid requests.',
+                  'Ready to go online',
+                  'Start receiving ride and courier requests instantly.',
                 ),
-                SizedBox(height: 14.h),
+
+                SizedBox(height: 18.h),
+
                 SizedBox(
                   width: double.infinity,
-                  height: 62.h,
+                  height: 64.h,
                   child: ElevatedButton.icon(
                     onPressed: _accountStatus == 'approved'
                         ? () => _toggleOnline(true)
                         : null,
-                    icon: const Icon(Icons.play_circle_fill_rounded),
-                    label: const Text('Go Online'),
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    label: Text(
+                      'GO ONLINE',
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppConst.primaryColor,
                       foregroundColor: Colors.black,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24.r),
                       ),
@@ -1221,19 +1152,28 @@ class HomeScreenState extends State<HomeScreen> {
                 _emptyPanel(
                   Icons.radar_rounded,
                   'Waiting for requests',
-                  'You are online. New ride, courier, delivery and bid requests will appear here.',
+                  'You are online. New ride and courier requests will appear here.',
                 ),
-                SizedBox(height: 14.h),
+
+                SizedBox(height: 18.h),
+
                 SizedBox(
                   width: double.infinity,
-                  height: 62.h,
+                  height: 64.h,
                   child: ElevatedButton.icon(
                     onPressed: () => _toggleOnline(false),
-                    icon: const Icon(Icons.play_circle_fill_rounded),
-                    label: const Text('Go Offline'),
+                    icon: const Icon(Icons.pause_circle_filled_rounded),
+                    label: Text(
+                      'GO OFFLINE',
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       foregroundColor: AppConst.primaryColor,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24.r),
                       ),
@@ -1251,56 +1191,71 @@ class HomeScreenState extends State<HomeScreen> {
       width: double.infinity,
       padding: EdgeInsets.all(18.w),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30.r),
-        border: Border.all(
-          color: AppConst.primaryColor.withOpacity(0.65),
-          width: 1.2,
+        gradient: LinearGradient(
+          colors: [Colors.white, const Color(0xFFFFF8E1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.14),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(30.r),
+        border: Border.all(color: AppConst.primaryColor.withOpacity(0.4)),
       ),
       child: Row(
         children: [
           Container(
-            width: 64.w,
-            height: 64.w,
+            width: 72.w,
+            height: 72.w,
             decoration: BoxDecoration(
               color: Colors.black,
-              borderRadius: BorderRadius.circular(22.r),
+              borderRadius: BorderRadius.circular(24.r),
             ),
-            child: Icon(icon, color: AppConst.primaryColor, size: 34.sp),
+            child: Icon(icon, color: AppConst.primaryColor, size: 36.sp),
           ),
-          SizedBox(width: 14.w),
+
+          SizedBox(width: 16.w),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 5.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999.r),
+                  ),
+                  child: Text(
+                    'Ready to roll',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-                SizedBox(height: 5.h),
+
+                SizedBox(height: 10.h),
+
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w900,
+                    height: 1.05,
+                  ),
+                ),
+
+                SizedBox(height: 6.h),
+
                 Text(
                   subtitle,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.black54,
-                    fontSize: 12.5.sp,
-                    height: 1.3,
+                    fontSize: 12.sp,
+                    height: 1.35,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1435,7 +1390,9 @@ class HomeScreenState extends State<HomeScreen> {
             if (ride.canBid) ...[SizedBox(width: 8.w), _smallPill('BID')],
             const Spacer(),
             Text(
-              ride.estimatedFare == null ? '—' : _money(ride.estimatedFare!),
+              ride.estimatedFare == null
+                  ? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'
+                  : _money(ride.estimatedFare!),
               style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900),
             ),
           ],
