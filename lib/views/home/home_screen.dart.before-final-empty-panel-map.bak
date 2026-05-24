@@ -1187,109 +1187,79 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _emptyPanel(IconData icon, String title, String subtitle) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      height: 255.h,
-      child: Stack(
-        clipBehavior: Clip.none,
+      padding: EdgeInsets.all(18.w),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.white, const Color(0xFFFFF8E1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(30.r),
+        border: Border.all(color: AppConst.primaryColor.withOpacity(0.4)),
+      ),
+      child: Row(
         children: [
-          Positioned(
-            right: 12.w,
-            top: 20.h,
-            child: Opacity(
-              opacity: 0.12,
-              child: Icon(
-                Icons.location_city_rounded,
-                size: 150.sp,
-                color: AppConst.primaryColor,
-              ),
+          Container(
+            width: 72.w,
+            height: 72.w,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(24.r),
             ),
+            child: Icon(icon, color: AppConst.primaryColor, size: 36.sp),
           ),
 
-          Positioned(
-            right: 64.w,
-            top: 42.h,
-            child: Icon(
-              Icons.location_on_rounded,
-              color: AppConst.primaryColor,
-              size: 64.sp,
-            ),
-          ),
+          SizedBox(width: 16.w),
 
-          Positioned(
-            right: -34.w,
-            bottom: 2.h,
-            child: Image.asset(
-              'assets/images/t_ride_car.png',
-              width: 280.w,
-              fit: BoxFit.contain,
-            ),
-          ),
-
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF4CC),
-                borderRadius: BorderRadius.circular(999.r),
-              ),
-              child: Text(
-                'READY TO ROLL',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w900,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 5.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999.r),
+                  ),
+                  child: Text(
+                    'Ready to roll',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
 
-          Positioned(
-            left: 0,
-            top: 58.h,
-            width: 170.w,
-            child: RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: _isOnline ? 'Waiting for\n' : 'Ready for\n',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 26.sp,
-                      fontWeight: FontWeight.w900,
-                      height: 1.04,
-                    ),
-                  ),
-                  TextSpan(
-                    text: _isOnline ? 'new requests' : 'new trips',
-                    style: TextStyle(
-                      color: AppConst.primaryColor,
-                      fontSize: 26.sp,
-                      fontWeight: FontWeight.w900,
-                      height: 1.04,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                SizedBox(height: 10.h),
 
-          Positioned(
-            left: 0,
-            top: 142.h,
-            width: 160.w,
-            child: Text(
-              subtitle,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.black54,
-                fontSize: 12.sp,
-                height: 1.35,
-                fontWeight: FontWeight.w600,
-              ),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w900,
+                    height: 1.05,
+                  ),
+                ),
+
+                SizedBox(height: 6.h),
+
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12.sp,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1421,7 +1391,7 @@ class HomeScreenState extends State<HomeScreen> {
             const Spacer(),
             Text(
               ride.estimatedFare == null
-                  ? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'
+                  ? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'
                   : _money(ride.estimatedFare!),
               style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900),
             ),
