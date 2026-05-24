@@ -249,7 +249,20 @@ class _GoogleMapState extends State<GoogleMap> {
 
     _lastDestination = destination;
 
-    await nav.GoogleMapsNavigator.initializeNavigationSession();
+    try {
+      await nav.GoogleMapsNavigator.initializeNavigationSession();
+    } on nav.SessionInitializationException catch (e) {
+      debugPrint('NAV SESSION ERROR: ');
+
+      if (e.code == nav.SessionInitializationError.termsNotAccepted) {
+        await nav.GoogleMapsNavigator.showTermsAndConditionsDialog(
+          'T-Ride Driver',
+          'en-US',
+        );
+
+        await nav.GoogleMapsNavigator.initializeNavigationSession();
+      }
+    }
     debugPrint('T-RIDE NAV SDK: navigation session initialized');
 
     if (!await nav.GoogleMapsNavigator.areTermsAccepted()) {
