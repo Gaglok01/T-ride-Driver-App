@@ -1508,10 +1508,7 @@ class HomeScreenState extends State<HomeScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
             foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(vertical: 15.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18.r),
-            ),
+            padding: EdgeInsets.symmetric(vertical: 12.h),
           ),
           child: const Text('Arrived'),
         );
@@ -1523,10 +1520,7 @@ class HomeScreenState extends State<HomeScreen> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
             foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(vertical: 15.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18.r),
-            ),
+            padding: EdgeInsets.symmetric(vertical: 12.h),
           ),
           child: const Text('Start trip'),
         );
@@ -1537,10 +1531,7 @@ class HomeScreenState extends State<HomeScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(vertical: 15.h),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18.r),
-          ),
+          padding: EdgeInsets.symmetric(vertical: 12.h),
         ),
         child: const Text('Complete'),
       );
@@ -1621,33 +1612,7 @@ class HomeScreenState extends State<HomeScreen> {
               if (_remainingDurationText.isNotEmpty) ...[
                 SizedBox(width: 8.w),
                 Expanded(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 11.h),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(18.r),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          _remainingDurationText,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          'ETA',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _meta(Icons.schedule_rounded, _remainingDurationText),
                 ),
               ],
             ],
@@ -1661,10 +1626,7 @@ class HomeScreenState extends State<HomeScreen> {
                   icon: const Icon(Icons.near_me_rounded),
                   label: const Text('Navigate'),
                   style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: 15.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18.r),
-                    ),
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
                   ),
                 ),
               ),
@@ -1676,10 +1638,7 @@ class HomeScreenState extends State<HomeScreen> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red),
-                      padding: EdgeInsets.symmetric(vertical: 15.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18.r),
-                      ),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
                     ),
                     child: const Text('Cancel'),
                   ),
