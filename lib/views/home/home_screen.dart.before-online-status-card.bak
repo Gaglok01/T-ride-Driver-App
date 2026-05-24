@@ -1087,89 +1087,6 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _onlineStatusCard() {
-    final canToggle = !_updatingOnline && _accountStatus == 'approved';
-
-    return GestureDetector(
-      onTap: canToggle ? () => _toggleOnline(!_isOnline) : null,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 16.h),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.94),
-          borderRadius: BorderRadius.circular(30.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.24),
-              blurRadius: 28,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 12.w,
-              height: 12.w,
-              decoration: BoxDecoration(
-                color: _isOnline ? Colors.greenAccent : Colors.redAccent,
-                shape: BoxShape.circle,
-              ),
-            ),
-            SizedBox(width: 14.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _isOnline ? "You're Online" : "You're Offline",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    _isOnline ? 'Receiving requests' : 'Not receiving requests',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              width: 82.w,
-              height: 44.h,
-              padding: EdgeInsets.all(4.w),
-              decoration: BoxDecoration(
-                color: _isOnline ? AppConst.primaryColor : Colors.white12,
-                borderRadius: BorderRadius.circular(999.r),
-              ),
-              child: AnimatedAlign(
-                duration: const Duration(milliseconds: 220),
-                alignment: _isOnline
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: Container(
-                  width: 36.w,
-                  height: 36.w,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _requestsPanel() {
     final request = _topRequest;
 
@@ -1473,7 +1390,7 @@ class HomeScreenState extends State<HomeScreen> {
             if (ride.canBid) ...[SizedBox(width: 8.w), _smallPill('BID')],
             const Spacer(),
             Text(
-              ride.estimatedFare == null ? 'â€”' : _money(ride.estimatedFare!),
+              ride.estimatedFare == null ? '—' : _money(ride.estimatedFare!),
               style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900),
             ),
           ],
