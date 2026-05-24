@@ -840,7 +840,7 @@ class HomeScreenState extends State<HomeScreen> {
           ),
           SafeArea(
             child: Padding(
-              padding: EdgeInsets.all(18.w),
+              padding: EdgeInsets.all(16.w),
               child: Column(
                 children: [
                   _topBar(),
@@ -970,7 +970,7 @@ class HomeScreenState extends State<HomeScreen> {
         height: 54.w,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24.r),
+          borderRadius: BorderRadius.circular(22.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.14),
@@ -1073,7 +1073,7 @@ class HomeScreenState extends State<HomeScreen> {
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(24.r),
+        borderRadius: BorderRadius.circular(22.r),
       ),
       child: Row(
         children: [
@@ -1180,7 +1180,7 @@ class HomeScreenState extends State<HomeScreen> {
     final request = _topRequest;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 260),
-      padding: EdgeInsets.all(18.w),
+      padding: EdgeInsets.all(16.w),
       decoration: _cardDecoration(radius: 26),
       child: !_isOnline
           ? Column(
@@ -1194,7 +1194,7 @@ class HomeScreenState extends State<HomeScreen> {
                 SizedBox(height: 14.h),
                 SizedBox(
                   width: double.infinity,
-                  height: 62.h,
+                  height: 58.h,
                   child: ElevatedButton.icon(
                     onPressed: _accountStatus == 'approved'
                         ? () => _toggleOnline(true)
@@ -1205,7 +1205,7 @@ class HomeScreenState extends State<HomeScreen> {
                       backgroundColor: AppConst.primaryColor,
                       foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24.r),
+                        borderRadius: BorderRadius.circular(22.r),
                       ),
                     ),
                   ),
@@ -1226,7 +1226,7 @@ class HomeScreenState extends State<HomeScreen> {
                 SizedBox(height: 14.h),
                 SizedBox(
                   width: double.infinity,
-                  height: 62.h,
+                  height: 58.h,
                   child: ElevatedButton.icon(
                     onPressed: () => _toggleOnline(false),
                     icon: const Icon(Icons.play_circle_fill_rounded),
@@ -1235,7 +1235,7 @@ class HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.black,
                       foregroundColor: AppConst.primaryColor,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24.r),
+                        borderRadius: BorderRadius.circular(22.r),
                       ),
                     ),
                   ),
@@ -1249,18 +1249,14 @@ class HomeScreenState extends State<HomeScreen> {
   Widget _emptyPanel(IconData icon, String title, String subtitle) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(18.w),
+      padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30.r),
-        border: Border.all(
-          color: AppConst.primaryColor.withOpacity(0.65),
-          width: 1.2,
-        ),
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(26.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.14),
-            blurRadius: 30,
+            color: Colors.black.withOpacity(0.22),
+            blurRadius: 28,
             offset: const Offset(0, 12),
           ),
         ],
@@ -1268,13 +1264,13 @@ class HomeScreenState extends State<HomeScreen> {
       child: Row(
         children: [
           Container(
-            width: 64.w,
-            height: 64.w,
+            width: 58.w,
+            height: 58.w,
             decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(22.r),
+              color: AppConst.primaryColor,
+              borderRadius: BorderRadius.circular(20.r),
             ),
-            child: Icon(icon, color: AppConst.primaryColor, size: 34.sp),
+            child: Icon(icon, color: Colors.black, size: 30.sp),
           ),
           SizedBox(width: 14.w),
           Expanded(
@@ -1283,24 +1279,23 @@ class HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                ),
-                SizedBox(height: 5.h),
-                Text(
-                  subtitle,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 12.5.sp,
-                    height: 1.3,
+                    color: Colors.white70,
+                    fontSize: 12.sp,
+                    height: 1.25,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1534,7 +1529,7 @@ class HomeScreenState extends State<HomeScreen> {
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(vertical: 15.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24.r),
+              borderRadius: BorderRadius.circular(22.r),
             ),
           ),
           child: const Text('Arrived'),
@@ -1549,7 +1544,7 @@ class HomeScreenState extends State<HomeScreen> {
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(vertical: 15.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24.r),
+              borderRadius: BorderRadius.circular(22.r),
             ),
           ),
           child: const Text('Start trip'),
@@ -1563,7 +1558,7 @@ class HomeScreenState extends State<HomeScreen> {
           foregroundColor: Colors.white,
           padding: EdgeInsets.symmetric(vertical: 15.h),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24.r),
+            borderRadius: BorderRadius.circular(22.r),
           ),
         ),
         child: const Text('Complete'),
@@ -1649,7 +1644,7 @@ class HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.symmetric(vertical: 11.h),
                     decoration: BoxDecoration(
                       color: Colors.black,
-                      borderRadius: BorderRadius.circular(24.r),
+                      borderRadius: BorderRadius.circular(22.r),
                     ),
                     child: Column(
                       children: [
@@ -1687,7 +1682,7 @@ class HomeScreenState extends State<HomeScreen> {
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 15.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24.r),
+                      borderRadius: BorderRadius.circular(22.r),
                     ),
                   ),
                 ),
@@ -1702,7 +1697,7 @@ class HomeScreenState extends State<HomeScreen> {
                       side: const BorderSide(color: Colors.red),
                       padding: EdgeInsets.symmetric(vertical: 15.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24.r),
+                        borderRadius: BorderRadius.circular(22.r),
                       ),
                     ),
                     child: const Text('Cancel'),
