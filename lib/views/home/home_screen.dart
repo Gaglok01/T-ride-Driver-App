@@ -1187,7 +1187,7 @@ class HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _emptyPanel(
-                  Icons.power_settings_new_rounded,
+                  Icons.radio_button_checked_rounded,
                   'Go online to receive requests',
                   'Tap below to start receiving ride, courier, delivery and bid requests.',
                 ),
@@ -1199,7 +1199,7 @@ class HomeScreenState extends State<HomeScreen> {
                     onPressed: _accountStatus == 'approved'
                         ? () => _toggleOnline(true)
                         : null,
-                    icon: const Icon(Icons.power_settings_new_rounded),
+                    icon: const Icon(Icons.play_circle_fill_rounded),
                     label: const Text('Go Online'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppConst.primaryColor,
@@ -1229,7 +1229,7 @@ class HomeScreenState extends State<HomeScreen> {
                   height: 52.h,
                   child: ElevatedButton.icon(
                     onPressed: () => _toggleOnline(false),
-                    icon: const Icon(Icons.power_settings_new_rounded),
+                    icon: const Icon(Icons.play_circle_fill_rounded),
                     label: const Text('Go Offline'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
@@ -1257,7 +1257,11 @@ class HomeScreenState extends State<HomeScreen> {
             color: AppConst.primaryColor.withOpacity(0.22),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: AppConst.primaryColor, size: 26.sp),
+          child: Icon(
+            Icons.local_taxi_rounded,
+            color: Colors.black,
+            size: 26.sp,
+          ),
         ),
         SizedBox(height: 12.h),
         Text(
