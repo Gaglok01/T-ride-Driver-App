@@ -912,6 +912,15 @@ class HomeScreenState extends State<HomeScreen> {
               width: 28.w,
               height: 28.w,
               child: const CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Switch(
+              value: _isOnline,
+              activeColor: AppConst.primaryColor,
+              activeTrackColor: AppConst.primaryColor.withOpacity(0.55),
+              inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75),
+              inactiveTrackColor: AppConst.primaryColor.withOpacity(0.18),
+              onChanged: _toggleOnline,
             ),
           IconButton(
             onPressed: () => Get.to(() => const SettingScreen()),
