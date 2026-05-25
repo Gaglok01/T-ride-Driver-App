@@ -41,6 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   bool _uploadingDocs = false;
   String _accountStatus = 'pending';
+  Map<String, String> _documentStatuses = {};
 
   String _carModel = '';
   String _carPlate = '';
@@ -727,9 +728,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         vehiclePhoto: _vehiclePhoto,
       );
 
+      if (_selectedPhoto != null) _documentStatuses['profile_photo'] = 'pending';
+      if (_licenseFront != null) _documentStatuses['license_front'] = 'pending';
+      if (_licenseBack != null) _documentStatuses['license_back'] = 'pending';
+      if (_insurance != null) _documentStatuses['insurance'] = 'pending';
+      if (_vehicleRegistration != null) _documentStatuses['vehicle_registration'] = 'pending';
+      if (_vehiclePhoto != null) _documentStatuses['vehicle_photo'] = 'pending';
+
       if (!mounted) return;
 
       setState(() {
+        if (_selectedPhoto != null) _documentStatuses['image'] = 'pending';
+        if (_licenseFront != null) _documentStatuses['license_front'] = 'pending';
+        if (_licenseBack != null) _documentStatuses['license_back'] = 'pending';
+        if (_insurance != null) _documentStatuses['insurance'] = 'pending';
+        if (_vehicleRegistration != null) _documentStatuses['vehicle_registration'] = 'pending';
+        if (_vehiclePhoto != null) _documentStatuses['vehicle_photo'] = 'pending';
+
         _selectedPhoto = null;
         _licenseFront = null;
         _licenseBack = null;
@@ -751,6 +766,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+
+  String _docStatus(String key, File? localFile) {
+    if (localFile != null) return 'Selected';
+
+    final String? status = _documentStatuses[key];
+
+    if (status == 'pending') return 'Pending';
+    if (status == 'approved') return 'Valid';
+    if (status == 'rejected') return 'Rejected';
+
+    return 'Required';
+  }
+
+  Color _docStatusColor(String key, File? localFile) {
+    if (localFile != null) return Colors.green;
+
+    final String? status = _documentStatuses[key];
+
+    if (status == 'pending') return Colors.orange;
+    if (status == 'approved') return Colors.green;
+    if (status == 'rejected') return Colors.red;
+
+    return Colors.red;
+  }
+
   Widget _documentsCard() {
     return _sectionCard(
       title: 'Driver verification',
@@ -758,44 +798,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         _document(
           'Clear profile photo',
-          _selectedPhoto == null ? 'Required' : 'Selected',
+          _documentStatuses['profile_photo']?.toString().toUpperCase() ?? 'Required',
           Icons.person_rounded,
-          _selectedPhoto == null ? Colors.red : Colors.green,
+          (_documentStatuses['profile_photo'] == 'pending')
+              ? Colors.orange
+              : (_documentStatuses['profile_photo'] == 'approved')
+                  ? Colors.green
+                  : Colors.red,
           () => _pickDocument('profile_photo'),
         ),
         _document(
           'Driver license front',
-          _licenseFront == null ? 'Required' : 'Selected',
+          _documentStatuses['license_front']?.toString().toUpperCase() ?? 'Required',
           Icons.badge_rounded,
-          _licenseFront == null ? Colors.red : Colors.green,
+          (_documentStatuses['license_front'] == 'pending')
+              ? Colors.orange
+              : (_documentStatuses['license_front'] == 'approved')
+                  ? Colors.green
+                  : Colors.red,
           () => _pickDocument('license_front'),
         ),
         _document(
           'Driver license back',
-          _licenseBack == null ? 'Required' : 'Selected',
+          _documentStatuses['license_back']?.toString().toUpperCase() ?? 'Required',
           Icons.badge_outlined,
-          _licenseBack == null ? Colors.red : Colors.green,
+          (_documentStatuses['license_back'] == 'pending')
+              ? Colors.orange
+              : (_documentStatuses['license_back'] == 'approved')
+                  ? Colors.green
+                  : Colors.red,
           () => _pickDocument('license_back'),
         ),
         _document(
           'Insurance',
-          _insurance == null ? 'Required' : 'Selected',
+          _documentStatuses['insurance']?.toString().toUpperCase() ?? 'Required',
           Icons.description_rounded,
-          _insurance == null ? Colors.red : Colors.green,
+          (_documentStatuses['insurance'] == 'pending')
+              ? Colors.orange
+              : (_documentStatuses['insurance'] == 'approved')
+                  ? Colors.green
+                  : Colors.red,
           () => _pickDocument('insurance'),
         ),
         _document(
           'Vehicle registration',
-          _vehicleRegistration == null ? 'Required' : 'Selected',
+          _documentStatuses['vehicle_registration']?.toString().toUpperCase() ?? 'Required',
           Icons.article_rounded,
-          _vehicleRegistration == null ? Colors.red : Colors.green,
+          (_documentStatuses['vehicle_registration'] == 'pending')
+              ? Colors.orange
+              : (_documentStatuses['vehicle_registration'] == 'approved')
+                  ? Colors.green
+                  : Colors.red,
           () => _pickDocument('vehicle_registration'),
         ),
         _document(
           'Vehicle photo',
-          _vehiclePhoto == null ? 'Required' : 'Selected',
+          _documentStatuses['vehicle_photo']?.toString().toUpperCase() ?? 'Required',
           Icons.directions_car_rounded,
-          _vehiclePhoto == null ? Colors.red : Colors.green,
+          (_documentStatuses['vehicle_photo'] == 'pending')
+              ? Colors.orange
+              : (_documentStatuses['vehicle_photo'] == 'approved')
+                  ? Colors.green
+                  : Colors.red,
           () => _pickDocument('vehicle_photo'),
         ),
         SizedBox(height: 10.h),
