@@ -65,6 +65,10 @@ class DriverOnboardingRepository {
 
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
+
+    print('UPLOAD DOCS STATUS: ' + response.statusCode.toString());
+    print('UPLOAD DOCS BODY: ' + response.body);
+
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -84,3 +88,5 @@ class DriverOnboardingException implements Exception {
   @override
   String toString() => 'DriverOnboardingException($statusCode): $body';
 }
+
+

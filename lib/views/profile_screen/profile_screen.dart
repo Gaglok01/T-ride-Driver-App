@@ -89,7 +89,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        imageQuality: 82,
+        imageQuality: 65,
+        maxWidth: 1200,
+        maxHeight: 1200,
       );
       if (picked == null) return;
       setState(() => _selectedPhoto = File(picked.path));
@@ -244,7 +246,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String? get _photoUrl {
-    final raw = _profile?.photo?.trim();
+    final raw = (_dashboard?.profileImage ?? _profile?.photo)?.trim();
     if (raw == null || raw.isEmpty) return null;
     return raw.startsWith('http') ? raw : '${ApiUrls.baseUrl}$raw';
   }
@@ -666,7 +668,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        imageQuality: 82,
+        imageQuality: 65,
+        maxWidth: 1200,
+        maxHeight: 1200,
       );
       if (picked == null) return;
 
@@ -1341,5 +1345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+
 
 
