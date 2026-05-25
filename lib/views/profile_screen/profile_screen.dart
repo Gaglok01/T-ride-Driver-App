@@ -9,6 +9,7 @@ import 'package:t_rider_services_app/data/local/secure_storage_service.dart';
 import 'package:t_rider_services_app/data/models/user_profile_model.dart';
 import 'package:t_rider_services_app/data/models/driver_dashboard_model.dart';
 import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
+import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
 import 'package:t_rider_services_app/data/repositories/profile_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
@@ -22,7 +23,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ProfileRepository _profileRepository = ProfileRepository();
-  final RiderStatusRepository _dashboardRepository = RiderStatusRepository();
+  final DriverDashboardRepository _dashboardRepository = DriverDashboardRepository();
   DriverDashboardData? _dashboard;
 
   final DriverOnboardingRepository _driverOnboardingRepository =
@@ -46,6 +47,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _carModel = '';
   String _carPlate = '';
   String _carColor = '';
+  bool _rideRequestsEnabled = true;
+  bool _bidEnabled = true;
+  bool _poolingEnabled = true;
+  bool _courierEnabled = true;
+  bool _deliveryEnabled = true;
+  bool _petFriendlyEnabled = false;
 
   @override
   void initState() {
@@ -61,7 +68,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadDashboard() async {
     try {
-      final dash = await _dashboardRepository.fetchDriverDashboard();
+      final dashMap = await _dashboardRepository.getDashboard();
+      final dash = DriverDashboardData.fromJson(dashMap['data'] ?? dashMap);
       if (mounted) setState(() => _dashboard = dash);
     } catch (_) {}
   }
@@ -1083,11 +1091,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Work preferences',
       icon: Icons.tune_rounded,
       children: [
-        _toggleRow('Ride requests', true),
-        _toggleRow('Bid rides', true),
-        _toggleRow('Pooling', true),
-        _toggleRow('Courier', true),
-        _toggleRow('Delivery', true),
+        _toggleRow('Ride requests', _rideRequestsEnabled, (v) => _savePreferences(rideRequests: v)),
+        _toggleRow('Bid & Ride', _bidEnabled, (v) => _savePreferences(bid: v)),
+        _toggleRow('Pooling', _poolingEnabled, (v) => _savePreferences(pooling: v)),
+        _toggleRow('Courier', _courierEnabled, (v) => _savePreferences(courier: v)),
+        _toggleRow('Delivery', _deliveryEnabled, (v) => _savePreferences(delivery: v)),
         SizedBox(height: 12.h),
         Container(
           padding: EdgeInsets.all(14.w),
@@ -1133,7 +1141,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _toggleRow(String title, bool enabled) {
+
+  Future<void> _savePreferences({
+    bool? rideRequests,
+    bool? bid,
+    bool? pooling,
+    bool? courier,
+    bool? delivery,
+    bool? petFriendly,
+  }) async {
+    setState(() {
+      if (rideRequests != null) _rideRequestsEnabled = rideRequests;
+      if (bid != null) _bidEnabled = bid;
+      if (pooling != null) _poolingEnabled = pooling;
+      if (courier != null) _courierEnabled = courier;
+      if (delivery != null) _deliveryEnabled = delivery;
+      if (petFriendly != null) _petFriendlyEnabled = petFriendly;
+    });
+
+    try {
+      await _dashboardRepository.updatePreferences(
+        bidEnabled: _bidEnabled,
+        poolingEnabled: _poolingEnabled,
+        courierEnabled: _courierEnabled,
+        deliveryEnabled: _deliveryEnabled,
+        petFriendlyEnabled: _petFriendlyEnabled,
+      );
+    } catch (e) {
+      AppSnackbar.showError(message: 'Unable to save preferences.');
+    }
+  }
+
+  Widget _toggleRow(String title, bool enabled, ValueChanged<bool> onChanged) {
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
@@ -1149,22 +1188,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
             ),
           ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: enabled
-                  ? Colors.green.withOpacity(0.14)
-                  : Colors.red.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(40.r),
-            ),
-            child: Text(
-              enabled ? 'Enabled' : 'Disabled',
-              style: TextStyle(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w800,
-                color: enabled ? Colors.green : Colors.red,
-              ),
-            ),
+          Switch(
+            value: enabled,
+            activeColor: AppConst.primaryColor,
+            onChanged: onChanged,
           ),
         ],
       ),
@@ -1409,6 +1436,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+
+
 
 
 

@@ -25,6 +25,7 @@ class ApiUrls {
 
   /// Driver home dashboard — `GET` (is_online, stats).
   static const String driverDashboard = 'api/app/driver/dashboard';
+  static const String driverPreferences = 'api/app/driver/preferences';
 
   /// Driver online toggle — `POST` body: `{ "is_online": true }`.
   static const String updateOnlineStatus = 'api/app/driver/toggle-online';
@@ -120,3 +121,4 @@ class ApiUrls {
   // static const String profile = 'api/profile';
   // static const String rides = 'api/rides';
 }
+

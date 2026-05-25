@@ -18,6 +18,10 @@ class DriverDashboardData {
     this.canDrive = false,
     this.tier,
     this.profileImage,
+      this.bidEnabled = true,
+    this.poolingEnabled = true,
+    this.courierEnabled = true,
+    this.deliveryEnabled = true,
   });
 
   final bool isOnline;
@@ -38,6 +42,10 @@ class DriverDashboardData {
   final bool canDrive;
   final String? tier;
   final String? profileImage;
+  final bool bidEnabled;
+  final bool poolingEnabled;
+  final bool courierEnabled;
+  final bool deliveryEnabled;
 
   static bool _parseBool(dynamic raw) {
     if (raw is bool) return raw;
@@ -91,6 +99,11 @@ class DriverDashboardData {
       canDrive: _parseBool(json['can_drive']),
       tier: json['tier']?.toString(),
       profileImage: json['profile_image']?.toString(),
+      bidEnabled: json['bid_enabled'] == true || json['bid_enabled'] == 1,
+      poolingEnabled: json['pooling_enabled'] == true || json['pooling_enabled'] == 1,
+      courierEnabled: json['courier_enabled'] == true || json['courier_enabled'] == 1,
+      deliveryEnabled: json['delivery_enabled'] == true || json['delivery_enabled'] == 1,
     );
   }
 }
+
