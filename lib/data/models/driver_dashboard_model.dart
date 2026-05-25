@@ -22,6 +22,7 @@ class DriverDashboardData {
     this.poolingEnabled = true,
     this.courierEnabled = true,
     this.deliveryEnabled = true,
+    this.petFriendlyEnabled = false,
   });
 
   final bool isOnline;
@@ -46,6 +47,7 @@ class DriverDashboardData {
   final bool poolingEnabled;
   final bool courierEnabled;
   final bool deliveryEnabled;
+  final bool petFriendlyEnabled;
 
   static bool _parseBool(dynamic raw) {
     if (raw is bool) return raw;

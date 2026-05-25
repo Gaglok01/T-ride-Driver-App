@@ -417,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _badge(_dashboard?.verified == true ? 'Verified' : 'Unverified', Colors.green.shade100),
                         _badge(_dashboard?.tier ?? 'Standard', const Color(0xFFF3F3F3)),
                         _badge(
-                          _accountStatus.toUpperCase(),
+                          (_dashboard?.accountStatus ?? _accountStatus).toUpperCase(),
                           AppConst.primaryColor.withOpacity(0.22),
                         ),
                       ],
@@ -528,6 +528,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+
+  String _accountMessage() {
+    final status = (_dashboard?.accountStatus ?? _accountStatus).toLowerCase();
+
+    if (status == 'approved') {
+      return 'Your account is approved and ready to drive.';
+    }
+
+    if (status == 'rejected') {
+      return 'Your account needs attention. Please review your documents.';
+    }
+
+    return 'Your account is being reviewed by T-Ride.';
+  }
+
+  double _verificationProgress() {
+    double progress = 0;
+
+    if (_dashboard?.verified == true) progress += 0.30;
+    if ((_dashboard?.approvedDocuments ?? 0) > 0) progress += 0.25;
+    if ((_dashboard?.backgroundCheckStatus ?? '').toLowerCase() == 'approved') {
+      progress += 0.25;
+    }
+    if ((_dashboard?.accountStatus ?? _accountStatus).toLowerCase() == 'approved') {
+      progress += 0.20;
+    }
+
+    return progress.clamp(0, 1);
+  }
+
+  String _verificationPercent() {
+    return '${(_verificationProgress() * 100).round()}%';
+  }
+
+  String _backgroundCheckLabel() {
+    final status = (_dashboard?.backgroundCheckStatus ?? 'pending').toLowerCase();
+
+    if (status == 'approved') return 'Approved';
+    if (status == 'rejected') return 'Rejected';
+    if (status == 'in_review') return 'In review';
+
+    return 'Pending';
+  }
+
+  double _backgroundCheckProgress() {
+    final status = (_dashboard?.backgroundCheckStatus ?? 'pending').toLowerCase();
+
+    if (status == 'approved') return 1.0;
+    if (status == 'rejected') return 0.15;
+    if (status == 'in_review') return 0.65;
+
+    return 0.35;
+  }
+
+  String _tierProgressLabel() {
+    final tier = _dashboard?.tier ?? 'Standard';
+    return '$tier';
+  }
+
+  double _tierProgressValue() {
+    final tier = (_dashboard?.tier ?? 'Standard').toLowerCase();
+
+    if (tier.contains('gold')) return 0.85;
+    if (tier.contains('silver')) return 0.62;
+    if (tier.contains('standard')) return 0.35;
+
+    return 0.35;
+  }
+
   Widget _statusCard() {
     return _sectionCard(
       title: 'Account status',
@@ -559,7 +628,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _accountStatus.toUpperCase(),
+                      (_dashboard?.accountStatus ?? _accountStatus).toUpperCase(),
                       style: TextStyle(
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w900,
@@ -567,7 +636,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     SizedBox(height: 3.h),
                     Text(
-                      'Your account is being reviewed by T-Ride.',
+                      _accountMessage(),
                       style: TextStyle(fontSize: 12.sp, color: Colors.black54),
                     ),
                   ],
@@ -577,11 +646,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         SizedBox(height: 14.h),
-        _progressRow('Verification progress', '78%', 0.78),
+        _progressRow('Verification progress', _verificationPercent(), _verificationProgress()),
         SizedBox(height: 10.h),
-        _progressRow('Background check', 'Pending', 0.45),
+        _progressRow('Background check', _backgroundCheckLabel(), _backgroundCheckProgress()),
         SizedBox(height: 10.h),
-        _progressRow('Driver tier progress', 'Silver ? Gold', 0.62),
+        _progressRow('Driver tier progress', _tierProgressLabel(), _tierProgressValue()),
       ],
     );
   }
@@ -759,7 +828,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _insurance = null;
         _vehicleRegistration = null;
         _vehiclePhoto = null;
-        _accountStatus = 'pending_review';
+        _accountStatus = _dashboard?.accountStatus ?? 'pending_review';
       });
 
       AppSnackbar.showSuccess(
@@ -1115,7 +1184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _savePreferences(petFriendly: false),
                       icon: const Icon(Icons.close_rounded),
                       label: const Text('Decline'),
                     ),
@@ -1123,7 +1192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   SizedBox(width: 10.w),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _savePreferences(petFriendly: true),
                       icon: const Icon(Icons.pets_rounded),
                       label: const Text('Accept'),
                       style: ElevatedButton.styleFrom(
@@ -1436,6 +1505,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+
+
 
 
 
