@@ -58,6 +58,7 @@ UserProfile? _driverProfile;
   bool _updatingOnline = false;
   bool _loadingRequests = false;
   String _accountStatus = 'pending';
+  String? _dashboardProfileImage;
   bool _bidEnabled = true;
   bool _poolingEnabled = true;
   bool _courierEnabled = true;
@@ -125,10 +126,18 @@ UserProfile? _driverProfile;
   }
 
   String? _profilePhotoUrl() {
-    final raw = _driverProfile?.photo?.trim();
+    final raw = (_dashboardProfileImage ?? _driverProfile?.photo)?.trim();
     if (raw == null || raw.isEmpty) return null;
     if (raw.startsWith('http')) return raw;
-    return '${ApiUrls.baseUrl}$raw';
+    final cleanBase = ApiUrls.baseUrl.endsWith('/')
+        ? ApiUrls.baseUrl.substring(0, ApiUrls.baseUrl.length - 1)
+        : ApiUrls.baseUrl;
+
+    final cleanRaw = raw.startsWith('/') ? raw.substring(1) : raw;
+
+    return cleanRaw.startsWith('storage/')
+        ? '$cleanBase/$cleanRaw'
+        : '$cleanBase/storage/$cleanRaw';
   }
 
   void initState() {
@@ -157,6 +166,7 @@ UserProfile? _driverProfile;
       if (!mounted) return;
       setState(() {
         _accountStatus = dash.accountStatus ?? 'pending';
+        _dashboardProfileImage = dash.profileImage;
         _isOnline = dash.isOnline;
         _rating = dash.rating ?? 0;
         _totalTrips = dash.totalTrips ?? 0;
@@ -956,19 +966,15 @@ UserProfile? _driverProfile;
             ),
           ),
           SizedBox(width: 12.w),
-          Container(
-            width: 52.w,
-            height: 52.w,
-            decoration: BoxDecoration(
-              color: AppConst.primaryColor,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-            ),
-            child: Icon(
-              Icons.local_taxi_rounded,
-              color: Colors.black,
-              size: 30.sp,
-            ),
+          CircleAvatar(
+            radius: 26.r,
+            backgroundColor: Colors.white,
+            child: _profilePhotoUrl() == null
+                ? Icon(Icons.person_rounded, color: Colors.black, size: 30.sp)
+                : CircleAvatar(
+                    radius: 23.r,
+                    backgroundImage: NetworkImage(_profilePhotoUrl()!),
+                  ),
           ),
           SizedBox(width: 12.w),
           Expanded(
