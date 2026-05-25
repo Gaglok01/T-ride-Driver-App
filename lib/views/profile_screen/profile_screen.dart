@@ -285,7 +285,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SizedBox(height: 14.h),
                     _preferencesCard(),
                     SizedBox(height: 14.h),
-                    _accountCard(),
+                    _accountDetailsCard(),
                     SizedBox(height: 22.h),
                   ],
                 ),
@@ -1267,6 +1267,142 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+
+
+  void _showAccountDetails(String type) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.all(20.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                type.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 18.h),
+
+              if (type == 'personal') ...[
+                Text('Name: ${_profile?.name ?? 'Driver'}'),
+                Text('Vehicle: ${_carModel.isEmpty ? 'Not provided' : _carModel}'),
+                Text('Plate: ${_carPlate.isEmpty ? 'Not provided' : _carPlate}'),
+                Text('Color: ${_carColor.isEmpty ? 'Not provided' : _carColor}'),
+              ],
+
+              if (type == 'earnings') ...[
+                Text('Wallet: \$${_dashboard?.walletBalance ?? 0}'),
+                Text('Today: \$${_dashboard?.earningsToday ?? 0}'),
+                Text('Weekly: \$${_dashboard?.earningsWeekly ?? 0}'),
+                Text('Monthly: \$${_dashboard?.earningsMonthly ?? 0}'),
+              ],
+
+              if (type == 'security') ...[
+                Text('Account: ${_dashboard?.accountStatus ?? _accountStatus}'),
+                Text('Driver status: ${_dashboard?.driverStatus ?? 'Unknown'}'),
+                Text('Background: ${_dashboard?.backgroundCheckStatus ?? 'pending'}'),
+              ],
+
+              if (type == 'support') ...[
+                Text('Support available'),
+                Text('Current account status: ${_dashboard?.accountStatus ?? _accountStatus}'),
+              ],
+
+              SizedBox(height: 20.h),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
+
+  Widget _accountDetailsCard() {
+    Widget row(String label, String value) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: 10.h),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(label, style: TextStyle(fontSize: 13.sp, color: Colors.black54)),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget block(String title, IconData icon, List<Widget> rows) {
+      return Container(
+        margin: EdgeInsets.only(bottom: 12.h),
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F8F8),
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(icon, size: 20.sp, color: Colors.black87),
+              SizedBox(width: 8.w),
+              Text(title, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
+            ]),
+            SizedBox(height: 12.h),
+            ...rows,
+          ],
+        ),
+      );
+    }
+
+    return _sectionCard(
+      title: 'Account',
+      icon: Icons.manage_accounts_rounded,
+      children: [
+        block('Personal information', Icons.person_outline_rounded, [
+          row('Name', _profile?.name ?? 'Driver'),
+          row('Account status', _dashboard?.accountStatus ?? _accountStatus),
+          row('Driver status', _dashboard?.driverStatus ?? 'Unknown'),
+        ]),
+        block('Vehicle information', Icons.directions_car_rounded, [
+          row('Vehicle', _carModel.isEmpty ? 'Not provided' : _carModel),
+          row('Plate', _carPlate.isEmpty ? 'Not provided' : _carPlate),
+          row('Color', _carColor.isEmpty ? 'Not provided' : _carColor),
+        ]),
+        block('Earnings & payout', Icons.account_balance_wallet_outlined, [
+          row('Wallet balance', '\$${_dashboard?.walletBalance ?? 0}'),
+          row('Today', '\$${_dashboard?.earningsToday ?? 0}'),
+          row('Weekly', '\$${_dashboard?.earningsWeekly ?? 0}'),
+          row('Monthly', '\$${_dashboard?.earningsMonthly ?? 0}'),
+        ]),
+        block('Security', Icons.lock_outline_rounded, [
+          row('Background check', _dashboard?.backgroundCheckStatus ?? 'pending'),
+          row('Can drive', (_dashboard?.canDrive == true) ? 'Yes' : 'No'),
+          row('Verified', (_dashboard?.verified == true) ? 'Yes' : 'No'),
+        ]),
+        block('Help & support', Icons.support_agent_rounded, [
+          row('Support', 'Available'),
+          row('Current status', _dashboard?.accountStatus ?? _accountStatus),
+        ]),
+      ],
+    );
+  }
+
   Widget _accountCard() {
     return _sectionCard(
       title: 'Account',
@@ -1275,30 +1411,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _menu(
           'Personal information',
           Icons.person_outline_rounded,
-          _openEditSheet,
+          () => _showAccountDetails('personal'),
         ),
         _menu(
           'Earnings & payout',
           Icons.account_balance_wallet_outlined,
-          () => AppSnackbar.showSuccess(
-            title: 'Earnings',
-            message: 'Ready for backend connection.',
-          ),
+          () => _showAccountDetails('earnings'),
         ),
         _menu(
           'Security',
           Icons.lock_outline_rounded,
-          () => AppSnackbar.showSuccess(
-            title: 'Security',
-            message: 'Ready for backend connection.',
-          ),
+          () => _showAccountDetails('security'),
         ),
         _menu(
           'Help & support',
           Icons.support_agent_rounded,
           () => AppSnackbar.showSuccess(
-            title: 'Support',
-            message: 'Ready for backend connection.',
+            title: 'Help & support',
+            message:
+                'T-Ride support can review your account status \ and current status ${_dashboard?.accountStatus ?? _accountStatus}.',
           ),
         ),
       ],
@@ -1505,6 +1636,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+
+
+
 
 
 
