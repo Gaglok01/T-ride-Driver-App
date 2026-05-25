@@ -451,7 +451,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(width: 10.w),
               Expanded(
                 child: _premiumStat(
-                  '\$256',
+                  '\$${_dashboard?.walletBalance ?? 0}',
                   'Wallet',
                   Icons.account_balance_wallet_rounded,
                   'Balance',
@@ -1409,6 +1409,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+
+
 
 
 
