@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
+import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
 import 'package:t_rider_services_app/data/repositories/profile_repository.dart';
 import 'package:t_rider_services_app/data/models/user_profile_model.dart';
 import 'package:t_rider_services_app/config/api_urls.dart';
@@ -33,6 +34,7 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   final RiderStatusRepository _statusRepository = RiderStatusRepository();
   final DriverRealtimeRepository _driverRepository = DriverRealtimeRepository();
+  final DriverDashboardRepository _dashboardRepository = DriverDashboardRepository();
 
   GoogleMapController? _mapController;
   StreamSubscription<Position>? _positionSub;
@@ -151,6 +153,7 @@ UserProfile? _driverProfile;
     setState(() => _loadingDashboard = true);
     try {
       final dash = await _statusRepository.fetchDriverDashboard();
+      debugPrint('REAL DASHBOARD => rating=' + dash.rating.toString() + ', trips=' + dash.totalTrips.toString() + ', wallet=' + dash.walletBalance.toString() + ', acceptance=' + dash.acceptanceRate.toString() + ', tier=' + dash.tier.toString() + ', verified=' + dash.verified.toString() + ', pending=' + dash.pendingDocuments.toString());
       if (!mounted) return;
       setState(() {
         _accountStatus = dash.accountStatus ?? 'pending';
@@ -1890,6 +1893,10 @@ UserProfile? _driverProfile;
     );
   }
 }
+
+
+
+
 
 
 

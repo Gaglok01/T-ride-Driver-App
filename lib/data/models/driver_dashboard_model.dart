@@ -1,51 +1,96 @@
-/// `GET /api/app/driver/dashboard` → `data` object.
+/// `GET /api/app/driver/dashboard` ? `data` object.
 class DriverDashboardData {
   const DriverDashboardData({
     required this.isOnline,
     this.accountStatus,
+    this.driverStatus,
+    this.backgroundCheckStatus,
     this.rating,
     this.totalTrips,
     this.earningsToday = 0,
     this.earningsWeekly = 0,
     this.earningsMonthly = 0,
+    this.walletBalance = 0,
+    this.acceptanceRate = 0,
+    this.pendingDocuments = 0,
+    this.approvedDocuments = 0,
+    this.verified = false,
+    this.canDrive = false,
+    this.tier,
+    this.profileImage,
   });
 
   final bool isOnline;
   final String? accountStatus;
+  final String? driverStatus;
+  final String? backgroundCheckStatus;
   final num? rating;
   final int? totalTrips;
   final num earningsToday;
   final num earningsWeekly;
   final num earningsMonthly;
 
+  final num walletBalance;
+  final num acceptanceRate;
+  final int pendingDocuments;
+  final int approvedDocuments;
+  final bool verified;
+  final bool canDrive;
+  final String? tier;
+  final String? profileImage;
+
   static bool _parseBool(dynamic raw) {
     if (raw is bool) return raw;
     if (raw is num) return raw != 0;
     if (raw is String) {
       final s = raw.trim().toLowerCase();
-      return s == '1' || s == 'true' || s == 'yes';
+      return s == '1' || s == 'true' || s == 'yes' || s == 'approved';
     }
     return false;
+  }
+
+  static num _parseNum(dynamic raw, [num fallback = 0]) {
+    if (raw is num) return raw;
+    if (raw is String) return num.tryParse(raw) ?? fallback;
+    return fallback;
+  }
+
+  static int _parseInt(dynamic raw, [int fallback = 0]) {
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    if (raw is String) return int.tryParse(raw) ?? fallback;
+    return fallback;
   }
 
   factory DriverDashboardData.fromJson(Map<String, dynamic> json) {
     final earnings = json['earnings'];
     num today = 0, weekly = 0, monthly = 0;
+
     if (earnings is Map) {
       final m = Map<String, dynamic>.from(earnings);
-      today = (m['today'] as num?) ?? 0;
-      weekly = (m['weekly'] as num?) ?? 0;
-      monthly = (m['monthly'] as num?) ?? 0;
+      today = _parseNum(m['today']);
+      weekly = _parseNum(m['weekly']);
+      monthly = _parseNum(m['monthly']);
     }
 
     return DriverDashboardData(
       isOnline: _parseBool(json['is_online']),
       accountStatus: json['account_status']?.toString(),
-      rating: json['rating'] as num?,
-      totalTrips: (json['total_trips'] as num?)?.toInt(),
+      driverStatus: json['driver_status']?.toString(),
+      backgroundCheckStatus: json['background_check_status']?.toString(),
+      rating: _parseNum(json['rating']),
+      totalTrips: _parseInt(json['total_trips']),
       earningsToday: today,
       earningsWeekly: weekly,
       earningsMonthly: monthly,
+      walletBalance: _parseNum(json['wallet_balance']),
+      acceptanceRate: _parseNum(json['acceptance_rate']),
+      pendingDocuments: _parseInt(json['pending_documents']),
+      approvedDocuments: _parseInt(json['approved_documents']),
+      verified: _parseBool(json['verified']),
+      canDrive: _parseBool(json['can_drive']),
+      tier: json['tier']?.toString(),
+      profileImage: json['profile_image']?.toString(),
     );
   }
 }

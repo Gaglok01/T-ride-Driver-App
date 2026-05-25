@@ -67,7 +67,7 @@ class UserProfile {
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
       walletBalance: json['wallet_balance'] as String?,
-      photo: json['photo'] as String?,
+      photo: (json['photo'] ?? json['image'] ?? json['image_url'])?.toString(),
       roles: (json['roles'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
               .map(UserRole.fromJson)
@@ -127,4 +127,5 @@ class RolePivot {
     );
   }
 }
+
 

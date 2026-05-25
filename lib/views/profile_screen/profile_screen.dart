@@ -7,6 +7,8 @@ import 'package:t_rider_services_app/config/api_urls.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
 import 'package:t_rider_services_app/data/local/secure_storage_service.dart';
 import 'package:t_rider_services_app/data/models/user_profile_model.dart';
+import 'package:t_rider_services_app/data/models/driver_dashboard_model.dart';
+import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
 import 'package:t_rider_services_app/data/repositories/profile_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
@@ -20,6 +22,9 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ProfileRepository _profileRepository = ProfileRepository();
+  final RiderStatusRepository _dashboardRepository = RiderStatusRepository();
+  DriverDashboardData? _dashboard;
+
   final DriverOnboardingRepository _driverOnboardingRepository =
       DriverOnboardingRepository();
   final SecureStorageService _secureStorage = SecureStorageService();
@@ -49,8 +54,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadAll() async {
     setState(() => _loading = true);
-    await Future.wait([_loadProfile(), _loadCarInfo()]);
+    await Future.wait([_loadProfile(), _loadCarInfo(), _loadDashboard()]);
     if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _loadDashboard() async {
+    try {
+      final dash = await _dashboardRepository.fetchDriverDashboard();
+      if (mounted) setState(() => _dashboard = dash);
+    } catch (_) {}
   }
 
   Future<void> _loadProfile() async {
@@ -391,8 +403,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       spacing: 8.w,
                       runSpacing: 8.h,
                       children: [
-                        _badge('Verified', Colors.green.shade100),
-                        _badge('Silver tier', const Color(0xFFF3F3F3)),
+                        _badge(_dashboard?.verified == true ? 'Verified' : 'Unverified', Colors.green.shade100),
+                        _badge(_dashboard?.tier ?? 'Standard', const Color(0xFFF3F3F3)),
                         _badge(
                           _accountStatus.toUpperCase(),
                           AppConst.primaryColor.withOpacity(0.22),
@@ -409,7 +421,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Expanded(
                 child: _premiumStat(
-                  '4.85',
+                  _dashboard?.rating?.toString() ?? '0',
                   'Rating',
                   Icons.star_rounded,
                   '128 reviews',
@@ -418,7 +430,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(width: 10.w),
               Expanded(
                 child: _premiumStat(
-                  '328',
+                  _dashboard?.totalTrips?.toString() ?? '0',
                   'Trips',
                   Icons.local_taxi_rounded,
                   'All time',
@@ -427,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SizedBox(width: 10.w),
               Expanded(
                 child: _premiumStat(
-                  '98%',
+                  (_dashboard?.acceptanceRate.toString() ?? '0') + '%',
                   'Acceptance',
                   Icons.access_time_filled_rounded,
                   'Rate',
@@ -1329,3 +1341,5 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+
