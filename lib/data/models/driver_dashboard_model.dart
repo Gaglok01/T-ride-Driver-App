@@ -2,6 +2,7 @@
 class DriverDashboardData {
   const DriverDashboardData({
     required this.isOnline,
+    this.name,
     this.accountStatus,
     this.driverStatus,
     this.backgroundCheckStatus,
@@ -34,6 +35,7 @@ class DriverDashboardData {
   });
 
   final bool isOnline;
+  final String? name;
   final String? accountStatus;
   final String? driverStatus;
   final String? backgroundCheckStatus;
@@ -101,6 +103,7 @@ class DriverDashboardData {
 
     return DriverDashboardData(
       isOnline: _parseBool(json['is_online']),
+      name: json['name']?.toString(),
       accountStatus: json['account_status']?.toString(),
       driverStatus: json['driver_status']?.toString(),
       backgroundCheckStatus: json['background_check_status']?.toString(),
@@ -132,5 +135,6 @@ class DriverDashboardData {
     );
   }
 }
+
 
 

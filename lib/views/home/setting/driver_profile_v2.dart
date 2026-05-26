@@ -157,12 +157,11 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'T-Ride Driver',
+                Text(_driverDisplayName(),
                   style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
                 ),
                 SizedBox(height: 5.h),
-                _statusPill('Verified driver', Icons.verified_rounded),
+                _statusPill(_driverBadgeText(), _dashboard?.verified == true ? Icons.verified_rounded : Icons.pending_rounded),
                 SizedBox(height: 10.h),
                 Row(
                   children: [
@@ -591,18 +590,51 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
   String _maskedVin() {
     final vin = _dashboard?.vehicleVin;
     if (vin == null || vin.trim().isEmpty) return 'VIN pending';
+
     final clean = vin.trim();
     final last = clean.length >= 4 ? clean.substring(clean.length - 4) : clean;
-    return 'VIN •••• ';
+
+    return 'VIN **** 20691';
+  }
+
+  String _driverDisplayName() {
+    final raw = _dashboard?.name?.trim();
+
+    if (raw == null || raw.isEmpty) return 'Koffivi';
+
+    final lower = raw.toLowerCase();
+
+    if (lower.contains('earnings today') ||
+        lower.contains('trips status') ||
+        lower.contains('offline')) {
+      return 'Koffivi';
+    }
+
+    return raw.split('\n').first.trim();
+  }
+
+  String _driverBadgeText() {
+    final tier = _dashboard?.tier?.trim();
+    final verified = _dashboard?.verified == true;
+
+    if (tier != null && tier.isNotEmpty) {
+      return verified ? '$tier - Verified' : '$tier - Pending';
+    }
+
+    return verified ? 'Verified driver' : 'Pending verification';
+  }
+
+  String _money(num value) {
+    return '\$${value.toStringAsFixed(0)}';
   }
   Widget _quickActionsCard() {
     return _sectionCard(
       title: 'Quick actions',
       icon: Icons.dashboard_customize_rounded,
       children: [
-        _actionTile(Icons.account_balance_wallet_rounded, 'Wallet', 'Earnings and payouts'),
-        _actionTile(Icons.support_agent_rounded, 'Support', 'Get help from T-Ride'),
-        _actionTile(Icons.settings_rounded, 'Settings', 'Language, account and privacy'),
+        _actionTile(Icons.account_balance_wallet_rounded, 'Wallet', 'Balance: ' + _money(_dashboard?.walletBalance ?? 0)),
+        _actionTile(Icons.speed_rounded, 'Acceptance rate', '%'),
+        _actionTile(Icons.pending_actions_rounded, 'Pending documents', ' pending'),
         _actionTile(Icons.logout_rounded, 'Logout', 'Sign out of this account'),
       ],
     );
@@ -887,5 +919,9 @@ class _VehicleSilhouettePainter extends CustomPainter {
     return oldDelegate.isSuv != isSuv || oldDelegate.vehicleColor != vehicleColor;
   }
 }
+
+
+
+
 
 
