@@ -752,8 +752,8 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       icon: Icons.dashboard_customize_rounded,
       children: [
         _actionTile(Icons.account_balance_wallet_rounded, 'Wallet', 'Balance: ' + _money(_dashboard?.walletBalance ?? 0)),
-        _actionTile(Icons.speed_rounded, 'Acceptance rate', '%'),
-        _actionTile(Icons.pending_actions_rounded, 'Pending documents', ' pending'),
+        _actionTile(Icons.speed_rounded, 'Acceptance rate', (_dashboard?.acceptanceRate ?? 0).toStringAsFixed(1) + '%'),
+        _actionTile(Icons.pending_actions_rounded, 'Pending documents', (_dashboard?.pendingDocuments ?? 0).toString() + ' pending'),
         _actionTile(Icons.logout_rounded, 'Logout', 'Sign out of this account'),
       ],
     );
@@ -1046,6 +1046,8 @@ class _VehicleSilhouettePainter extends CustomPainter {
     return oldDelegate.isSuv != isSuv || oldDelegate.vehicleColor != vehicleColor;
   }
 }
+
+
 
 
 
