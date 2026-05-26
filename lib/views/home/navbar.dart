@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
-import 'package:t_rider_services_app/views/home/setting/profile_screen.dart';
+import 'setting/driver_profile_v2.dart';
 import 'home_screen.dart';
 import 'earnings_screen.dart';
 import 'nearby_firestore_orders_screen.dart';
@@ -34,7 +34,7 @@ class _NavbarState extends State<Navbar> {
     const NearbyFirestoreOrdersScreen(),
     const EarningsScreen(),
     // Profile Screen
-    const ProfileScreen(),
+    const DriverProfileV2(),
   ];
 
   void _selectIndex(int index) {
