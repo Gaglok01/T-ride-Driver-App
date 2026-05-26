@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
 import 'package:t_rider_services_app/data/models/driver_dashboard_model.dart';
 import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
+import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
+import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
 
 class DriverProfileV2 extends StatefulWidget {
   const DriverProfileV2({super.key});
@@ -15,6 +19,15 @@ class DriverProfileV2 extends StatefulWidget {
 
 class _DriverProfileV2State extends State<DriverProfileV2> {
   final DriverDashboardRepository _dashboardRepository = DriverDashboardRepository();
+  final DriverOnboardingRepository _onboardingRepository = DriverOnboardingRepository();
+  final ImagePicker _picker = ImagePicker();
+
+  File? _profilePhoto;
+  File? _licenseFront;
+  File? _licenseBack;
+  File? _insurance;
+  File? _vehicleRegistration;
+  bool _uploadingDocs = false;
 
   DriverDashboardData? _dashboard;
   bool _loading = true;
@@ -283,7 +296,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       child: Row(
         children: [
           Expanded(
-            child: CustomPaint(painter: _VehicleSilhouettePainter(isSuv: isSuv), child: const SizedBox.expand()),
+            child: CustomPaint(painter: _VehicleSilhouettePainter(isSuv: isSuv, vehicleColor: color), child: const SizedBox.expand()),
           ),
           SizedBox(width: 14.w),
           Column(
@@ -318,18 +331,48 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       title: 'Documents',
       icon: Icons.shield_rounded,
       children: [
-        _documentTile(Icons.badge_rounded, 'Driver license', 'Front and back required', 'AI verifying'),
-        _documentTile(Icons.article_rounded, 'Registration', 'Vehicle, VIN and plate detection', 'Required'),
-        _documentTile(Icons.verified_user_rounded, 'Insurance', 'Proof of active coverage', 'Required'),
-        _documentTile(Icons.person_rounded, 'Profile photo', 'Clear face photo for rider trust', 'Required'),
+        _documentTile(
+          Icons.badge_rounded,
+          'Driver license',
+          (_licenseFront == null && _licenseBack == null)
+              ? 'Front and back required'
+              : 'Photo selected',
+          (_licenseFront == null && _licenseBack == null) ? 'Required' : 'Ready',
+          () => _pickDocument('license_front'),
+        ),
+        _documentTile(
+          Icons.article_rounded,
+          'Registration',
+          _vehicleRegistration == null
+              ? 'Vehicle, VIN and plate detection'
+              : 'Photo selected',
+          _vehicleRegistration == null ? 'Required' : 'Ready',
+          () => _pickDocument('vehicle_registration'),
+        ),
+        _documentTile(
+          Icons.verified_user_rounded,
+          'Insurance',
+          _insurance == null ? 'Proof of active coverage' : 'Photo selected',
+          _insurance == null ? 'Required' : 'Ready',
+          () => _pickDocument('insurance'),
+        ),
+        _documentTile(
+          Icons.person_rounded,
+          'Profile photo',
+          _profilePhoto == null
+              ? 'Clear face photo for rider trust'
+              : 'Photo selected',
+          _profilePhoto == null ? 'Required' : 'Ready',
+          () => _pickDocument('profile_photo'),
+        ),
         SizedBox(height: 8.h),
         SizedBox(
           width: double.infinity,
           height: 48.h,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: _uploadingDocs ? null : _submitDocuments,
             icon: const Icon(Icons.cloud_upload_rounded),
-            label: const Text('Upload or update documents'),
+            label: Text(_uploadingDocs ? 'Uploading...' : 'Upload or update documents'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
@@ -342,7 +385,6 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       ],
     );
   }
-
   Widget _preferencesCard() {
     return _sectionCard(
       title: 'Preferences',
@@ -362,6 +404,122 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     );
   }
 
+  Future<void> _pickDocument(String type) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          margin: EdgeInsets.all(16.w),
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24.r),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Upload document',
+                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900),
+                ),
+                SizedBox(height: 14.h),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_rounded),
+                  title: const Text('Take a photo'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_rounded),
+                  title: const Text('Choose from gallery'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    final picked = await _picker.pickImage(
+      source: source,
+      imageQuality: 82,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+
+    if (picked == null) return;
+
+    final file = File(picked.path);
+
+    setState(() {
+      switch (type) {
+        case 'profile_photo':
+          _profilePhoto = file;
+          break;
+        case 'license_front':
+          if (_licenseFront == null) {
+            _licenseFront = file;
+          } else {
+            _licenseBack = file;
+          }
+          break;
+        case 'insurance':
+          _insurance = file;
+          break;
+        case 'vehicle_registration':
+          _vehicleRegistration = file;
+          break;
+      }
+    });
+
+    AppSnackbar.showSuccess(message: 'Photo selected.');
+  }
+
+  Future<void> _submitDocuments() async {
+    if (_uploadingDocs) return;
+
+    if (_profilePhoto == null &&
+        _licenseFront == null &&
+        _licenseBack == null &&
+        _insurance == null &&
+        _vehicleRegistration == null) {
+      AppSnackbar.showError(message: 'Please select at least one photo first.');
+      return;
+    }
+
+    setState(() => _uploadingDocs = true);
+
+    try {
+      await _onboardingRepository.uploadDocuments(
+        profilePhoto: _profilePhoto,
+        licenseFront: _licenseFront,
+        licenseBack: _licenseBack,
+        insurance: _insurance,
+        vehicleRegistration: _vehicleRegistration,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _profilePhoto = null;
+        _licenseFront = null;
+        _licenseBack = null;
+        _insurance = null;
+        _vehicleRegistration = null;
+      });
+
+      AppSnackbar.showSuccess(message: 'Documents uploaded for AI verification.');
+      await _loadDashboard();
+    } catch (e) {
+      AppSnackbar.showApiError(e);
+    } finally {
+      if (mounted) setState(() => _uploadingDocs = false);
+    }
+  }
   Widget _backgroundCheckCard() {
     final status = (_dashboard?.backgroundCheckStatus ?? 'not_started')
         .replaceAll('_', ' ')
@@ -522,41 +680,54 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     );
   }
 
-  Widget _documentTile(IconData icon, String title, String subtitle, String status) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.all(13.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F7),
-        borderRadius: BorderRadius.circular(18.r),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 24.sp),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
-                SizedBox(height: 3.h),
-                Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54)),
-              ],
+  Widget _documentTile(
+    IconData icon,
+    String title,
+    String subtitle,
+    String status,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18.r),
+      child: Container(
+        margin: EdgeInsets.only(bottom: 10.h),
+        padding: EdgeInsets.all(13.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F7F7),
+          borderRadius: BorderRadius.circular(18.r),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 24.sp),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                  SizedBox(height: 3.h),
+                  Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54)),
+                ],
+              ),
             ),
-          ),
-          Text(
-            status,
-            style: TextStyle(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w900,
-              color: status.contains('verifying') ? Colors.orange : Colors.black54,
+            Text(
+              status,
+              style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w900,
+                color: status == 'Ready'
+                    ? Colors.green
+                    : status.contains('verifying')
+                        ? Colors.orange
+                        : Colors.black54,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
-
   Widget _actionTile(IconData icon, String title, String subtitle) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -645,14 +816,15 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
 
 
 class _VehicleSilhouettePainter extends CustomPainter {
-  const _VehicleSilhouettePainter({required this.isSuv});
+  const _VehicleSilhouettePainter({required this.isSuv, required this.vehicleColor});
 
   final bool isSuv;
+  final String vehicleColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final bodyPaint = Paint()
-      ..color = AppConst.primaryColor
+      ..color = _paintColor(vehicleColor)
       ..style = PaintingStyle.fill;
 
     final glassPaint = Paint()
@@ -694,8 +866,26 @@ class _VehicleSilhouettePainter extends CustomPainter {
     canvas.drawCircle(Offset(w * 0.72, h * 0.72), h * 0.055, bodyPaint);
   }
 
+  Color _paintColor(String raw) {
+    final c = raw.toLowerCase().trim();
+
+    if (c.contains('black')) return const Color(0xFF111111);
+    if (c.contains('white')) return const Color(0xFFF2F2F2);
+    if (c.contains('gray') || c.contains('grey') || c.contains('silver')) {
+      return const Color(0xFF8E8E93);
+    }
+    if (c.contains('red')) return const Color(0xFFB3261E);
+    if (c.contains('blue')) return const Color(0xFF1E5AA8);
+    if (c.contains('green')) return const Color(0xFF2E7D32);
+    if (c.contains('yellow')) return AppConst.primaryColor;
+
+    return AppConst.primaryColor;
+  }
+
   @override
   bool shouldRepaint(covariant _VehicleSilhouettePainter oldDelegate) {
-    return oldDelegate.isSuv != isSuv;
+    return oldDelegate.isSuv != isSuv || oldDelegate.vehicleColor != vehicleColor;
   }
 }
+
+
