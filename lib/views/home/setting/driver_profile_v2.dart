@@ -226,7 +226,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  'Account:  • Status: ',
+                  'Account: ' + account + ' | Status: ' + driverStatus,
                   style: TextStyle(fontSize: 11.sp, color: Colors.black54),
                 ),
               ],
@@ -751,14 +751,37 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       title: 'Quick actions',
       icon: Icons.dashboard_customize_rounded,
       children: [
-        _actionTile(Icons.account_balance_wallet_rounded, 'Wallet', 'Balance: ' + _money(_dashboard?.walletBalance ?? 0)),
-        _actionTile(Icons.speed_rounded, 'Acceptance rate', (_dashboard?.acceptanceRate ?? 0).toStringAsFixed(1) + '%'),
-        _actionTile(Icons.pending_actions_rounded, 'Pending documents', (_dashboard?.pendingDocuments ?? 0).toString() + ' pending'),
-        _actionTile(Icons.logout_rounded, 'Logout', 'Sign out of this account'),
+        _actionTile(Icons.account_balance_wallet_rounded, 'Wallet', 'Balance: ' + _money(_dashboard?.walletBalance ?? 0), () {}),
+        _actionTile(Icons.speed_rounded, 'Acceptance rate', (_dashboard?.acceptanceRate ?? 0).toStringAsFixed(1) + '%', () {}),
+        _actionTile(Icons.pending_actions_rounded, 'Pending documents', (_dashboard?.pendingDocuments ?? 0).toString() + ' pending', () {
+  AppSnackbar.showSuccess(message: 'Open driver documents section.');
+}),
+        _actionTile(Icons.logout_rounded, 'Logout', 'Sign out of this account', () {
+  AppSnackbar.showSuccess(message: 'Logout flow coming next.');
+}),
       ],
     );
   }
 
+  void _showDocumentsInfo() {
+    AppSnackbar.showSuccess(
+      message: '${_dashboard?.pendingDocuments ?? 0} document(s) pending review.',
+    );
+  }
+
+  void _confirmLogout() {
+    Get.defaultDialog(
+      title: 'Logout',
+      middleText: 'Do you want to sign out?',
+      textCancel: 'Cancel',
+      textConfirm: 'Logout',
+      confirmTextColor: Colors.white,
+      onConfirm: () {
+        Get.back();
+        AppSnackbar.showSuccess(message: 'Logout flow will be connected next.');
+      },
+    );
+  }
   Widget _sectionCard({
     required String title,
     required IconData icon,
@@ -879,7 +902,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       ),
     );
   }
-  Widget _actionTile(IconData icon, String title, String subtitle) {
+  Widget _actionTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
@@ -889,7 +912,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: () {},
+      onTap: onTap,
     );
   }
 
@@ -1046,6 +1069,10 @@ class _VehicleSilhouettePainter extends CustomPainter {
     return oldDelegate.isSuv != isSuv || oldDelegate.vehicleColor != vehicleColor;
   }
 }
+
+
+
+
 
 
 
