@@ -181,7 +181,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                   children: [
                     _miniStat((_dashboard?.rating ?? 0).toString(), 'Rating'),
                     _divider(),
-                    _miniStat((_dashboard?.todayTrips ?? 0).toString(), 'Today trips'),
+                    _miniStat((_dashboard?.totalTrips ?? 0).toString(), 'Trips'),
                     _divider(),
                     _miniStat('\$240', 'Today'),
                   ],
@@ -382,43 +382,64 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     );
   }
   Widget _documentsCard() {
+    final licenseVerified = (_dashboard?.licenseExpiration ?? '').isNotEmpty;
+    final registrationVerified = (_dashboard?.vehicleVin ?? '').isNotEmpty ||
+        (_dashboard?.vehiclePlateNumber ?? '').isNotEmpty;
+    final insuranceVerified = (_dashboard?.insuranceExpiration ?? '').isNotEmpty;
+    final profileVerified = (_dashboard?.profileImage ?? '').isNotEmpty;
+
     return _sectionCard(
       title: 'Documents',
       icon: Icons.shield_rounded,
       children: [
         _documentTile(
           Icons.badge_rounded,
-          'Driver license front',
-          _docSubtitle('license_front'),
-          _docLabel('license_front'),
-          () => _pickDocument('license_front'),
-        ),
-        _documentTile(
-          Icons.badge_outlined,
-          'Driver license back',
-          _docSubtitle('license_back'),
-          _docLabel('license_back'),
+          'Driver license',
+          licenseVerified
+              ? 'Expires ${_dashboard?.licenseExpiration}'
+              : ((_licenseFront == null && _licenseBack == null)
+                  ? 'Front and back required'
+                  : 'Photo selected'),
+          licenseVerified
+              ? 'Verified'
+              : ((_licenseFront == null && _licenseBack == null) ? 'Required' : 'Ready'),
           () => _pickDocument('license_front'),
         ),
         _documentTile(
           Icons.article_rounded,
           'Registration',
-          _docSubtitle('vehicle_registration'),
-          _docLabel('vehicle_registration'),
+          registrationVerified
+              ? '${_dashboard?.vehicleYear ?? ''} ${_dashboard?.vehicleMake ?? ''} ${_dashboard?.vehicleModel ?? ''}'.trim()
+              : (_vehicleRegistration == null
+                  ? 'Vehicle, VIN and plate detection'
+                  : 'Photo selected'),
+          registrationVerified
+              ? 'Verified'
+              : (_vehicleRegistration == null ? 'Required' : 'Ready'),
           () => _pickDocument('vehicle_registration'),
         ),
         _documentTile(
           Icons.verified_user_rounded,
           'Insurance',
-          _docSubtitle('insurance'),
-          _docLabel('insurance'),
+          insuranceVerified
+              ? 'Expires ${_dashboard?.insuranceExpiration}'
+              : (_insurance == null ? 'Proof of active coverage' : 'Photo selected'),
+          insuranceVerified
+              ? 'Verified'
+              : (_insurance == null ? 'Required' : 'Ready'),
           () => _pickDocument('insurance'),
         ),
         _documentTile(
           Icons.person_rounded,
           'Profile photo',
-          _docSubtitle('image'),
-          _docLabel('image'),
+          profileVerified
+              ? 'Photo on file'
+              : (_profilePhoto == null
+                  ? 'Clear face photo for rider trust'
+                  : 'Photo selected'),
+          profileVerified
+              ? 'Verified'
+              : (_profilePhoto == null ? 'Required' : 'Ready'),
           () => _pickDocument('profile_photo'),
         ),
         SizedBox(height: 8.h),
@@ -744,26 +765,6 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     return verified ? 'Verified driver' : 'Pending verification';
   }
 
-  String _docStatus(String key) {
-    final statuses = _dashboard?.documentStatuses ?? {};
-    return (statuses[key] ?? 'required').toString().toLowerCase();
-  }
-
-  String _docLabel(String key) {
-    final s = _docStatus(key);
-    if (s == 'approved') return 'Verified';
-    if (s == 'pending') return 'Pending review';
-    if (s == 'rejected') return 'Rejected';
-    return 'Required';
-  }
-
-  String _docSubtitle(String key) {
-    final s = _docStatus(key);
-    if (s == 'approved') return 'Approved by T-Ride review';
-    if (s == 'pending') return 'Submitted and waiting for review';
-    if (s == 'rejected') return 'Reupload required';
-    return 'Tap to upload using camera or gallery';
-  }
   String _money(num value) {
     return '\$${value.toStringAsFixed(0)}';
   }
@@ -1099,8 +1100,6 @@ class _VehicleSilhouettePainter extends CustomPainter {
     return oldDelegate.isSuv != isSuv || oldDelegate.vehicleColor != vehicleColor;
   }
 }
-
-
 
 
 

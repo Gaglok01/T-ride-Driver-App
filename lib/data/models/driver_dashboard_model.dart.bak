@@ -8,7 +8,6 @@ class DriverDashboardData {
     this.backgroundCheckStatus,
     this.rating,
     this.totalTrips,
-    this.todayTrips = 0,
     this.earningsToday = 0,
     this.earningsWeekly = 0,
     this.earningsMonthly = 0,
@@ -16,7 +15,6 @@ class DriverDashboardData {
     this.acceptanceRate = 0,
     this.pendingDocuments = 0,
     this.approvedDocuments = 0,
-    this.documentStatuses = const {},
     this.verified = false,
     this.canDrive = false,
     this.tier,
@@ -43,7 +41,6 @@ class DriverDashboardData {
   final String? backgroundCheckStatus;
   final num? rating;
   final int? totalTrips;
-  final int todayTrips;
   final num earningsToday;
   final num earningsWeekly;
   final num earningsMonthly;
@@ -52,7 +49,6 @@ class DriverDashboardData {
   final num acceptanceRate;
   final int pendingDocuments;
   final int approvedDocuments;
-  final Map<String, dynamic> documentStatuses;
   final bool verified;
   final bool canDrive;
   final String? tier;
@@ -113,7 +109,6 @@ class DriverDashboardData {
       backgroundCheckStatus: json['background_check_status']?.toString(),
       rating: _parseNum(json['rating']),
       totalTrips: _parseInt(json['total_trips']),
-      todayTrips: _parseInt(json['today_trips']),
       earningsToday: today,
       earningsWeekly: weekly,
       earningsMonthly: monthly,
@@ -121,7 +116,6 @@ class DriverDashboardData {
       acceptanceRate: _parseNum(json['acceptance_rate']),
       pendingDocuments: _parseInt(json['pending_documents']),
       approvedDocuments: _parseInt(json['approved_documents']),
-      documentStatuses: Map<String, dynamic>.from(json['document_statuses'] ?? {}),
       verified: _parseBool(json['verified']),
       canDrive: _parseBool(json['can_drive']),
       tier: json['tier']?.toString(),
@@ -141,7 +135,6 @@ class DriverDashboardData {
     );
   }
 }
-
 
 
 
