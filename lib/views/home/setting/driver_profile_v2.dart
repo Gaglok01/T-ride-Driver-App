@@ -29,6 +29,13 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
   File? _vehicleRegistration;
   bool _uploadingDocs = false;
 
+  bool _bidEnabled = true;
+  bool _poolingEnabled = true;
+  bool _courierEnabled = true;
+  bool _deliveryEnabled = true;
+  bool _petFriendlyEnabled = false;
+  bool _savingPreferences = false;
+
   DriverDashboardData? _dashboard;
   bool _loading = true;
   String? _error;
@@ -50,6 +57,11 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       if (!mounted) return;
       setState(() {
         _dashboard = DriverDashboardData.fromJson(json);
+        _bidEnabled = _dashboard?.bidEnabled ?? true;
+        _poolingEnabled = _dashboard?.poolingEnabled ?? true;
+        _courierEnabled = _dashboard?.courierEnabled ?? true;
+        _deliveryEnabled = _dashboard?.deliveryEnabled ?? true;
+        _petFriendlyEnabled = _dashboard?.petFriendlyEnabled ?? false;
         _loading = false;
       });
     } catch (e) {
@@ -77,6 +89,8 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
             _header(),
             SizedBox(height: 16.h),
             _heroCard(),
+            SizedBox(height: 14.h),
+            _eligibilityCard(),
             SizedBox(height: 14.h),
             _aiVerificationCard(),
             SizedBox(height: 14.h),
@@ -180,6 +194,48 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     );
   }
 
+  Widget _eligibilityCard() {
+    final canDrive = _dashboard?.canDrive == true;
+    final account = _dashboard?.accountStatus ?? 'unknown';
+    final driverStatus = _dashboard?.driverStatus ?? 'unknown';
+
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: canDrive ? Colors.green.withOpacity(0.10) : Colors.orange.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(22.r),
+        border: Border.all(
+          color: canDrive ? Colors.green.withOpacity(0.28) : Colors.orange.withOpacity(0.28),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            canDrive ? Icons.check_circle_rounded : Icons.warning_amber_rounded,
+            color: canDrive ? Colors.green : Colors.orange,
+            size: 30.sp,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  canDrive ? 'Ready to drive' : 'Not ready to drive yet',
+                  style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Account:  • Status: ',
+                  style: TextStyle(fontSize: 11.sp, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _aiVerificationCard() {
     return _sectionCard(
       title: 'AI verification',
@@ -393,16 +449,79 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
           spacing: 8.w,
           runSpacing: 8.h,
           children: [
-            _preferenceChip('Ride requests', true),
-            _preferenceChip('Delivery', true),
-            _preferenceChip('Pooling', true),
-            _preferenceChip('Pet friendly', false),
+            _preferenceChip('Ride requests', _bidEnabled, () {
+              _savePreferences(bid: !_bidEnabled);
+            }),
+            _preferenceChip('Delivery', _deliveryEnabled, () {
+              _savePreferences(delivery: !_deliveryEnabled);
+            }),
+            _preferenceChip('Pooling', _poolingEnabled, () {
+              _savePreferences(pooling: !_poolingEnabled);
+            }),
+            _preferenceChip('Courier', _courierEnabled, () {
+              _savePreferences(courier: !_courierEnabled);
+            }),
+            _preferenceChip('Pet friendly', _petFriendlyEnabled, () {
+              _savePreferences(petFriendly: !_petFriendlyEnabled);
+            }),
           ],
         ),
+        if (_savingPreferences) ...[
+          SizedBox(height: 12.h),
+          const LinearProgressIndicator(),
+        ],
       ],
     );
   }
 
+  Future<void> _savePreferences({
+    bool? bid,
+    bool? pooling,
+    bool? courier,
+    bool? delivery,
+    bool? petFriendly,
+  }) async {
+    if (_savingPreferences) return;
+
+    final oldBid = _bidEnabled;
+    final oldPooling = _poolingEnabled;
+    final oldCourier = _courierEnabled;
+    final oldDelivery = _deliveryEnabled;
+    final oldPetFriendly = _petFriendlyEnabled;
+
+    setState(() {
+      if (bid != null) _bidEnabled = bid;
+      if (pooling != null) _poolingEnabled = pooling;
+      if (courier != null) _courierEnabled = courier;
+      if (delivery != null) _deliveryEnabled = delivery;
+      if (petFriendly != null) _petFriendlyEnabled = petFriendly;
+      _savingPreferences = true;
+    });
+
+    try {
+      await _dashboardRepository.updatePreferences(
+        bidEnabled: _bidEnabled,
+        poolingEnabled: _poolingEnabled,
+        courierEnabled: _courierEnabled,
+        deliveryEnabled: _deliveryEnabled,
+        petFriendlyEnabled: _petFriendlyEnabled,
+      );
+
+      AppSnackbar.showSuccess(message: 'Preferences updated.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _bidEnabled = oldBid;
+        _poolingEnabled = oldPooling;
+        _courierEnabled = oldCourier;
+        _deliveryEnabled = oldDelivery;
+        _petFriendlyEnabled = oldPetFriendly;
+      });
+      AppSnackbar.showApiError(e);
+    } finally {
+      if (mounted) setState(() => _savingPreferences = false);
+    }
+  }
   Future<void> _pickDocument(String type) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -774,9 +893,12 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     );
   }
 
-  Widget _preferenceChip(String label, bool enabled) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
+  Widget _preferenceChip(String label, bool enabled, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
       decoration: BoxDecoration(
         color: enabled ? AppConst.primaryColor.withOpacity(0.18) : Colors.grey.withOpacity(0.14),
         borderRadius: BorderRadius.circular(999.r),
@@ -784,9 +906,14 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
           color: enabled ? AppConst.primaryColor : Colors.black12,
         ),
       ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+      child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(enabled ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded, size: 15.sp),
+            SizedBox(width: 5.w),
+            Text(label, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800)),
+          ],
+        ),
       ),
     );
   }
@@ -919,6 +1046,7 @@ class _VehicleSilhouettePainter extends CustomPainter {
     return oldDelegate.isSuv != isSuv || oldDelegate.vehicleColor != vehicleColor;
   }
 }
+
 
 
 
