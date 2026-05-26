@@ -196,118 +196,42 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
 
   Widget _eligibilityCard() {
     final canDrive = _dashboard?.canDrive == true;
-
-    final eligibility = _dashboard?.eligibility ?? {};
-
-    final accountApproved =
-        eligibility['account_approved'] == true;
-
-    final driverActive =
-        eligibility['driver_active'] == true;
-
-    final documentsApproved =
-        eligibility['documents_approved'] == true;
-
-    final backgroundApproved =
-        eligibility['background_check_approved'] == true;
-
-    final issues = <String>[];
-
-    if (!accountApproved) {
-      issues.add('Account approval required');
-    }
-
-    if (!driverActive) {
-      issues.add('Driver account inactive');
-    }
-
-    if (!documentsApproved) {
-      issues.add('Required documents pending');
-    }
-
-    if (!backgroundApproved) {
-      issues.add('Background check pending');
-    }
+    final account = _dashboard?.accountStatus ?? 'unknown';
+    final driverStatus = _dashboard?.driverStatus ?? 'unknown';
 
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: canDrive
-            ? Colors.green.withOpacity(0.10)
-            : Colors.orange.withOpacity(0.10),
+        color: canDrive ? Colors.green.withOpacity(0.10) : Colors.orange.withOpacity(0.10),
         borderRadius: BorderRadius.circular(22.r),
         border: Border.all(
-          color: canDrive
-              ? Colors.green.withOpacity(0.28)
-              : Colors.orange.withOpacity(0.28),
+          color: canDrive ? Colors.green.withOpacity(0.28) : Colors.orange.withOpacity(0.28),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                canDrive
-                    ? Icons.check_circle_rounded
-                    : Icons.warning_amber_rounded,
-                color: canDrive ? Colors.green : Colors.orange,
-                size: 30.sp,
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      canDrive
-                          ? 'Eligible to drive'
-                          : 'Cannot go online yet',
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      'Account: ${_dashboard?.accountStatus ?? 'Unknown'} | Driver: ${_dashboard?.driverStatus ?? 'Unknown'}',
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Icon(
+            canDrive ? Icons.check_circle_rounded : Icons.warning_amber_rounded,
+            color: canDrive ? Colors.green : Colors.orange,
+            size: 30.sp,
           ),
-          if (issues.isNotEmpty) ...[
-            SizedBox(height: 14.h),
-            ...issues.map(
-              (e) => Padding(
-                padding: EdgeInsets.only(bottom: 6.h),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.circle,
-                      size: 6.sp,
-                      color: Colors.orange,
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        e,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  canDrive ? 'Ready to drive' : 'Not ready to drive yet',
+                  style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900),
                 ),
-              ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Account: ' + account + ' | Status: ' + driverStatus,
+                  style: TextStyle(fontSize: 11.sp, color: Colors.black54),
+                ),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -1175,7 +1099,6 @@ class _VehicleSilhouettePainter extends CustomPainter {
     return oldDelegate.isSuv != isSuv || oldDelegate.vehicleColor != vehicleColor;
   }
 }
-
 
 
 
