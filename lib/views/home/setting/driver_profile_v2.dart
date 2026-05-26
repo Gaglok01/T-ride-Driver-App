@@ -269,7 +269,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
         model.contains('pilot') ||
         model.contains('suv');
 
-    final label = isSuv ? 'Generic SUV' : 'Generic sedan';
+    final label = _vehicleTitle();
 
     return Container(
       width: double.infinity,
@@ -283,7 +283,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       child: Row(
         children: [
           Expanded(
-            child: Center(child: Icon(Icons.directions_car_filled_rounded, color: AppConst.primaryColor, size: 82.sp)),
+            child: CustomPaint(painter: _VehicleSilhouettePainter(isSuv: isSuv), child: const SizedBox.expand()),
           ),
           SizedBox(width: 14.w),
           Column(
