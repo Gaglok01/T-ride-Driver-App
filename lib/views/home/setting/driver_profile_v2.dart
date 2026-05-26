@@ -128,7 +128,16 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
               color: AppConst.primaryColor.withOpacity(0.18),
               border: Border.all(color: AppConst.primaryColor, width: 3),
             ),
-            child: Icon(Icons.person_rounded, size: 36.sp),
+            child: (_dashboard?.profileImage != null && _dashboard!.profileImage!.isNotEmpty)
+                  ? ClipOval(
+                      child: Image.network(
+                        _dashboard!.profileImage!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Icon(Icons.person_rounded, size: 36.sp),
+                      ),
+                    )
+                  : Icon(Icons.person_rounded, size: 36.sp),
           ),
           SizedBox(width: 14.w),
           Expanded(
@@ -214,6 +223,8 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
             ],
           ),
           SizedBox(height: 18.h),
+          _genericVehicleVisual(),
+          SizedBox(height: 16.h),
           Text(
             _vehicleTitle(),
             style: TextStyle(
@@ -247,6 +258,61 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     );
   }
 
+  Widget _genericVehicleVisual() {
+    final make = (_dashboard?.vehicleMake ?? '').toLowerCase();
+    final model = (_dashboard?.vehicleModel ?? '').toLowerCase();
+    final color = (_dashboard?.vehicleColor ?? 'Gray').toLowerCase();
+
+    final isSuv = model.contains('cr-v') ||
+        model.contains('rav4') ||
+        model.contains('escape') ||
+        model.contains('pilot') ||
+        model.contains('suv');
+
+    final label = isSuv ? 'Generic SUV' : 'Generic sedan';
+
+    return Container(
+      width: double.infinity,
+      height: 118.h,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(22.r),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Center(child: Icon(Icons.directions_car_filled_rounded, color: AppConst.primaryColor, size: 82.sp)),
+          ),
+          SizedBox(width: 14.w),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                color.capitalizeFirst ?? color,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
   Widget _documentsCard() {
     return _sectionCard(
       title: 'Documents',
@@ -256,6 +322,23 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
         _documentTile(Icons.article_rounded, 'Registration', 'Vehicle, VIN and plate detection', 'Required'),
         _documentTile(Icons.verified_user_rounded, 'Insurance', 'Proof of active coverage', 'Required'),
         _documentTile(Icons.person_rounded, 'Profile photo', 'Clear face photo for rider trust', 'Required'),
+        SizedBox(height: 8.h),
+        SizedBox(
+          width: double.infinity,
+          height: 48.h,
+          child: ElevatedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.cloud_upload_rounded),
+            label: const Text('Upload or update documents'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -555,5 +638,64 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       color: Colors.black12,
     );
   }
+
 }
 
+
+
+
+class _VehicleSilhouettePainter extends CustomPainter {
+  const _VehicleSilhouettePainter({required this.isSuv});
+
+  final bool isSuv;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bodyPaint = Paint()
+      ..color = AppConst.primaryColor
+      ..style = PaintingStyle.fill;
+
+    final glassPaint = Paint()
+      ..color = Colors.black.withOpacity(0.30)
+      ..style = PaintingStyle.fill;
+
+    final wheelPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+
+    final w = size.width;
+    final h = size.height;
+
+    final body = RRect.fromRectAndRadius(
+      Rect.fromLTWH(w * 0.08, h * 0.42, w * 0.84, h * 0.28),
+      Radius.circular(h * 0.11),
+    );
+    canvas.drawRRect(body, bodyPaint);
+
+    final roof = Path()
+      ..moveTo(w * 0.25, h * 0.43)
+      ..lineTo(w * (isSuv ? 0.38 : 0.44), h * 0.22)
+      ..lineTo(w * (isSuv ? 0.72 : 0.65), h * 0.22)
+      ..lineTo(w * 0.84, h * 0.43)
+      ..close();
+    canvas.drawPath(roof, bodyPaint);
+
+    final glass = Path()
+      ..moveTo(w * 0.37, h * 0.39)
+      ..lineTo(w * 0.46, h * 0.27)
+      ..lineTo(w * 0.65, h * 0.27)
+      ..lineTo(w * 0.74, h * 0.39)
+      ..close();
+    canvas.drawPath(glass, glassPaint);
+
+    canvas.drawCircle(Offset(w * 0.28, h * 0.72), h * 0.11, wheelPaint);
+    canvas.drawCircle(Offset(w * 0.72, h * 0.72), h * 0.11, wheelPaint);
+    canvas.drawCircle(Offset(w * 0.28, h * 0.72), h * 0.055, bodyPaint);
+    canvas.drawCircle(Offset(w * 0.72, h * 0.72), h * 0.055, bodyPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _VehicleSilhouettePainter oldDelegate) {
+    return oldDelegate.isSuv != isSuv;
+  }
+}
