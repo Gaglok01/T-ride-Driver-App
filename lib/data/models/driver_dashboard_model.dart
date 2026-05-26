@@ -18,6 +18,14 @@ class DriverDashboardData {
     this.canDrive = false,
     this.tier,
     this.profileImage,
+    this.vehicleMake,
+    this.vehicleModel,
+    this.vehicleYear,
+    this.vehiclePlateNumber,
+    this.vehicleVin,
+    this.vehicleColor,
+    this.licenseExpiration,
+    this.insuranceExpiration,
       this.bidEnabled = true,
     this.poolingEnabled = true,
     this.courierEnabled = true,
@@ -43,6 +51,14 @@ class DriverDashboardData {
   final bool canDrive;
   final String? tier;
   final String? profileImage;
+  final String? vehicleMake;
+  final String? vehicleModel;
+  final String? vehicleYear;
+  final String? vehiclePlateNumber;
+  final String? vehicleVin;
+  final String? vehicleColor;
+  final String? licenseExpiration;
+  final String? insuranceExpiration;
   final bool bidEnabled;
   final bool poolingEnabled;
   final bool courierEnabled;
@@ -101,6 +117,14 @@ class DriverDashboardData {
       canDrive: _parseBool(json['can_drive']),
       tier: json['tier']?.toString(),
       profileImage: json['profile_image']?.toString(),
+      vehicleMake: json['vehicle_make']?.toString(),
+      vehicleModel: json['vehicle_model']?.toString(),
+      vehicleYear: json['vehicle_year']?.toString(),
+      vehiclePlateNumber: json['vehicle_plate_number']?.toString(),
+      vehicleVin: json['vehicle_vin']?.toString(),
+      vehicleColor: json['vehicle_color']?.toString(),
+      licenseExpiration: json['license_expiration']?.toString(),
+      insuranceExpiration: json['insurance_expiration']?.toString(),
       bidEnabled: json['bid_enabled'] == true || json['bid_enabled'] == 1,
       poolingEnabled: json['pooling_enabled'] == true || json['pooling_enabled'] == 1,
       courierEnabled: json['courier_enabled'] == true || json['courier_enabled'] == 1,
@@ -108,4 +132,5 @@ class DriverDashboardData {
     );
   }
 }
+
 

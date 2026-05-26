@@ -20,7 +20,7 @@ import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart'
 import 'package:t_rider_services_app/data/repositories/driver_realtime_repository.dart';
 import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
-import 'package:t_rider_services_app/views/profile_screen/profile_screen.dart';
+import 'package:t_rider_services_app/views/home/setting/profile_screen.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
 import 'package:t_rider_services_app/modules/navigation/trip_navigation_screen.dart';
 

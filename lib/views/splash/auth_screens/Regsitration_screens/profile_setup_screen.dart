@@ -319,7 +319,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               ),
               SizedBox(height: 18.h),
               Text(
-                'Vehicle details, documents, background check, and payout setup will be completed after account creation.',
+                'After account creation, upload your driver license, vehicle registration, and insurance. T-Ride will automatically read your documents and prepare them for approval.',
                 style: TextStyle(
                   color: AppConst.grey,
                   fontSize: 12.sp,

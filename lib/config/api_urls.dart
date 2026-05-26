@@ -3,7 +3,7 @@
 class ApiUrls {
   ApiUrls._();
 
-  static const String baseUrl = 'http://3.140.253.81/';
+  static const String baseUrl = 'https://order.t-ride.tech/';
 
   // Languages
   static const String languages = 'api/languages';
