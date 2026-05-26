@@ -2,19 +2,65 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
+import 'package:t_rider_services_app/data/models/driver_dashboard_model.dart';
+import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
 
-class DriverProfileV2 extends StatelessWidget {
+class DriverProfileV2 extends StatefulWidget {
   const DriverProfileV2({super.key});
+
+  @override
+  State<DriverProfileV2> createState() => _DriverProfileV2State();
+}
+
+class _DriverProfileV2State extends State<DriverProfileV2> {
+  final DriverDashboardRepository _dashboardRepository = DriverDashboardRepository();
+
+  DriverDashboardData? _dashboard;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final json = await _dashboardRepository.getDashboard();
+      if (!mounted) return;
+      setState(() {
+        _dashboard = DriverDashboardData.fromJson(json);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.all(18.w),
-          children: [
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadDashboard,
+                child: ListView(
+                  padding: EdgeInsets.all(18.w),
+                  children: [
+                    if (_error != null) _errorCard(_error!),
             _header(),
             SizedBox(height: 16.h),
             _heroCard(),
@@ -27,10 +73,13 @@ class DriverProfileV2 extends StatelessWidget {
             SizedBox(height: 14.h),
             _preferencesCard(),
             SizedBox(height: 14.h),
+            _backgroundCheckCard(),
+            SizedBox(height: 14.h),
             _quickActionsCard(),
             SizedBox(height: 24.h),
-          ],
-        ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -95,9 +144,9 @@ class DriverProfileV2 extends StatelessWidget {
                 SizedBox(height: 10.h),
                 Row(
                   children: [
-                    _miniStat('4.9', 'Rating'),
+                    _miniStat((_dashboard?.rating ?? 0).toString(), 'Rating'),
                     _divider(),
-                    _miniStat('128', 'Trips'),
+                    _miniStat((_dashboard?.totalTrips ?? 0).toString(), 'Trips'),
                     _divider(),
                     _miniStat('\$240', 'Today'),
                   ],
@@ -166,7 +215,7 @@ class DriverProfileV2 extends StatelessWidget {
           ),
           SizedBox(height: 18.h),
           Text(
-            'Vehicle details will appear here after OCR parsing',
+            _vehicleTitle(),
             style: TextStyle(
               color: Colors.white,
               fontSize: 16.sp,
@@ -178,9 +227,9 @@ class DriverProfileV2 extends StatelessWidget {
             spacing: 8.w,
             runSpacing: 8.h,
             children: [
-              _darkPill('Plate pending'),
-              _darkPill('Color pending'),
-              _darkPill('VIN pending'),
+              _darkPill(_dashboard?.vehiclePlateNumber?.isNotEmpty == true ? _dashboard!.vehiclePlateNumber! : 'Plate pending'),
+              _darkPill(_dashboard?.vehicleColor?.isNotEmpty == true ? _dashboard!.vehicleColor! : 'Color pending'),
+              _darkPill(_maskedVin()),
             ],
           ),
           SizedBox(height: 14.h),
@@ -230,6 +279,81 @@ class DriverProfileV2 extends StatelessWidget {
     );
   }
 
+  Widget _backgroundCheckCard() {
+    final status = (_dashboard?.backgroundCheckStatus ?? 'not_started')
+        .replaceAll('_', ' ')
+        .capitalizeFirst ?? 'Not started';
+
+    return _sectionCard(
+      title: 'Background check',
+      icon: Icons.policy_rounded,
+      children: [
+        Container(
+          padding: EdgeInsets.all(14.w),
+          decoration: BoxDecoration(
+            color: AppConst.primaryColor.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(18.r),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.verified_user_rounded, color: Colors.black, size: 26.sp),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      status,
+                      style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Powered by Checkr. Required before going online.',
+                      style: TextStyle(fontSize: 11.sp, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _errorCard(String message) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 14.h),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: Colors.red.withOpacity(0.25)),
+      ),
+      child: Text(
+        message,
+        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  String _vehicleTitle() {
+    final parts = [
+      _dashboard?.vehicleYear,
+      _dashboard?.vehicleMake,
+      _dashboard?.vehicleModel,
+    ].where((v) => v != null && v.toString().trim().isNotEmpty).join(' ');
+
+    return parts.isEmpty ? 'Vehicle details will appear here after OCR parsing' : parts;
+  }
+
+  String _maskedVin() {
+    final vin = _dashboard?.vehicleVin;
+    if (vin == null || vin.trim().isEmpty) return 'VIN pending';
+    final clean = vin.trim();
+    final last = clean.length >= 4 ? clean.substring(clean.length - 4) : clean;
+    return 'VIN •••• ';
+  }
   Widget _quickActionsCard() {
     return _sectionCard(
       title: 'Quick actions',
@@ -432,3 +556,4 @@ class DriverProfileV2 extends StatelessWidget {
     );
   }
 }
+
