@@ -21,7 +21,6 @@ import 'package:t_rider_services_app/data/repositories/driver_realtime_repositor
 import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
 import 'package:t_rider_services_app/views/home/setting/profile_screen.dart';
-import 'package:t_rider_services_app/views/home/setting/driver_profile_v2.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
 import 'package:t_rider_services_app/modules/navigation/trip_navigation_screen.dart';
 
@@ -928,10 +927,11 @@ UserProfile? _driverProfile;
                 children: [
                   _topBar(),
                   if (_accountStatus != 'approved') ...[
-                    _complianceWarningCard(),
+                    _approvalBanner(),
                     SizedBox(height: 12.h),
                   ],
                   SizedBox(height: 12.h),
+                  _earningsBar(),
                   const Spacer(),
                   if (_hasActiveRide) _activeTripCard() else _requestsPanel(),
                 ],
@@ -961,22 +961,19 @@ UserProfile? _driverProfile;
       return const SizedBox.shrink();
     }
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(20.r),
-      onTap: () => Get.to(() => DriverProfileV2()),
-      child: Container(
-        width: double.infinity,
+    return Container(
+      width: double.infinity,
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
         color: _adminOverride
-            ? Colors.blue.withOpacity(0.18)
-            : AppConst.primaryColor.withOpacity(0.92),
+            ? Colors.blue.withOpacity(0.10)
+            : Colors.orange.withOpacity(0.10),
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: _adminOverride
               ? Colors.blue.withOpacity(0.25)
-              : Colors.black.withOpacity(0.10),
+              : Colors.orange.withOpacity(0.25),
         ),
       ),
       child: Row(
@@ -1001,10 +998,8 @@ UserProfile? _driverProfile;
           ),
         ],
       ),
-    ),
     );
   }
-
   Widget _topBar() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
@@ -1320,39 +1315,278 @@ UserProfile? _driverProfile;
   }
 
   Widget _miniStatusPanel(IconData icon, String title, String subtitle) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(22.r),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 24.sp, color: Colors.black87),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 3.h),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: Colors.black54,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _emptyPanel(IconData icon, String title, String subtitle) {
+    return SizedBox(
+      width: double.infinity,
+      height: 270.h,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            right: 10.w,
+            top: 22.h,
+            child: Opacity(
+              opacity: 0.18,
+              child: Icon(
+                Icons.location_city_rounded,
+                size: 175.sp,
+                color: AppConst.primaryColor,
+              ),
+            ),
+          ),
+
+          Positioned(
+            right: 68.w,
+            top: 38.h,
+            child: Icon(
+              Icons.location_on_rounded,
+              color: AppConst.primaryColor,
+              size: 66.sp,
+            ),
+          ),
+
+          Positioned(
+            right: -34.w,
+            bottom: 18.h,
+            child: Image.asset(
+              'assets/images/t_ride_car.png',
+              width: 295.w,
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          Positioned(
+            left: 0,
+            top: 0,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF4CC),
+                borderRadius: BorderRadius.circular(999.r),
+              ),
+              child: Text(
+                'READY TO ROLL',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 0,
+            top: 62.h,
+            width: 170.w,
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Waiting for\n',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 27.sp,
+                      fontWeight: FontWeight.w900,
+                      height: 1.04,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'new requests',
+                    style: TextStyle(
+                      color: AppConst.primaryColor,
+                      fontSize: 27.sp,
+                      fontWeight: FontWeight.w900,
+                      height: 1.04,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 0,
+            top: 150.h,
+            width: 165.w,
+            child: Text(
+              subtitle,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: 12.sp,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 0,
+            bottom: 6.h,
+            child: Row(
+              children: [
+                Container(
+                  width: 34.w,
+                  height: 5.h,
+                  decoration: BoxDecoration(
+                    color: AppConst.primaryColor,
+                    borderRadius: BorderRadius.circular(99.r),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Container(
+                  width: 28.w,
+                  height: 5.h,
+                  decoration: BoxDecoration(
+                    color: Colors.black12,
+                    borderRadius: BorderRadius.circular(99.r),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Container(
+                  width: 8.w,
+                  height: 8.w,
+                  decoration: const BoxDecoration(
+                    color: Colors.black12,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _approvalBanner() {
     return InkWell(
-      borderRadius: BorderRadius.circular(20.r),
-      onTap: () => Get.to(() => DriverProfileV2()),
+      borderRadius: BorderRadius.circular(26.r),
+      onTap: () => Get.to(() => ProfileScreen()),
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.all(14.w),
+        padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F7F7),
-          borderRadius: BorderRadius.circular(22.r),
-          border: Border.all(color: Colors.black.withOpacity(0.06)),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFF8DE), Color(0xFFFFF1B8)],
+          ),
+          borderRadius: BorderRadius.circular(26.r),
+          border: Border.all(color: AppConst.primaryColor, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(icon, size: 24.sp, color: Colors.black87),
-            SizedBox(width: 12.w),
+            Container(
+              width: 50.w,
+              height: 50.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.65),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange.shade800,
+                size: 34.sp,
+              ),
+            ),
+            SizedBox(width: 14.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    'Account pending approval',
                     style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: 17.sp,
                       fontWeight: FontWeight.w900,
+                      color: Colors.black,
                     ),
                   ),
-                  SizedBox(height: 3.h),
+                  SizedBox(height: 5.h),
                   Text(
-                    subtitle,
+                    'Complete your onboarding documents to start receiving trip requests.',
                     style: TextStyle(
-                      fontSize: 11.sp,
-                      color: Colors.black54,
-                      height: 1.25,
+                      fontSize: 12.sp,
+                      color: Colors.black87,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 8.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppConst.primaryColor,
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Complete onboarding',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                          ),
+                        ),
+                        SizedBox(width: 6.w),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 16.sp,
+                          color: Colors.black,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1363,12 +1597,7 @@ UserProfile? _driverProfile;
       ),
     );
   }
-  Widget _emptyPanel(IconData icon, String title, String subtitle) {
-    return const SizedBox.shrink();
-  }
-  Widget _approvalBanner() {
-    return const SizedBox.shrink();
-  }
+
   Widget _requestCard(DriverRideRequest ride) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1787,15 +2016,6 @@ UserProfile? _driverProfile;
 
 
   
-
-
-
-
-
-
-
-
-
 
 
 
