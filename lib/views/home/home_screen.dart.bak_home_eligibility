@@ -58,9 +58,6 @@ UserProfile? _driverProfile;
   bool _updatingOnline = false;
   bool _loadingRequests = false;
   String _accountStatus = 'pending';
-  bool _canDrive = false;
-  bool _adminOverride = false;
-  Map<String, dynamic> _eligibility = {};
   String? _dashboardProfileImage;
   bool _bidEnabled = true;
   bool _poolingEnabled = true;
@@ -1912,7 +1909,3 @@ UserProfile? _driverProfile;
 
 
 
-
-
-
-  
