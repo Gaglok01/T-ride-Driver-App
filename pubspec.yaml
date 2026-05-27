@@ -1,4 +1,4 @@
-﻿name: t_rider_services_app
+name: t_rider_services_app
 description: "A new Flutter project."
 publish_to: 'none'
 
@@ -40,4 +40,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/
     - assets/images/
+    - assets/sounds/
+

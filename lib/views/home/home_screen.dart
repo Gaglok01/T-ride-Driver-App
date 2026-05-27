@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
+import 'package:t_rider_services_app/data/repositories/driver_heat_map_repository.dart';
+import 'package:t_rider_services_app/data/models/heat_map_zone.dart';
 import 'package:t_rider_services_app/data/repositories/profile_repository.dart';
 import 'package:t_rider_services_app/data/models/user_profile_model.dart';
 import 'package:t_rider_services_app/config/api_urls.dart';
@@ -36,17 +38,20 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   final RiderStatusRepository _statusRepository = RiderStatusRepository();
   final DriverRealtimeRepository _driverRepository = DriverRealtimeRepository();
-  final DriverDashboardRepository _dashboardRepository = DriverDashboardRepository();
+  final DriverDashboardRepository _dashboardRepository =
+      DriverDashboardRepository();
+  final DriverHeatMapRepository _heatMapRepository = DriverHeatMapRepository();
 
   GoogleMapController? _mapController;
   StreamSubscription<Position>? _positionSub;
   Timer? _pollingTimer;
   Timer? _locationPushTimer;
-Timer? _driverStatusTimer;
+  Timer? _driverStatusTimer;
 
-final DriverOnboardingRepository _onboardingRepository = DriverOnboardingRepository();
-final ProfileRepository _profileRepository = ProfileRepository();
-UserProfile? _driverProfile;
+  final DriverOnboardingRepository _onboardingRepository =
+      DriverOnboardingRepository();
+  final ProfileRepository _profileRepository = ProfileRepository();
+  UserProfile? _driverProfile;
   Timer? _arrivalCountdownTimer;
 
   int _arrivalCountdownSeconds = 0;
@@ -79,6 +84,7 @@ UserProfile? _driverProfile;
   double _heading = 0;
   DriverRideRequest? _activeRide;
   List<DriverRideRequest> _requests = [];
+  List<HeatMapZone> _heatMapZones = [];
 
   static const LatLng _fallbackCenter = LatLng(41.2565, -95.9345);
   static const double _startTripMaxMiles = 0.5;
@@ -90,16 +96,15 @@ UserProfile? _driverProfile;
       _requests.isEmpty ? null : _requests.first;
 
   @override
-  
   Future<void> _refreshDriverApprovalStatus() async {
     try {
       final response = await _onboardingRepository.getStatus();
 
-      final accountStatus =
-          response['account_status']?.toString().toLowerCase();
+      final accountStatus = response['account_status']
+          ?.toString()
+          .toLowerCase();
 
       if (accountStatus != 'approved') {
-
         if (mounted) {
           setState(() {
             _isOnline = false;
@@ -115,7 +120,6 @@ UserProfile? _driverProfile;
       debugPrint('Driver status refresh error: $e');
     }
   }
-
 
   Future<void> _loadDriverProfile() async {
     try {
@@ -159,15 +163,46 @@ UserProfile? _driverProfile;
   Future<void> _bootstrap() async {
     await _startLocation();
     await refreshDashboard();
+    await _loadHeatMapZones();
     await _loadActiveRide();
     _configurePolling();
+  }
+
+  Future<void> _loadHeatMapZones() async {
+    try {
+      final zones = await _heatMapRepository.fetchHeatMapZones();
+      debugPrint('HEAT MAP ZONES LOADED => ${zones.length}');
+
+      if (!mounted) return;
+
+      setState(() {
+        _heatMapZones = zones;
+      });
+    } catch (e) {
+      debugPrint('HEAT MAP LOAD ERROR => $e');
+    }
   }
 
   Future<void> refreshDashboard() async {
     setState(() => _loadingDashboard = true);
     try {
       final dash = await _statusRepository.fetchDriverDashboard();
-      debugPrint('REAL DASHBOARD => rating=' + dash.rating.toString() + ', trips=' + dash.totalTrips.toString() + ', wallet=' + dash.walletBalance.toString() + ', acceptance=' + dash.acceptanceRate.toString() + ', tier=' + dash.tier.toString() + ', verified=' + dash.verified.toString() + ', pending=' + dash.pendingDocuments.toString());
+      debugPrint(
+        'REAL DASHBOARD => rating=' +
+            dash.rating.toString() +
+            ', trips=' +
+            dash.totalTrips.toString() +
+            ', wallet=' +
+            dash.walletBalance.toString() +
+            ', acceptance=' +
+            dash.acceptanceRate.toString() +
+            ', tier=' +
+            dash.tier.toString() +
+            ', verified=' +
+            dash.verified.toString() +
+            ', pending=' +
+            dash.pendingDocuments.toString(),
+      );
       if (!mounted) return;
       setState(() {
         _accountStatus = dash.accountStatus ?? 'pending';
@@ -513,7 +548,9 @@ UserProfile? _driverProfile;
     setState(() => _requests.removeWhere((e) => e.id == ride.id));
     try {
       await _driverRepository.declineRide(ride.id);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('HEAT MAP LOAD ERROR => ');
+    }
   }
 
   Future<void> _openNavigationForActiveRide() async {
@@ -796,6 +833,28 @@ UserProfile? _driverProfile;
     );
   }
 
+  Set<Circle> _heatMapCircles() {
+    return _heatMapZones.map((zone) {
+      final isHigh = zone.demandLevel.toLowerCase() == 'high';
+      final isMedium = zone.demandLevel.toLowerCase() == 'medium';
+
+      final color = isHigh
+          ? Colors.red
+          : isMedium
+          ? Colors.orange
+          : AppConst.primaryColor;
+
+      return Circle(
+        circleId: CircleId('heat_zone_${zone.id}'),
+        center: LatLng(zone.lat, zone.lng),
+        radius: zone.radiusMeters.toDouble(),
+        fillColor: color.withOpacity(isHigh ? 0.40 : 0.28),
+        strokeColor: color.withOpacity(0.85),
+        strokeWidth: 4,
+      );
+    }).toSet();
+  }
+
   Set<Marker> _markers() {
     final markers = <Marker>{};
     final p = _driverLatLng;
@@ -909,8 +968,9 @@ UserProfile? _driverProfile;
       body: Stack(
         children: [
           GoogleMap(
-            initialCameraPosition: CameraPosition(target: mapCenter, zoom: 14),
+            initialCameraPosition: CameraPosition(target: mapCenter, zoom: 11),
             markers: _markers(),
+	    circles: _heatMapCircles(),
             polylines: {},
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
@@ -967,42 +1027,39 @@ UserProfile? _driverProfile;
       onTap: () => Get.to(() => DriverProfileV2()),
       child: Container(
         width: double.infinity,
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(14.w),
-      decoration: BoxDecoration(
-        color: _adminOverride
-            ? Colors.blue.withOpacity(0.18)
-            : AppConst.primaryColor.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(
+        margin: EdgeInsets.only(bottom: 12.h),
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
           color: _adminOverride
-              ? Colors.blue.withOpacity(0.25)
-              : Colors.black.withOpacity(0.10),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _adminOverride
-                ? Icons.admin_panel_settings_rounded
-                : Icons.warning_amber_rounded,
-            color: _adminOverride ? Colors.blue : Colors.orange,
+              ? Colors.blue.withOpacity(0.18)
+              : AppConst.primaryColor.withOpacity(0.92),
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: _adminOverride
+                ? Colors.blue.withOpacity(0.25)
+                : Colors.black.withOpacity(0.10),
           ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Text(
+        ),
+        child: Row(
+          children: [
+            Icon(
               _adminOverride
-                  ? 'Admin override active for testing'
-                  : issues.join(' • '),
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w800,
+                  ? Icons.admin_panel_settings_rounded
+                  : Icons.warning_amber_rounded,
+              color: _adminOverride ? Colors.blue : Colors.orange,
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                _adminOverride
+                    ? 'Admin override active for testing'
+                    : issues.join('   '),
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -1051,7 +1108,8 @@ UserProfile? _driverProfile;
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello, ' + ((_driverProfile?.name ?? 'Driver').split(' ').first),
+                  'Hello, ' +
+                      ((_driverProfile?.name ?? 'Driver').split(' ').first),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -1062,7 +1120,10 @@ UserProfile? _driverProfile;
                 ),
                 SizedBox(height: 5.h),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 5.h,
+                  ),
                   decoration: BoxDecoration(
                     color: AppConst.primaryColor,
                     borderRadius: BorderRadius.circular(999.r),
@@ -1116,6 +1177,7 @@ UserProfile? _driverProfile;
       ),
     );
   }
+
   Widget _earningsBar() {
     return Container(
       padding: EdgeInsets.all(12.w),
@@ -1377,12 +1439,15 @@ UserProfile? _driverProfile;
       ),
     );
   }
+
   Widget _emptyPanel(IconData icon, String title, String subtitle) {
     return const SizedBox.shrink();
   }
+
   Widget _approvalBanner() {
     return const SizedBox.shrink();
   }
+
   Widget _requestCard(DriverRideRequest ride) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1787,37 +1852,6 @@ UserProfile? _driverProfile;
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
