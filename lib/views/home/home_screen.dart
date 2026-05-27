@@ -169,6 +169,9 @@ UserProfile? _driverProfile;
       if (!mounted) return;
       setState(() {
         _accountStatus = dash.accountStatus ?? 'pending';
+        _canDrive = dash.canDrive;
+        _eligibility = dash.eligibility;
+        _adminOverride = dash.adminOverride;
         _dashboardProfileImage = dash.profileImage;
         _isOnline = dash.isOnline;
         _rating = dash.rating ?? 0;
@@ -940,6 +943,63 @@ UserProfile? _driverProfile;
     );
   }
 
+  Widget _complianceWarningCard() {
+    final docsApproved = _eligibility['documents_approved'] == true;
+    final bgApproved = _eligibility['background_check_approved'] == true;
+
+    final issues = <String>[];
+
+    if (!docsApproved) {
+      issues.add('Required documents pending');
+    }
+
+    if (!bgApproved) {
+      issues.add('Background check pending');
+    }
+
+    if (_canDrive && issues.isEmpty && !_adminOverride) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: _adminOverride
+            ? Colors.blue.withOpacity(0.10)
+            : Colors.orange.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: _adminOverride
+              ? Colors.blue.withOpacity(0.25)
+              : Colors.orange.withOpacity(0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _adminOverride
+                ? Icons.admin_panel_settings_rounded
+                : Icons.warning_amber_rounded,
+            color: _adminOverride ? Colors.blue : Colors.orange,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              _adminOverride
+                  ? 'Admin override active for testing'
+                  : issues.join(' • '),
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _topBar() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
@@ -1916,3 +1976,6 @@ UserProfile? _driverProfile;
 
 
   
+
+
+
