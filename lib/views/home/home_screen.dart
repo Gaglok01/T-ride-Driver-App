@@ -20,6 +20,7 @@ import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart'
 import 'package:t_rider_services_app/data/repositories/driver_realtime_repository.dart';
 import 'package:t_rider_services_app/data/repositories/rider_status_repository.dart';
 import 'package:t_rider_services_app/views/home/setting/setting_screen.dart';
+import 'package:t_rider_services_app/views/home/earnings_screen.dart';
 import 'package:t_rider_services_app/views/home/setting/profile_screen.dart';
 import 'package:t_rider_services_app/views/home/setting/driver_profile_v2.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
@@ -1061,10 +1062,7 @@ UserProfile? _driverProfile;
                 ),
                 SizedBox(height: 5.h),
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 5.h,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
                   decoration: BoxDecoration(
                     color: AppConst.primaryColor,
                     borderRadius: BorderRadius.circular(999.r),
@@ -1081,19 +1079,36 @@ UserProfile? _driverProfile;
               ],
             ),
           ),
-          Container(
-            width: 50.w,
-            height: 50.w,
-            decoration: BoxDecoration(
-              color: const Color(0xFF181818),
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: IconButton(
-              onPressed: () {},
-              icon: Icon(
-                Icons.notifications_active_rounded,
-                color: AppConst.primaryColor,
-                size: 28.sp,
+          InkWell(
+            borderRadius: BorderRadius.circular(20.r),
+            onTap: () => Get.to(() => const EarningsScreen()),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFF181818),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Today ${_money(_todayEarnings)}',
+                    style: TextStyle(
+                      color: AppConst.primaryColor,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    'Trips $_totalTrips',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 9.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1101,7 +1116,6 @@ UserProfile? _driverProfile;
       ),
     );
   }
-
   Widget _earningsBar() {
     return Container(
       padding: EdgeInsets.all(12.w),
@@ -1787,6 +1801,10 @@ UserProfile? _driverProfile;
 
 
   
+
+
+
+
 
 
 
