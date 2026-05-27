@@ -18,7 +18,6 @@ class DriverDashboardData {
     this.approvedDocuments = 0,
     this.documentStatuses = const {},
     this.eligibility = const {},
-    this.adminOverride = false,
     this.verified = false,
     this.canDrive = false,
     this.tier,
@@ -56,7 +55,6 @@ class DriverDashboardData {
   final int approvedDocuments;
   final Map<String, dynamic> documentStatuses;
   final Map<String, dynamic> eligibility;
-  final bool adminOverride;
   final bool verified;
   final bool canDrive;
   final String? tier;
@@ -127,7 +125,6 @@ class DriverDashboardData {
       approvedDocuments: _parseInt(json['approved_documents']),
       documentStatuses: Map<String, dynamic>.from(json['document_statuses'] ?? {}),
       eligibility: Map<String, dynamic>.from(json['eligibility'] ?? {}),
-      adminOverride: _parseBool((json['eligibility'] ?? {})['admin_override']),
       verified: _parseBool(json['verified']),
       canDrive: _parseBool(json['can_drive']),
       tier: json['tier']?.toString(),
@@ -147,7 +144,6 @@ class DriverDashboardData {
     );
   }
 }
-
 
 
 
