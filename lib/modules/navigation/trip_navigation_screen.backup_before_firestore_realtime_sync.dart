@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
@@ -107,82 +106,9 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     return Geolocator.distanceBetween(a, b, c, d) / 1609.34;
   }
 
-  Future<DocumentReference<Map<String, dynamic>>?> _activeRideDocRef() async {
-    final snap = await FirebaseFirestore.instance
-        .collection('active_rides')
-        .where('ride_id', isEqualTo: _ride.id)
-        .limit(1)
-        .get();
-
-    if (snap.docs.isEmpty) return null;
-    return snap.docs.first.reference;
-  }
-
-  Future<void> _syncRideFirestoreStatus(String status) async {
-    try {
-      final ref = await _activeRideDocRef();
-      if (ref == null) {
-        debugPrint('FIRESTORE SYNC FAILED: no doc for ride_id=');
-        return;
-      }
-      debugPrint('FIRESTORE SYNC OK: status= doc=');
-
-      final payload = <String, dynamic>{
-        'status': status,
-        'ride_status': status,
-        'updated_at': FieldValue.serverTimestamp(),
-      };
-
-      if (status == 'arrived') {
-        payload['driver_arrived'] = true;
-      }
-
-      if (status == 'started' || status == 'in_progress') {
-        payload['trip_started'] = true;
-      }
-
-      if (status == 'completed') {
-        payload['mark_as_completed'] = true;
-        payload['completion_status'] = 'completed';
-        payload['completed_at'] = FieldValue.serverTimestamp();
-      }
-
-      await ref.set(payload, SetOptions(merge: true));
-      debugPrint('FIRESTORE SYNC WROTE: status=');
-    } catch (e) {
-      debugPrint('Firestore ride status sync failed: $e');
-    }
-  }
-
-  Future<void> _syncDriverLocationToFirestore(Position pos) async {
-    try {
-      final ref = await _activeRideDocRef();
-      if (ref == null) {
-        debugPrint('FIRESTORE SYNC FAILED: no doc for ride_id=');
-        return;
-      }
-      debugPrint('FIRESTORE SYNC OK: status= doc=');
-
-      await ref.set({
-        'driver_location': {
-          'lat': pos.latitude,
-          'lng': pos.longitude,
-          'latitude': pos.latitude,
-          'longitude': pos.longitude,
-          'heading': pos.heading,
-        },
-        'driver_location_updated_at': FieldValue.serverTimestamp(),
-        'updated_at': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      debugPrint('Firestore driver location sync failed: $e');
-    }
-  }
-
   Future<void> _updateEta() async {
     try {
       final pos = await Geolocator.getCurrentPosition();
-      await _syncDriverLocationToFirestore(pos);
       final miles = _distanceMiles(
         pos.latitude,
         pos.longitude,
@@ -236,7 +162,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     final updated = await _repo.arrived(_ride.id);
     if (updated != null && mounted) {
       setState(() => _ride = updated);
-      await _syncRideFirestoreStatus('arrived');
       _startWaitTimerIfNeeded();
     }
   }
@@ -245,7 +170,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     final updated = await _repo.startRide(_ride.id);
     if (updated != null && mounted) {
       setState(() => _ride = updated);
-      await _syncRideFirestoreStatus('started');
       _startWaitTimerIfNeeded();
     }
   }
