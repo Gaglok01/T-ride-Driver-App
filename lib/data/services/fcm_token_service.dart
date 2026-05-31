@@ -22,10 +22,19 @@ class FcmTokenService {
   Future<void> registerDeviceToken() async {
     print('FCM DEBUG: registerDeviceToken called');
     try {
+      print('FCM STEP 1');
+
       await _messaging.requestPermission(alert: true, badge: true, sound: true);
 
+      print('FCM STEP 2');
+
       final fcmToken = await _messaging.getToken();
+
+      print("FCM TOKEN: $fcmToken");
+
       final authToken = await _storage.getAuthToken();
+
+      print('FCM STEP 3');
 
       if (fcmToken == null || fcmToken.isEmpty) {
         print('FCM DEBUG: token unavailable');
@@ -48,14 +57,18 @@ class FcmTokenService {
         },
       );
 
-      developer.log(
-        'POST ${ApiUrls.deviceToken} -> ${response.statusCode}: ${response.body}',
-        name: 'FcmTokenService',
-      );
+      print("FCM POST RESULT => ${response.statusCode} : ${response.body}");
+
+
+
     } catch (e) {
-      developer.log('Failed to register FCM token: $e', name: 'FcmTokenService');
+      print("FCM DEBUG ERROR: $e");
     }
   }
 }
+
+
+
+
 
 
