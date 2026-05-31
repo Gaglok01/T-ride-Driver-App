@@ -20,6 +20,7 @@ class FcmTokenService {
   final ApiClient _apiClient;
 
   Future<void> registerDeviceToken() async {
+    print('FCM DEBUG: registerDeviceToken called');
     try {
       await _messaging.requestPermission(alert: true, badge: true, sound: true);
 
@@ -56,4 +57,5 @@ class FcmTokenService {
     }
   }
 }
+
 
