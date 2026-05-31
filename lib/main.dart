@@ -9,12 +9,14 @@ import 'package:t_rider_services_app/controllers/app_language_controller.dart';
 import 'package:t_rider_services_app/controllers/app_theme_controller.dart';
 import 'package:t_rider_services_app/controllers/firestore_active_orders_listener.dart';
 import 'package:t_rider_services_app/firebase_options.dart';
+import 'package:t_rider_services_app/data/services/fcm_token_service.dart';
 import 'package:t_rider_services_app/translations/app_translations.dart';
 import 'package:t_rider_services_app/views/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FcmTokenService().registerDeviceToken();
   // Keep status bar icons/text fixed to white across the app.
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -80,3 +82,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+

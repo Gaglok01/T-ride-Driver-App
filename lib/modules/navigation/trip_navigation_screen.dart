@@ -122,10 +122,10 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     try {
       final ref = await _activeRideDocRef();
       if (ref == null) {
-        debugPrint('FIRESTORE SYNC FAILED: no doc for ride_id=');
+        debugPrint("FIRESTORE SYNC FAILED: no doc for ride_id=${_ride.id}");
         return;
       }
-      debugPrint('FIRESTORE SYNC OK: status= doc=');
+      debugPrint("FIRESTORE SYNC OK: doc=${ref.id}");
 
       final payload = <String, dynamic>{
         'status': status,
@@ -148,7 +148,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
       }
 
       await ref.set(payload, SetOptions(merge: true));
-      debugPrint('FIRESTORE SYNC WROTE: status=');
+      debugPrint("FIRESTORE SYNC WROTE: status=$status");
     } catch (e) {
       debugPrint('Firestore ride status sync failed: $e');
     }
@@ -158,10 +158,10 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     try {
       final ref = await _activeRideDocRef();
       if (ref == null) {
-        debugPrint('FIRESTORE SYNC FAILED: no doc for ride_id=');
+        debugPrint("FIRESTORE SYNC FAILED: no doc for ride_id=${_ride.id}");
         return;
       }
-      debugPrint('FIRESTORE SYNC OK: status= doc=');
+      debugPrint("FIRESTORE SYNC OK: doc=${ref.id}");
 
       await ref.set({
         'driver_location': {

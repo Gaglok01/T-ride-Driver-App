@@ -32,6 +32,7 @@ class ApiUrls {
   static const String driverStatus = 'api/app/driver/status';
   static const String driverProfileSetup = 'api/app/driver/profile-setup';
   static const String driverUploadDocuments = 'api/app/driver/upload-docs';
+  static const String deviceToken = 'api/app/device-token';
 
   // Feedback
   static const String submitFeedback = 'api/app/submit-feedback';
@@ -121,4 +122,6 @@ class ApiUrls {
   // static const String profile = 'api/profile';
   // static const String rides = 'api/rides';
 }
+
+
 

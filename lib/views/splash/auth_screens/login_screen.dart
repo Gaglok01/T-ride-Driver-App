@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:t_rider_services_app/controllers/app_language_controller.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
 import 'package:t_rider_services_app/data/local/secure_storage_service.dart';
+import 'package:t_rider_services_app/data/services/fcm_token_service.dart';
 import 'package:t_rider_services_app/data/repositories/auth_repository.dart';
 import 'package:t_rider_services_app/views/home/navbar.dart';
 import 'package:t_rider_services_app/views/splash/auth_screens/language_selection_screen.dart';
@@ -75,10 +76,13 @@ class _LoginScreenState extends State<LoginScreen> {
         final token = response['token'] as String?;
         if (token != null && token.isNotEmpty) {
           await _storageService.saveAuthToken(token);
+          await FcmTokenService().registerDeviceToken();
         }
         if (user is Map) {
           final idRaw = user['id'];
           int? userId;
+          if (idRaw is int) userId = idRaw;
+          if (idRaw is num) userId = idRaw.toInt();
           if (idRaw is int) userId = idRaw;
           if (idRaw is num) userId = idRaw.toInt();
           if (idRaw is String) userId = int.tryParse(idRaw.trim());
@@ -491,3 +495,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+
+
+
