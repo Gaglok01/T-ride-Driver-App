@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -89,12 +89,18 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
   String get _title {
     final status = _ride.status.toLowerCase();
-    if (status == 'arrived') return 'Waiting for rider';
-    if (status == 'started' || status == 'in_progress')
-      return 'Trip in progress';
-    return 'Heading to rider';
-  }
+    final riderName = (_ride.riderName ?? '').trim();
 
+    if (status == 'arrived') {
+      return riderName.isNotEmpty ? 'Waiting for ' + riderName : 'Waiting for rider';
+    }
+
+    if (status == 'started' || status == 'in_progress') {
+      return 'Trip in progress';
+    }
+
+    return riderName.isNotEmpty ? 'Heading to ' + riderName : 'Heading to rider';
+  }
   String get _address {
     final status = _ride.status.toLowerCase();
     if (status == 'started' || status == 'in_progress') {
@@ -323,7 +329,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
             child: OutlinedButton(
               onPressed: _cancelRide,
               style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 15.h),
+                padding: EdgeInsets.symmetric(vertical: 10.h),
                 side: const BorderSide(color: Colors.red, width: 1.8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18.r),
@@ -342,7 +348,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 15.h),
+                padding: EdgeInsets.symmetric(vertical: 10.h),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18.r),
                 ),
@@ -410,6 +416,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
         children: [
           Positioned.fill(
             child: GoogleMap(
+              padding: EdgeInsets.only(bottom: 310.h, top: 20.h),
               initialCameraPosition: CameraPosition(target: _target, zoom: 16),
               navigationDestination: _target,
               navigationEnabled: true,
@@ -420,7 +427,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                 try {
                   await controller.rawController.followMyLocation(
                     nav.CameraPerspective.tilted,
-                    zoomLevel: 17,
+                    zoomLevel: 15,
                   );
                 } catch (_) {}
               },
@@ -432,7 +439,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
           Positioned(
             right: 16.w,
-            bottom: MediaQuery.of(context).padding.bottom + 230.h,
+            bottom: MediaQuery.of(context).padding.bottom + 330.h,
             child: FloatingActionButton.small(
               heroTag: 'overview',
               onPressed: () async {
@@ -446,14 +453,14 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
           Positioned(
             right: 16.w,
-            bottom: MediaQuery.of(context).padding.bottom + 170.h,
+            bottom: MediaQuery.of(context).padding.bottom + 270.h,
             child: FloatingActionButton.small(
               heroTag: 'follow',
               onPressed: () async {
                 try {
                   await _mapController?.rawController?.followMyLocation(
                     nav.CameraPerspective.tilted,
-                    zoomLevel: 17,
+                    zoomLevel: 15,
                   );
                 } catch (_) {}
               },
@@ -465,11 +472,11 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
-                padding: EdgeInsets.all(14.w),
+                margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 8.h),
+                padding: EdgeInsets.all(10.w),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(28.r),
+                  borderRadius: BorderRadius.circular(20.r),
                   boxShadow: const [
                     BoxShadow(
                       blurRadius: 30,
@@ -484,8 +491,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                     Row(
                       children: [
                         Container(
-                          width: 50.w,
-                          height: 50.w,
+                          width: 42.w,
+                          height: 42.w,
                           decoration: BoxDecoration(
                             color: Colors.black,
                             borderRadius: BorderRadius.circular(18.r),
@@ -507,7 +514,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 18.sp,
+                                  fontSize: 15.sp,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
@@ -529,13 +536,13 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                       ],
                     ),
 
-                    SizedBox(height: 14.h),
+                    SizedBox(height: 8.h),
 
                     Row(
                       children: [
                         Expanded(
                           child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                            padding: EdgeInsets.symmetric(vertical: 7.h),
                             decoration: BoxDecoration(
                               color: Colors.black,
                               borderRadius: BorderRadius.circular(18.r),
@@ -545,7 +552,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                                 Text(
                                   _eta,
                                   style: TextStyle(
-                                    fontSize: 18.sp,
+                                    fontSize: 15.sp,
                                     color: Colors.white,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -567,7 +574,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
                         Expanded(
                           child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                            padding: EdgeInsets.symmetric(vertical: 7.h),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(18.r),
@@ -577,7 +584,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                                 Text(
                                   _distance,
                                   style: TextStyle(
-                                    fontSize: 18.sp,
+                                    fontSize: 15.sp,
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
@@ -597,10 +604,10 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                     ),
 
                     if (status == 'arrived') ...[
-                      SizedBox(height: 10.h),
+                      SizedBox(height: 6.h),
                       Container(
                         width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 10.h),
+                        padding: EdgeInsets.symmetric(vertical: 6.h),
                         decoration: BoxDecoration(
                           color: Colors.orange.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(16.r),
@@ -625,7 +632,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                       ),
                     ],
 
-                    SizedBox(height: 14.h),
+                    SizedBox(height: 8.h),
 
                     _actionButton(status),
                   ],
@@ -638,3 +645,10 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 }
+
+
+
+
+
+
+
