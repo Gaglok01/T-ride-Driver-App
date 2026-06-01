@@ -20,8 +20,8 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 const AndroidNotificationChannel rideRequestsChannel =
     AndroidNotificationChannel(
-  'ride_requests',
-  'Ride Requests',
+  id: 'ride_requests',
+  name: 'Ride Requests',
   description: 'Notifications for new ride requests',
   importance: Importance.max,
   playSound: true,
@@ -48,10 +48,10 @@ Future<void> main() async {
     final notification = message.notification;
 
     flutterLocalNotificationsPlugin.show(
-      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title: notification?.title ?? 'New ride request',
-      body: notification?.body ?? 'You have a new ride request',
-      notificationDetails: const NotificationDetails(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notification?.title ?? 'New ride request',
+      notification?.body ?? 'You have a new ride request',
+      const NotificationDetails(
         android: AndroidNotificationDetails(
           'ride_requests',
           'Ride Requests',
@@ -78,6 +78,7 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -85,7 +86,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final appLanguageController = Get.put(AppLanguageController());
     final appThemeController = Get.put(AppThemeController());
-
     if (!Get.isRegistered<FirestoreActiveOrdersListener>()) {
       Get.put(FirestoreActiveOrdersListener(), permanent: true);
     }
@@ -97,39 +97,43 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return Obx(
           () => GetMaterialApp(
-            key: ValueKey(appThemeController.themeMode.value),
-            title: 'T Ride',
-            debugShowCheckedModeBanner: false,
-            translations: AppTranslations(),
-            locale: appLanguageController.locale.value,
-            fallbackLocale: const Locale('en'),
-            supportedLocales: const [
-              Locale('en'),
-              Locale('ar'),
-              Locale('es'),
-              Locale('fr'),
-              Locale('zh'),
-            ],
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-            ],
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: appThemeController.themeMode.value,
-            builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-              value: const SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.light,
-                statusBarBrightness: Brightness.dark,
+              key: ValueKey(appThemeController.themeMode.value),
+              title: 'T Ride',
+              debugShowCheckedModeBanner: false,
+              translations: AppTranslations(),
+              locale: appLanguageController.locale.value,
+              fallbackLocale: const Locale('en'),
+              supportedLocales: const [
+                Locale('en'),
+                Locale('ar'),
+                Locale('es'),
+                Locale('fr'),
+                Locale('zh'),
+              ],
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+              ],
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: appThemeController.themeMode.value,
+              builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+                value: const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.light,
+                  statusBarBrightness: Brightness.dark,
+                ),
+                child: child ?? const SizedBox.shrink(),
               ),
-              child: child ?? const SizedBox.shrink(),
+              home: const SplashScreen(),
             ),
-            home: const SplashScreen(),
-          ),
         );
       },
     );
   }
 }
+
+
+
+
