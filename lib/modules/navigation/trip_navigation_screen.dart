@@ -398,7 +398,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
             child: Text(
               text,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+              style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w800),
             ),
           ),
         ],
@@ -427,7 +427,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                 try {
                   await controller.rawController.followMyLocation(
                     nav.CameraPerspective.tilted,
-                    zoomLevel: 15,
+                    zoomLevel: 17,
                   );
                 } catch (_) {}
               },
@@ -439,7 +439,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
           Positioned(
             right: 16.w,
-            bottom: MediaQuery.of(context).padding.bottom + 330.h,
+            top: MediaQuery.of(context).padding.top + 130.h,
             child: FloatingActionButton.small(
               heroTag: 'overview',
               onPressed: () async {
@@ -453,14 +453,14 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
           Positioned(
             right: 16.w,
-            bottom: MediaQuery.of(context).padding.bottom + 270.h,
+            top: MediaQuery.of(context).padding.top + 190.h,
             child: FloatingActionButton.small(
               heroTag: 'follow',
               onPressed: () async {
                 try {
                   await _mapController?.rawController?.followMyLocation(
                     nav.CameraPerspective.tilted,
-                    zoomLevel: 15,
+                    zoomLevel: 17,
                   );
                 } catch (_) {}
               },
@@ -472,8 +472,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Container(
-                margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 8.h),
-                padding: EdgeInsets.all(10.w),
+                margin: EdgeInsets.fromLTRB(10.w, 0, 10.w, 4.h),
+                padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20.r),
@@ -526,7 +526,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 12.sp,
+                                  fontSize: 10.sp,
                                   color: Colors.black54,
                                 ),
                               ),
@@ -536,68 +536,34 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                       ],
                     ),
 
-                    SizedBox(height: 8.h),
+                    SizedBox(height: 5.h),
 
                     Row(
                       children: [
                         Expanded(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 7.h),
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(18.r),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  _eta,
-                                  style: TextStyle(
-                                    fontSize: 15.sp,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                SizedBox(height: 2.h),
-                                Text(
-                                  'ETA',
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ],
+                          child: Text(
+                            ' • ',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.black87,
                             ),
                           ),
                         ),
-
-                        SizedBox(width: 10.w),
-
-                        Expanded(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(vertical: 7.h),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(18.r),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  _distance,
-                                  style: TextStyle(
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                SizedBox(height: 2.h),
-                                Text(
-                                  'Distance',
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(18.r),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.call, color: Colors.white, size: 18.sp),
+                              SizedBox(width: 12.w),
+                              Icon(Icons.message_rounded, color: Colors.white, size: 18.sp),
+                            ],
                           ),
                         ),
                       ],
@@ -632,7 +598,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                       ),
                     ],
 
-                    SizedBox(height: 8.h),
+                    SizedBox(height: 5.h),
 
                     _actionButton(status),
                   ],
@@ -645,6 +611,12 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 }
+
+
+
+
+
+
 
 
 
