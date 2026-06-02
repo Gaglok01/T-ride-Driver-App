@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -243,7 +243,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     if (updated != null && mounted) {
       setState(() => _ride = updated);
       await _syncRideFirestoreStatus('arrived');
-      }
+      _startWaitTimerIfNeeded();
+    }
   }
 
   Future<void> _startTrip() async {
@@ -251,7 +252,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     if (updated != null && mounted) {
       setState(() => _ride = updated);
       await _syncRideFirestoreStatus('started');
-      }
+      _startWaitTimerIfNeeded();
+    }
   }
 
   Future<void> _completeTrip() async {
@@ -380,16 +382,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 
-
-  String get _tripBannerTitle {
-    final status = _ride.status.toLowerCase();
-
-    if (status == 'accepted') return 'Heading to Pickup';
-    if (status == 'arrived') return 'Arrived at Pickup';
-    if (status == 'started') return 'Trip in Progress';
-
-    return 'Navigation Active';
-  }
   Widget _navChip(IconData icon, String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
@@ -417,13 +409,14 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final status = _ride.status.toLowerCase();
+    _startWaitTimerIfNeeded();
 
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
             child: GoogleMap(
-              padding: EdgeInsets.zero,
+              padding: EdgeInsets.only(bottom: 310.h, top: 20.h),
               initialCameraPosition: CameraPosition(target: _target, zoom: 16),
               navigationDestination: _target,
               navigationEnabled: true,
@@ -431,7 +424,13 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
               myLocationButtonEnabled: true,
               onMapCreated: (controller) async {
                 _mapController = controller;
-},
+                try {
+                  await controller.rawController.followMyLocation(
+                    nav.CameraPerspective.tilted,
+                    zoomLevel: 17,
+                  );
+                } catch (_) {}
+              },
               markers: {
                 Marker(markerId: const MarkerId('target'), position: _target),
               },
@@ -461,7 +460,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                 try {
                   await _mapController?.rawController?.followMyLocation(
                     nav.CameraPerspective.tilted,
-                    zoomLevel: 15.0,
+                    zoomLevel: 17,
                   );
                 } catch (_) {}
               },
@@ -471,68 +470,120 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
 
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
+            top: MediaQuery.of(context).padding.top + 10.h,
+            left: 12.w,
+            right: 12.w,
             child: Container(
-              padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, MediaQuery.of(context).padding.bottom + 14.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(26.r)),
-                boxShadow: [
+                color: Colors.white.withOpacity(0.96),
+                borderRadius: BorderRadius.circular(18.r),
+                boxShadow: const [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
+                    blurRadius: 18,
+                    offset: Offset(0, 6),
+                    color: Colors.black26,
                   ),
                 ],
               ),
               child: Row(
                 children: [
-                  Expanded(child: _navChip(Icons.schedule_rounded, _eta)),
+                  const Icon(Icons.navigation_rounded, color: Colors.black),
                   SizedBox(width: 8.w),
-                  Expanded(child: _navChip(Icons.route_rounded, _distance)),
-                  SizedBox(width: 8.w),
-                  SizedBox(
-                    width: 125.w,
-                    height: 44.h,
-                    child: _actionButton(status),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert_rounded),
-                    onSelected: (value) {
-                      if (value == 'details') {
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (_) => Padding(
-                            padding: EdgeInsets.all(18.w),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Ride details', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
-                                SizedBox(height: 12.h),
-                                Text('Pickup', style: TextStyle(fontWeight: FontWeight.w900)),
-                                Text(_ride.pickupAddress),
-                                SizedBox(height: 10.h),
-                                Text('Drop-off', style: TextStyle(fontWeight: FontWeight.w900)),
-                                Text(_ride.dropoffAddress),
-                              ],
-                            ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w900,
                           ),
-                        );
-                      }
-                      if (value == 'last_trip') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Last trip then offline selected.')),
-                        );
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'details', child: Text('Ride details')),
-                      PopupMenuItem(value: 'last_trip', child: Text('Last trip then offline')),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          _address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 12.w,
+            right: 12.w,
+            bottom: MediaQuery.of(context).padding.bottom + 10.h,
+            child: Container(
+              padding: EdgeInsets.all(9.w),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.97),
+                borderRadius: BorderRadius.circular(18.r),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _eta + ' • ' + _distance,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(18.r),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.call, color: Colors.white, size: 18.sp),
+                            SizedBox(width: 12.w),
+                            Icon(Icons.message_rounded, color: Colors.white, size: 18.sp),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
+                  if (status == 'arrived') ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      _waitText,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: 6.h),
+                  _actionButton(status),
                 ],
               ),
             ),
@@ -543,20 +594,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -314,7 +314,7 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 500));
+        await _controller?.rawController?.setPadding(const EdgeInsets.fromLTRB(0, 500, 0, 0));
 
         
       } catch (e) {
@@ -325,7 +325,7 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 500));
+        await _controller?.rawController?.setPadding(const EdgeInsets.fromLTRB(0, 500, 0, 0));
 } catch (e) {
         debugPrint('T-RIDE NAV CAMERA FINAL TEST ERROR: ');
       }
@@ -399,7 +399,7 @@ class _GoogleMapState extends State<GoogleMap> {
           await controller.setNavigationHeaderEnabled(true);
           await controller.setNavigationFooterEnabled(false);
           await controller.setRecenterButtonEnabled(true);
-          await controller.setPadding(const EdgeInsets.only(bottom: 500));
+          await controller.setPadding(const EdgeInsets.fromLTRB(0, 500, 0, 0));
           await controller.setSpeedometerEnabled(true);
           await controller.setReportIncidentButtonEnabled(false);
           await controller.setTrafficIncidentCardsEnabled(false);

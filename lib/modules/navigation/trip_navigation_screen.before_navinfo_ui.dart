@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -243,7 +243,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     if (updated != null && mounted) {
       setState(() => _ride = updated);
       await _syncRideFirestoreStatus('arrived');
-      }
+      _startWaitTimerIfNeeded();
+    }
   }
 
   Future<void> _startTrip() async {
@@ -251,7 +252,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     if (updated != null && mounted) {
       setState(() => _ride = updated);
       await _syncRideFirestoreStatus('started');
-      }
+      _startWaitTimerIfNeeded();
+    }
   }
 
   Future<void> _completeTrip() async {
@@ -380,16 +382,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 
-
-  String get _tripBannerTitle {
-    final status = _ride.status.toLowerCase();
-
-    if (status == 'accepted') return 'Heading to Pickup';
-    if (status == 'arrived') return 'Arrived at Pickup';
-    if (status == 'started') return 'Trip in Progress';
-
-    return 'Navigation Active';
-  }
   Widget _navChip(IconData icon, String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
@@ -417,13 +409,14 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final status = _ride.status.toLowerCase();
+    _startWaitTimerIfNeeded();
 
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
             child: GoogleMap(
-              padding: EdgeInsets.zero,
+              padding: EdgeInsets.only(bottom: 310.h, top: 20.h),
               initialCameraPosition: CameraPosition(target: _target, zoom: 16),
               navigationDestination: _target,
               navigationEnabled: true,
@@ -431,7 +424,13 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
               myLocationButtonEnabled: true,
               onMapCreated: (controller) async {
                 _mapController = controller;
-},
+                try {
+                  await controller.rawController.followMyLocation(
+                    nav.CameraPerspective.tilted,
+                    zoomLevel: 17,
+                  );
+                } catch (_) {}
+              },
               markers: {
                 Marker(markerId: const MarkerId('target'), position: _target),
               },
@@ -461,7 +460,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                 try {
                   await _mapController?.rawController?.followMyLocation(
                     nav.CameraPerspective.tilted,
-                    zoomLevel: 15.0,
+                    zoomLevel: 17,
                   );
                 } catch (_) {}
               },
@@ -469,95 +468,183 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
             ),
           ),
 
+          SafeArea(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                margin: EdgeInsets.fromLTRB(10.w, 0, 10.w, 4.h),
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20.r),
+                  boxShadow: const [
+                    BoxShadow(
+                      blurRadius: 30,
+                      offset: Offset(0, 12),
+                      color: Colors.black26,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 42.w,
+                          height: 42.w,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(18.r),
+                          ),
+                          child: const Icon(
+                            Icons.navigation_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
 
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, MediaQuery.of(context).padding.bottom + 14.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(26.r)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(child: _navChip(Icons.schedule_rounded, _eta)),
-                  SizedBox(width: 8.w),
-                  Expanded(child: _navChip(Icons.route_rounded, _distance)),
-                  SizedBox(width: 8.w),
-                  SizedBox(
-                    width: 125.w,
-                    height: 44.h,
-                    child: _actionButton(status),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert_rounded),
-                    onSelected: (value) {
-                      if (value == 'details') {
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (_) => Padding(
-                            padding: EdgeInsets.all(18.w),
+                        SizedBox(width: 12.w),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+
+                              SizedBox(height: 3.h),
+
+                              Text(
+                                _address,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 5.h),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 7.h),
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(18.r),
+                            ),
                             child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Ride details', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
-                                SizedBox(height: 12.h),
-                                Text('Pickup', style: TextStyle(fontWeight: FontWeight.w900)),
-                                Text(_ride.pickupAddress),
-                                SizedBox(height: 10.h),
-                                Text('Drop-off', style: TextStyle(fontWeight: FontWeight.w900)),
-                                Text(_ride.dropoffAddress),
+                                Text(
+                                  _eta,
+                                  style: TextStyle(
+                                    fontSize: 15.sp,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                SizedBox(height: 2.h),
+                                Text(
+                                  'ETA',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    color: Colors.white70,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                        );
-                      }
-                      if (value == 'last_trip') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Last trip then offline selected.')),
-                        );
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'details', child: Text('Ride details')),
-                      PopupMenuItem(value: 'last_trip', child: Text('Last trip then offline')),
+                        ),
+
+                        SizedBox(width: 10.w),
+
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 7.h),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(18.r),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  _distance,
+                                  style: TextStyle(
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                SizedBox(height: 2.h),
+                                Text(
+                                  'Distance',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (status == 'arrived') ...[
+                      SizedBox(height: 6.h),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(vertical: 6.h),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.timer_rounded,
+                              color: Colors.orange.shade800,
+                            ),
+                            SizedBox(width: 8.w),
+                            Text(
+                              _waitText,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
-                  ),
-                ],
+
+                    SizedBox(height: 5.h),
+
+                    _actionButton(status),
+                  ],
+                ),
               ),
             ),
           ),
-
         ],
       ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

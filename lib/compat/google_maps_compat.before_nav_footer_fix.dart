@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     as nav;
@@ -188,8 +187,6 @@ class GoogleMap extends StatefulWidget {
 
 class _GoogleMapState extends State<GoogleMap> {
   GoogleMapController? _controller;
-  Timer? _autoRecenterTimer;
-  bool _guidanceStarted = false;
   LatLng? _lastDestination;
 
   @override
@@ -239,7 +236,7 @@ class _GoogleMapState extends State<GoogleMap> {
     final destination = _findDestination();
 
     debugPrint(
-      'NAV BUILD ${DateTime.now()} markers=${widget.markers.length}',
+      'T-RIDE NAV SDK: markers=${widget.markers.length}, polylines=${widget.polylines.length}, destination=${destination != null}',
     );
 
     if (destination == null) return;
@@ -295,73 +292,7 @@ class _GoogleMapState extends State<GoogleMap> {
     if (status == nav.NavigationRouteStatus.statusOk) {
       await nav.GoogleMapsNavigator.startGuidance();
       debugPrint('T-RIDE NAV SDK: guidance started');
-      _startAutoRecenter();
-
-      await Future.delayed(const Duration(milliseconds: 1200));
-      await _controller?.rawController?.followMyLocation(
-        nav.CameraPerspective.tilted,
-        zoomLevel: 16.0,
-      );
-
-      await Future.delayed(const Duration(milliseconds: 1200));
-      await _controller?.rawController?.followMyLocation(
-        nav.CameraPerspective.tilted,
-        zoomLevel: 16.0,
-      );
-
-
-      try {
-        await _controller?.rawController?.setNavigationUIEnabled(true);
-        await _controller?.rawController?.setNavigationHeaderEnabled(true);
-        await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 500));
-
-        
-      } catch (e) {
-        debugPrint('T-RIDE ROUTE OVERVIEW FOLLOW TEST ERROR: $e');
-      }
-
-      try {
-        await _controller?.rawController?.setNavigationUIEnabled(true);
-        await _controller?.rawController?.setNavigationHeaderEnabled(true);
-        await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 500));
-} catch (e) {
-        debugPrint('T-RIDE NAV CAMERA FINAL TEST ERROR: ');
-      }
-
-      try {
-        await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setRecenterButtonEnabled(true);
-
-        await _controller?.rawController?.setSpeedometerEnabled(true);
-        await _controller?.rawController?.setReportIncidentButtonEnabled(false);
-        await _controller?.rawController?.setTrafficIncidentCardsEnabled(false);
-        await _controller?.rawController?.setTrafficPromptsEnabled(false);
-} catch (e) {
-        debugPrint('T-RIDE NAV AFTER START SETTINGS ERROR: $e');
-      }
     }
-  }
-
-  void _startAutoRecenter() {
-    _autoRecenterTimer?.cancel();
-    _autoRecenterTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
-      try {
-        await _controller?.rawController?.followMyLocation(
-          nav.CameraPerspective.tilted,
-          zoomLevel: 16.0,
-        );
-      } catch (e) {
-        debugPrint('T-RIDE AUTO RECENTER ERROR: $e');
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _autoRecenterTimer?.cancel();
-    super.dispose();
   }
 
   @override
@@ -390,49 +321,13 @@ class _GoogleMapState extends State<GoogleMap> {
 
     return nav.GoogleMapsNavigationView(
       initialNavigationUIEnabledPreference:
-          nav.NavigationUIEnabledPreference.disabled,
+          nav.NavigationUIEnabledPreference.automatic,
       initialCameraPosition: navCamera,
       onViewCreated: (controller) async {
         _controller = GoogleMapController(controller);
-
-        try {
-          await controller.setNavigationHeaderEnabled(true);
-          await controller.setNavigationFooterEnabled(false);
-          await controller.setRecenterButtonEnabled(true);
-          await controller.setPadding(const EdgeInsets.only(bottom: 500));
-          await controller.setSpeedometerEnabled(true);
-          await controller.setReportIncidentButtonEnabled(false);
-          await controller.setTrafficIncidentCardsEnabled(false);
-          await controller.setTrafficPromptsEnabled(false);
-        } catch (e) {
-          debugPrint('T-RIDE NAV UI SETTINGS ERROR: $e');
-        }
-
         widget.onMapCreated?.call(_controller!);
         await _tryStartNavigation();
       },
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

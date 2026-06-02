@@ -380,16 +380,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 
-
-  String get _tripBannerTitle {
-    final status = _ride.status.toLowerCase();
-
-    if (status == 'accepted') return 'Heading to Pickup';
-    if (status == 'arrived') return 'Arrived at Pickup';
-    if (status == 'started') return 'Trip in Progress';
-
-    return 'Navigation Active';
-  }
   Widget _navChip(IconData icon, String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
@@ -471,14 +461,14 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
 
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
+            left: 14.w,
+            right: 14.w,
+            bottom: MediaQuery.of(context).padding.bottom + 22.h,
             child: Container(
-              padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, MediaQuery.of(context).padding.bottom + 14.h),
+              padding: EdgeInsets.all(12.w),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(26.r)),
+                borderRadius: BorderRadius.circular(24.r),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.18),
@@ -537,17 +527,13 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
               ),
             ),
           ),
+          ),
 
         ],
       ),
     );
   }
 }
-
-
-
-
-
 
 
 

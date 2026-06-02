@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_navigation_flutter/google_navigation_flutter.dart' as nav;
+
+import '../../compat/google_maps_compat.dart';
+import '../../data/models/driver_ride_request_model.dart';
+
+class TripNavigationScreenV3 extends StatefulWidget {
+  final DriverRideRequest ride;
+
+  const TripNavigationScreenV3({super.key, required this.ride});
+
+  @override
+  State<TripNavigationScreenV3> createState() => _TripNavigationScreenV3State();
+}
+
+class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
+  GoogleMapController? _mapController;
+
+  String _eta = '-- min';
+  String _distance = '-- mi';
+
+  LatLng get _target {
+    final status = widget.ride.status.toLowerCase();
+    final point = status == 'started' || status == 'in_progress'
+        ? widget.ride.dropoffLatLng
+        : widget.ride.pickupLatLng;
+
+    return LatLng(point.latitude, point.longitude);
+  }
+
+  String get _title {
+    final status = widget.ride.status.toLowerCase();
+    final name = (widget.ride.riderName ?? '').trim();
+
+    if (status == 'started' || status == 'in_progress') {
+      return 'Trip in progress';
+    }
+
+    if (status == 'arrived') {
+      return 'Arrived at pickup';
+    }
+
+    return name.isEmpty ? 'Heading to rider' : 'Heading to $name';
+  }
+
+  @override
+  void dispose() {
+    try {
+      nav.GoogleMapsNavigator.cleanup();
+    } catch (_) {}
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: GoogleMap(
+              padding: EdgeInsets.zero,
+              initialCameraPosition: CameraPosition(target: _target, zoom: 16),
+              navigationDestination: _target,
+              navigationEnabled: true,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              markers: {
+                Marker(markerId: const MarkerId('target'), position: _target),
+              },
+              onMapCreated: (controller) async {
+                _mapController = controller;
+              },
+            ),
+          ),
+
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(
+                18.w,
+                16.h,
+                18.w,
+                MediaQuery.of(context).padding.bottom + 16.h,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(28.r),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.20),
+                    blurRadius: 24,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          '$_eta • $_distance',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      try {
+                        await _mapController?.rawController?.followMyLocation(
+                          nav.CameraPerspective.tilted,
+                          zoomLevel: 16.0,
+                        );
+                      } catch (_) {}
+                    },
+                    icon: const Icon(Icons.my_location_rounded),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert_rounded),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'details',
+                        child: Text('Ride details'),
+                      ),
+                      PopupMenuItem(
+                        value: 'last_trip',
+                        child: Text('Last trip then offline'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+

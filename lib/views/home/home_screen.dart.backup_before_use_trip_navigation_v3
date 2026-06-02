@@ -26,7 +26,7 @@ import 'package:t_rider_services_app/views/home/earnings_screen.dart';
 import 'package:t_rider_services_app/views/home/setting/profile_screen.dart';
 import 'package:t_rider_services_app/views/home/setting/driver_profile_v2.dart';
 import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
-import 'package:t_rider_services_app/modules/navigation/trip_navigation_screen_v3.dart';
+import 'package:t_rider_services_app/modules/navigation/trip_navigation_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -557,7 +557,7 @@ class HomeScreenState extends State<HomeScreen> {
     final ride = _activeRide;
     if (ride == null) return;
 
-    Get.to(() => TripNavigationScreenV3(ride: ride));
+    Get.to(() => TripNavigationScreen(ride: ride));
   }
 
   Future<void> _arrived() async {

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -427,7 +427,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                 try {
                   await controller.rawController.followMyLocation(
                     nav.CameraPerspective.tilted,
-                    zoomLevel: 15,
+                    zoomLevel: 15.0,
                   );
                 } catch (_) {}
               },
@@ -460,7 +460,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                 try {
                   await _mapController?.rawController?.followMyLocation(
                     nav.CameraPerspective.tilted,
-                    zoomLevel: 15,
+                    zoomLevel: 15.0,
                   );
                 } catch (_) {}
               },

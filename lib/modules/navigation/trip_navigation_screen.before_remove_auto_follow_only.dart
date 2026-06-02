@@ -243,7 +243,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     if (updated != null && mounted) {
       setState(() => _ride = updated);
       await _syncRideFirestoreStatus('arrived');
-      }
+      _startWaitTimerIfNeeded();
+    }
   }
 
   Future<void> _startTrip() async {
@@ -251,7 +252,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     if (updated != null && mounted) {
       setState(() => _ride = updated);
       await _syncRideFirestoreStatus('started');
-      }
+      _startWaitTimerIfNeeded();
+    }
   }
 
   Future<void> _completeTrip() async {
@@ -380,16 +382,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 
-
-  String get _tripBannerTitle {
-    final status = _ride.status.toLowerCase();
-
-    if (status == 'accepted') return 'Heading to Pickup';
-    if (status == 'arrived') return 'Arrived at Pickup';
-    if (status == 'started') return 'Trip in Progress';
-
-    return 'Navigation Active';
-  }
   Widget _navChip(IconData icon, String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
@@ -417,13 +409,14 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final status = _ride.status.toLowerCase();
+    _startWaitTimerIfNeeded();
 
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
             child: GoogleMap(
-              padding: EdgeInsets.zero,
+              padding: EdgeInsets.only(bottom: 310.h, top: 20.h),
               initialCameraPosition: CameraPosition(target: _target, zoom: 16),
               navigationDestination: _target,
               navigationEnabled: true,
@@ -431,7 +424,13 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
               myLocationButtonEnabled: true,
               onMapCreated: (controller) async {
                 _mapController = controller;
-},
+                try {
+                  await controller.rawController.followMyLocation(
+                    nav.CameraPerspective.tilted,
+                    zoomLevel: 15.0,
+                  );
+                } catch (_) {}
+              },
               markers: {
                 Marker(markerId: const MarkerId('target'), position: _target),
               },
@@ -470,71 +469,33 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
           ),
 
 
+
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, MediaQuery.of(context).padding.bottom + 14.h),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(26.r)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
-                    blurRadius: 22,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(child: _navChip(Icons.schedule_rounded, _eta)),
-                  SizedBox(width: 8.w),
-                  Expanded(child: _navChip(Icons.route_rounded, _distance)),
-                  SizedBox(width: 8.w),
-                  SizedBox(
-                    width: 125.w,
-                    height: 44.h,
-                    child: _actionButton(status),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert_rounded),
-                    onSelected: (value) {
-                      if (value == 'details') {
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (_) => Padding(
-                            padding: EdgeInsets.all(18.w),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Ride details', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
-                                SizedBox(height: 12.h),
-                                Text('Pickup', style: TextStyle(fontWeight: FontWeight.w900)),
-                                Text(_ride.pickupAddress),
-                                SizedBox(height: 10.h),
-                                Text('Drop-off', style: TextStyle(fontWeight: FontWeight.w900)),
-                                Text(_ride.dropoffAddress),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-                      if (value == 'last_trip') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Last trip then offline selected.')),
-                        );
-                      }
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'details', child: Text('Ride details')),
-                      PopupMenuItem(value: 'last_trip', child: Text('Last trip then offline')),
-                    ],
-                  ),
-                ],
-              ),
+            right: 14.w,
+            bottom: MediaQuery.of(context).padding.bottom + 28.h,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'call_rider',
+                  backgroundColor: Colors.black,
+                  onPressed: () {},
+                  child: const Icon(Icons.call, color: Colors.white),
+                ),
+                SizedBox(height: 10.h),
+                FloatingActionButton.small(
+                  heroTag: 'sms_rider',
+                  backgroundColor: Colors.black,
+                  onPressed: () {},
+                  child: const Icon(Icons.message_rounded, color: Colors.white),
+                ),
+                SizedBox(height: 10.h),
+                SizedBox(
+                  width: 145.w,
+                  height: 46.h,
+                  child: _actionButton(status),
+                ),
+              ],
             ),
           ),
 
@@ -543,17 +504,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
