@@ -26,6 +26,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
   String _eta = '-- min';
   String _distance = '-- mi';
   Timer? _pickupWaitTimer;
+  StreamSubscription<Position>? _positionSub;
   int _pickupWaitSeconds = 0;
 
   @override
@@ -33,6 +34,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     super.initState();
     _ride = widget.ride;
     _updateEtaDistance();
+    _positionSub = Geolocator.getPositionStream().listen((_) => _updateEtaDistance());
   }
 
   LatLng get _target {
@@ -180,6 +182,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
   }
   void _startPickupWaitTimer() {
     _pickupWaitTimer?.cancel();
+    _positionSub?.cancel();
     _pickupWaitSeconds = 0;
 
     _pickupWaitTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -237,6 +240,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
   @override
   void dispose() {
     _pickupWaitTimer?.cancel();
+    _positionSub?.cancel();
     try {
       nav.GoogleMapsNavigator.cleanup();
     } catch (_) {}
@@ -362,3 +366,4 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     );
   }
 }
+
