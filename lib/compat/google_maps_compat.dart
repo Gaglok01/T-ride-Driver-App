@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     as nav;
 
@@ -292,6 +292,22 @@ class _GoogleMapState extends State<GoogleMap> {
     if (status == nav.NavigationRouteStatus.statusOk) {
       await nav.GoogleMapsNavigator.startGuidance();
       debugPrint('T-RIDE NAV SDK: guidance started');
+
+      try {
+        await _controller?.rawController?.setNavigationFooterEnabled(false);
+        await _controller?.rawController?.setRecenterButtonEnabled(true);
+        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 120));
+        await _controller?.rawController?.setSpeedometerEnabled(true);
+        await _controller?.rawController?.setReportIncidentButtonEnabled(false);
+        await _controller?.rawController?.setTrafficIncidentCardsEnabled(false);
+        await _controller?.rawController?.setTrafficPromptsEnabled(false);
+        await _controller?.rawController?.followMyLocation(
+          nav.CameraPerspective.tilted,
+          zoomLevel: 16,
+        );
+      } catch (e) {
+        debugPrint('T-RIDE NAV AFTER START SETTINGS ERROR: $e');
+      }
     }
   }
 
@@ -325,9 +341,27 @@ class _GoogleMapState extends State<GoogleMap> {
       initialCameraPosition: navCamera,
       onViewCreated: (controller) async {
         _controller = GoogleMapController(controller);
+
+        try {
+          await controller.setNavigationHeaderEnabled(true);
+          await controller.setNavigationFooterEnabled(false);
+          await controller.setRecenterButtonEnabled(true);
+          await controller.setPadding(const EdgeInsets.only(bottom: 120));
+          await controller.setSpeedometerEnabled(true);
+          await controller.setReportIncidentButtonEnabled(false);
+          await controller.setTrafficIncidentCardsEnabled(false);
+          await controller.setTrafficPromptsEnabled(false);
+        } catch (e) {
+          debugPrint('T-RIDE NAV UI SETTINGS ERROR: $e');
+        }
+
         widget.onMapCreated?.call(_controller!);
         await _tryStartNavigation();
       },
     );
   }
 }
+
+
+
+

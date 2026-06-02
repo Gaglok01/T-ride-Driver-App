@@ -468,149 +468,133 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
             ),
           ),
 
-          SafeArea(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                margin: EdgeInsets.fromLTRB(10.w, 0, 10.w, 4.h),
-                padding: EdgeInsets.all(8.w),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20.r),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 30,
-                      offset: Offset(0, 12),
-                      color: Colors.black26,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
+
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10.h,
+            left: 12.w,
+            right: 12.w,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.96),
+                borderRadius: BorderRadius.circular(18.r),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 18,
+                    offset: Offset(0, 6),
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.navigation_rounded, color: Colors.black),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 42.w,
-                          height: 42.w,
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(18.r),
-                          ),
-                          child: const Icon(
-                            Icons.navigation_rounded,
-                            color: Colors.white,
+                        Text(
+                          _title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-
-                        SizedBox(width: 12.w),
-
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 15.sp,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-
-                              SizedBox(height: 3.h),
-
-                              Text(
-                                _address,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                            ],
+                        SizedBox(height: 2.h),
+                        Text(
+                          _address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: Colors.black54,
                           ),
                         ),
                       ],
                     ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
-                    SizedBox(height: 5.h),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            ' • ',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black87,
-                            ),
+          Positioned(
+            left: 12.w,
+            right: 12.w,
+            bottom: MediaQuery.of(context).padding.bottom + 10.h,
+            child: Container(
+              padding: EdgeInsets.all(9.w),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.97),
+                borderRadius: BorderRadius.circular(18.r),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _eta + ' • ' + _distance,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black87,
                           ),
                         ),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(18.r),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.call, color: Colors.white, size: 18.sp),
-                              SizedBox(width: 12.w),
-                              Icon(Icons.message_rounded, color: Colors.white, size: 18.sp),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    if (status == 'arrived') ...[
-                      SizedBox(height: 6.h),
+                      ),
                       Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 6.h),
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(16.r),
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(18.r),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.timer_rounded,
-                              color: Colors.orange.shade800,
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              _waitText,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                color: Colors.orange.shade900,
-                              ),
-                            ),
+                            Icon(Icons.call, color: Colors.white, size: 18.sp),
+                            SizedBox(width: 12.w),
+                            Icon(Icons.message_rounded, color: Colors.white, size: 18.sp),
                           ],
                         ),
                       ),
                     ],
-
-                    SizedBox(height: 5.h),
-
-                    _actionButton(status),
+                  ),
+                  if (status == 'arrived') ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      _waitText,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
                   ],
-                ),
+                  SizedBox(height: 6.h),
+                  _actionButton(status),
+                ],
               ),
             ),
           ),
+
         ],
       ),
     );
   }
 }
+
 
 
 
