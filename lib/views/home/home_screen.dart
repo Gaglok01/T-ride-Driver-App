@@ -1323,8 +1323,46 @@ class HomeScreenState extends State<HomeScreen> {
                   'Start receiving ride and courier requests instantly.',
                 ),
 
-                SizedBox(height: 18.h),
+                SizedBox(height: 12.h),
 
+                SizedBox(
+                  width: double.infinity,
+                  height: 56.h,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _quickHomeChip(
+                        icon: Icons.local_offer_rounded,
+                        title: 'Promos',
+                        value: '2',
+                        color: Colors.orange,
+                      ),
+                      SizedBox(width: 10.w),
+                      _quickHomeChip(
+                        icon: Icons.schedule_rounded,
+                        title: 'Scheduled',
+                        value: '1',
+                        color: Colors.blue,
+                      ),
+                      SizedBox(width: 10.w),
+                      _quickHomeChip(
+                        icon: Icons.emoji_events_rounded,
+                        title: 'Challenges',
+                        value: '3',
+                        color: Colors.green,
+                      ),
+                      SizedBox(width: 10.w),
+                      _quickHomeChip(
+                        icon: Icons.attach_money_rounded,
+                        title: 'Today',
+                        value: '84',
+                        color: Colors.purple,
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 18.h),
                 SizedBox(
                   width: double.infinity,
                   height: 58.h,
@@ -1364,8 +1402,46 @@ class HomeScreenState extends State<HomeScreen> {
                   'You are online. New ride and courier requests will appear here.',
                 ),
 
-                SizedBox(height: 18.h),
+                SizedBox(height: 12.h),
 
+                SizedBox(
+                  width: double.infinity,
+                  height: 56.h,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _quickHomeChip(
+                        icon: Icons.local_offer_rounded,
+                        title: 'Promos',
+                        value: '2',
+                        color: Colors.orange,
+                      ),
+                      SizedBox(width: 10.w),
+                      _quickHomeChip(
+                        icon: Icons.schedule_rounded,
+                        title: 'Scheduled',
+                        value: '1',
+                        color: Colors.blue,
+                      ),
+                      SizedBox(width: 10.w),
+                      _quickHomeChip(
+                        icon: Icons.emoji_events_rounded,
+                        title: 'Challenges',
+                        value: '3',
+                        color: Colors.green,
+                      ),
+                      SizedBox(width: 10.w),
+                      _quickHomeChip(
+                        icon: Icons.attach_money_rounded,
+                        title: 'Today',
+                        value: '84',
+                        color: Colors.purple,
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 18.h),
                 SizedBox(
                   width: double.infinity,
                   height: 58.h,
@@ -1448,6 +1524,57 @@ class HomeScreenState extends State<HomeScreen> {
     return const SizedBox.shrink();
   }
 
+  Widget _quickHomeChip({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: color.withOpacity(0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          SizedBox(width: 8.w),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12.sp,
+            ),
+          ),
+          SizedBox(width: 6.w),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 11.sp,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _requestCard(DriverRideRequest ride) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1853,6 +1980,10 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+
+
 
 
 
