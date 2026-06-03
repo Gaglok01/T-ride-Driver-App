@@ -1327,25 +1327,25 @@ class HomeScreenState extends State<HomeScreen> {
 
                 SizedBox(
                   width: double.infinity,
-                  height: 64.h,
+                  height: 58.h,
                   child: ElevatedButton.icon(
                     onPressed: _accountStatus == 'approved'
                         ? () => _toggleOnline(true)
                         : null,
-                    icon: const Icon(Icons.play_arrow_rounded),
+                    icon: const Icon(Icons.power_settings_new_rounded, size: 22),
                     label: Text(
                       'GO ONLINE',
                       style: TextStyle(
-                        fontSize: 15.sp,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppConst.primaryColor,
                       foregroundColor: Colors.black,
-                      elevation: 0,
+                      elevation: 8,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24.r),
+                        borderRadius: BorderRadius.circular(999.r),
                       ),
                     ),
                   ),
@@ -1368,23 +1368,23 @@ class HomeScreenState extends State<HomeScreen> {
 
                 SizedBox(
                   width: double.infinity,
-                  height: 64.h,
+                  height: 58.h,
                   child: ElevatedButton.icon(
                     onPressed: () => _toggleOnline(false),
-                    icon: const Icon(Icons.pause_circle_filled_rounded),
+                    icon: const Icon(Icons.power_settings_new_rounded, size: 22),
                     label: Text(
                       'GO OFFLINE',
                       style: TextStyle(
-                        fontSize: 15.sp,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       foregroundColor: AppConst.primaryColor,
-                      elevation: 0,
+                      elevation: 8,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24.r),
+                        borderRadius: BorderRadius.circular(999.r),
                       ),
                     ),
                   ),
@@ -1575,7 +1575,7 @@ class HomeScreenState extends State<HomeScreen> {
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(vertical: 15.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24.r),
+              borderRadius: BorderRadius.circular(999.r),
             ),
           ),
           child: const Text('Arrived'),
@@ -1590,7 +1590,7 @@ class HomeScreenState extends State<HomeScreen> {
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(vertical: 15.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24.r),
+              borderRadius: BorderRadius.circular(999.r),
             ),
           ),
           child: const Text('Start trip'),
@@ -1604,7 +1604,7 @@ class HomeScreenState extends State<HomeScreen> {
           foregroundColor: Colors.white,
           padding: EdgeInsets.symmetric(vertical: 15.h),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24.r),
+            borderRadius: BorderRadius.circular(999.r),
           ),
         ),
         child: const Text('Complete'),
@@ -1690,7 +1690,7 @@ class HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.symmetric(vertical: 11.h),
                     decoration: BoxDecoration(
                       color: Colors.black,
-                      borderRadius: BorderRadius.circular(24.r),
+                      borderRadius: BorderRadius.circular(999.r),
                     ),
                     child: Column(
                       children: [
@@ -1728,7 +1728,7 @@ class HomeScreenState extends State<HomeScreen> {
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 15.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24.r),
+                      borderRadius: BorderRadius.circular(999.r),
                     ),
                   ),
                 ),
@@ -1743,7 +1743,7 @@ class HomeScreenState extends State<HomeScreen> {
                       side: const BorderSide(color: Colors.red),
                       padding: EdgeInsets.symmetric(vertical: 15.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24.r),
+                        borderRadius: BorderRadius.circular(999.r),
                       ),
                     ),
                     child: const Text('Cancel'),
@@ -1853,6 +1853,8 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
 
 
 
