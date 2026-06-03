@@ -3,7 +3,20 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
 
 class EarningsScreen extends StatelessWidget {
-  const EarningsScreen({super.key});
+  final num today;
+  final num weekly;
+  final num monthly;
+  final num wallet;
+
+  const EarningsScreen({
+    super.key,
+    this.today = 0,
+    this.weekly = 0,
+    this.monthly = 0,
+    this.wallet = 0,
+  });
+
+  String _money(num value) => '\$' + value.toStringAsFixed(2);
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +60,7 @@ class EarningsScreen extends StatelessWidget {
               SizedBox(height: 12.h),
               Row(
                 children: [
-                  Expanded(child: _metric('Trips', '0', Icons.route_rounded)),
+                  Expanded(child: _metric('This month', _money(monthly), Icons.route_rounded)),
                   SizedBox(width: 12.w),
                   Expanded(
                     child: _metric(
@@ -245,3 +258,5 @@ class EarningsScreen extends StatelessWidget {
     );
   }
 }
+
+

@@ -77,6 +77,8 @@ class HomeScreenState extends State<HomeScreen> {
 
   num _todayEarnings = 0;
   num _weekEarnings = 0;
+  num _monthEarnings = 0;
+  num _walletBalance = 0;
   num _rating = 0;
   int _totalTrips = 0;
 
@@ -215,6 +217,18 @@ class HomeScreenState extends State<HomeScreen> {
         _totalTrips = dash.totalTrips ?? 0;
         _todayEarnings = dash.earningsToday;
         _weekEarnings = dash.earningsWeekly;
+        _monthEarnings = dash.earningsMonthly;
+        _walletBalance = dash.walletBalance;
+        debugPrint(
+          'EARNINGS DEBUG => today=' +
+              _todayEarnings.toString() +
+              ' week=' +
+              _weekEarnings.toString() +
+              ' month=' +
+              _monthEarnings.toString() +
+              ' wallet=' +
+              _walletBalance.toString(),
+        );
         _loadingDashboard = false;
       });
     } catch (_) {
@@ -1142,7 +1156,12 @@ class HomeScreenState extends State<HomeScreen> {
           ),
           InkWell(
             borderRadius: BorderRadius.circular(20.r),
-            onTap: () => Get.to(() => const EarningsScreen()),
+            onTap: () => Get.to(() => EarningsScreen(
+                today: _todayEarnings,
+                weekly: _weekEarnings,
+                monthly: _monthEarnings,
+                wallet: _walletBalance,
+              )),
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
               decoration: BoxDecoration(
@@ -1355,8 +1374,14 @@ class HomeScreenState extends State<HomeScreen> {
                       _quickHomeChip(
                         icon: Icons.attach_money_rounded,
                         title: 'Today',
-                        value: '84',
+                        value: _todayEarnings.toStringAsFixed(0),
                         color: Colors.purple,
+                        onTap: () => Get.to(() => EarningsScreen(
+                today: _todayEarnings,
+                weekly: _weekEarnings,
+                monthly: _monthEarnings,
+                wallet: _walletBalance,
+              )),
                       ),
                     ],
                   ),
@@ -1434,8 +1459,14 @@ class HomeScreenState extends State<HomeScreen> {
                       _quickHomeChip(
                         icon: Icons.attach_money_rounded,
                         title: 'Today',
-                        value: '84',
+                        value: _todayEarnings.toStringAsFixed(0),
                         color: Colors.purple,
+                        onTap: () => Get.to(() => EarningsScreen(
+                today: _todayEarnings,
+                weekly: _weekEarnings,
+                monthly: _monthEarnings,
+                wallet: _walletBalance,
+              )),
                       ),
                     ],
                   ),
@@ -1529,9 +1560,13 @@ class HomeScreenState extends State<HomeScreen> {
     required String title,
     required String value,
     required Color color,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w),
+    return InkWell(
+      borderRadius: BorderRadius.circular(18.r),
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18.r),
@@ -1572,6 +1607,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1980,6 +2016,11 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+
+
+
 
 
 
