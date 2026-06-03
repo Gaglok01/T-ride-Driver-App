@@ -8,6 +8,34 @@ import '../../compat/google_maps_compat.dart';
 import '../../data/models/driver_ride_request_model.dart';
 import '../../data/repositories/driver_realtime_repository.dart';
 
+class _StableNavigationMap extends StatefulWidget {
+  final LatLng target;
+
+  const _StableNavigationMap({required this.target});
+
+  @override
+  State<_StableNavigationMap> createState() => _StableNavigationMapState();
+}
+
+class _StableNavigationMapState extends State<_StableNavigationMap> {
+  @override
+  Widget build(BuildContext context) {
+    return GoogleMap(
+      key: const ValueKey('stable_trip_navigation_map'),
+      padding: EdgeInsets.only(
+                bottom: 350.h + MediaQuery.of(context).padding.bottom,
+              ),
+      initialCameraPosition: CameraPosition(target: widget.target, zoom: 16),
+      navigationDestination: widget.target,
+      navigationEnabled: true,
+      myLocationEnabled: true,
+      myLocationButtonEnabled: false,
+      markers: {
+        Marker(markerId: const MarkerId('target'), position: widget.target),
+      },
+    );
+  }
+}
 class TripNavigationScreenV3 extends StatefulWidget {
   final DriverRideRequest ride;
 
@@ -23,6 +51,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
 
   GoogleMapController? _mapController;
 
+  final ValueNotifier<String> _navInfo = ValueNotifier<String>('-- min | -- mi');
   String _eta = '-- min';
   String _distance = '-- mi';
   Timer? _pickupWaitTimer;
@@ -34,7 +63,25 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     super.initState();
     _ride = widget.ride;
     _updateEtaDistance();
-    _positionSub = Geolocator.getPositionStream().listen((_) => _updateEtaDistance());
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 5,
+      ),
+    ).listen((pos) {
+      _updateEtaDistance();
+
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(pos.latitude, pos.longitude),
+            zoom: 18.5,
+            tilt: 60,
+            bearing: pos.heading < 0 ? 0 : pos.heading,
+          ),
+        ),
+      );
+    });
   }
 
   LatLng get _target {
@@ -182,6 +229,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
   }
   void _startPickupWaitTimer() {
     _pickupWaitTimer?.cancel();
+    _navInfo.dispose();
     _positionSub?.cancel();
     _pickupWaitSeconds = 0;
 
@@ -225,7 +273,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18.r),
         ),
@@ -240,6 +288,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
   @override
   void dispose() {
     _pickupWaitTimer?.cancel();
+    _navInfo.dispose();
     _positionSub?.cancel();
     try {
       nav.GoogleMapsNavigator.cleanup();
@@ -254,7 +303,10 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
         children: [
           Positioned.fill(
             child: GoogleMap(
-              padding: EdgeInsets.zero,
+              key: const ValueKey('trip_navigation_v3_map'),
+              padding: EdgeInsets.only(
+                bottom: 350.h + MediaQuery.of(context).padding.bottom,
+              ),
               initialCameraPosition: CameraPosition(target: _target, zoom: 16),
               navigationDestination: _target,
               navigationEnabled: true,
@@ -276,10 +328,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.fromLTRB(
-                16.w,
-                14.h,
-                16.w,
-                MediaQuery.of(context).padding.bottom + 14.h,
+                12.w, 8.h, 12.w, MediaQuery.of(context).padding.bottom + 8.h,
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -301,23 +350,23 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 18.sp,
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.w900,
                       color: Colors.black,
                     ),
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 2.h),
                   Text(
                     _ride.status.toLowerCase() == 'arrived'
                         ? _pickupWaitText
                         : '$_eta | $_distance',
                     style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.black54,
                     ),
                   ),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: 6.h),
                   Row(
                     children: [
                       if (_canContactRider) ...[
@@ -336,7 +385,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
                       ],
                       Expanded(
                         child: SizedBox(
-                          height: 48.h,
+                          height: 38.h,
                           child: _actionButton(),
                         ),
                       ),
@@ -366,4 +415,21 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
