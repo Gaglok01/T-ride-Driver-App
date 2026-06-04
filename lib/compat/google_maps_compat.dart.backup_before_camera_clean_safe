@@ -294,19 +294,27 @@ class _GoogleMapState extends State<GoogleMap> {
 
     if (status == nav.NavigationRouteStatus.statusOk) {
       await nav.GoogleMapsNavigator.startGuidance();
-      await Future.delayed(const Duration(milliseconds: 900));
+      debugPrint('T-RIDE NAV SDK: guidance started');
+      _startAutoRecenter();
+
+      await Future.delayed(const Duration(milliseconds: 1200));
+      await _controller?.rawController?.followMyLocation(
+        nav.CameraPerspective.tilted,
+        zoomLevel: 16.0,
+      );
+
+      await Future.delayed(const Duration(milliseconds: 1200));
       await _controller?.rawController?.followMyLocation(
         nav.CameraPerspective.tilted,
         zoomLevel: 16.0,
       );
 
 
-
       try {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 330));
+        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 500));
 
         
       } catch (e) {
@@ -317,7 +325,7 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 330));
+        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 500));
 } catch (e) {
         debugPrint('T-RIDE NAV CAMERA FINAL TEST ERROR: ');
       }
@@ -391,7 +399,7 @@ class _GoogleMapState extends State<GoogleMap> {
           await controller.setNavigationHeaderEnabled(true);
           await controller.setNavigationFooterEnabled(false);
           await controller.setRecenterButtonEnabled(true);
-          await controller.setPadding(const EdgeInsets.only(bottom: 330));
+          await controller.setPadding(const EdgeInsets.only(bottom: 500));
           await controller.setSpeedometerEnabled(true);
           await controller.setReportIncidentButtonEnabled(false);
           await controller.setTrafficIncidentCardsEnabled(false);
@@ -406,7 +414,6 @@ class _GoogleMapState extends State<GoogleMap> {
     );
   }
 }
-
 
 
 

@@ -115,7 +115,9 @@ class _FindingRideRequestsScreenState extends State<FindingRideRequestsScreen> {
     return CameraPosition(target: p ?? d ?? _fallbackMapCenter, zoom: 13);
   }
 
-  String? get _mapStyleJson => HomeMapStyles.lightUberLike;
+  String? get _mapStyleJson => AppConst.isDarkMode
+      ? HomeMapStyles.darkUberLike
+      : HomeMapStyles.lightUberLike;
 
   /// When [awaitDirections] is true, markers are set but no polyline until the
   /// API returns (or fails — then a straight fallback is drawn).

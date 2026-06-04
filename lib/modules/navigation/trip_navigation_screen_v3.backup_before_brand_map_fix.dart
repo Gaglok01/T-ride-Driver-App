@@ -25,14 +25,13 @@ class _StableNavigationMapState extends State<_StableNavigationMap> {
       key: const ValueKey('stable_trip_navigation_map'),
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 60.h,
-        right: 16.w,
         bottom: 430.h + MediaQuery.of(context).padding.bottom,
       ),
       initialCameraPosition: CameraPosition(target: widget.target, zoom: 16),
       navigationDestination: widget.target,
       navigationEnabled: true,
       myLocationEnabled: true,
-      myLocationButtonEnabled: true,
+      myLocationButtonEnabled: false,
       markers: {
         Marker(markerId: const MarkerId('target'), position: widget.target),
       },
@@ -328,14 +327,13 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
               key: const ValueKey('trip_navigation_v3_map'),
               padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 60.h,
-                right: 16.w,
                 bottom: 430.h + MediaQuery.of(context).padding.bottom,
               ),
               initialCameraPosition: CameraPosition(target: _target, zoom: 16),
               navigationDestination: _target,
               navigationEnabled: true,
               myLocationEnabled: true,
-              myLocationButtonEnabled: true,
+              myLocationButtonEnabled: false,
               markers: {
                 Marker(markerId: const MarkerId('target'), position: _target),
               },

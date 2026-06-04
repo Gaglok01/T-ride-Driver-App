@@ -154,7 +154,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
         Polyline(
           polylineId: const PolylineId('route'),
           points: points,
-          color: const Color(0xFFFFB000),
+          color: AppConst.black,
           width: 5,
           geodesic: geodesic,
           startCap: Cap.roundCap,
@@ -286,7 +286,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFFFFB000),
+            color: AppConst.black,
           ),
         ),
         content: Text(
@@ -309,7 +309,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
             child: Text(
               'complete'.tr,
               style: TextStyle(
-                color: const Color(0xFFFFB000),
+                color: AppConst.black,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -482,14 +482,14 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                     height: 22.w,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      color: const Color(0xFFFFB000),
+                                      color: AppConst.black,
                                     ),
                                   ),
                                   SizedBox(width: 14.w),
                                   Text(
                                     'finding_route'.tr,
                                     style: TextStyle(
-                                      color: const Color(0xFFFFB000),
+                                      color: AppConst.black,
                                       fontSize: 14.sp,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -606,7 +606,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                         ? '${'order'.tr} ${_order.orderCode}'
                                         : 'food_order'.tr,
                                     style: TextStyle(
-                                      color: const Color(0xFFFFB000),
+                                      color: AppConst.black,
                                       fontSize: 16.sp,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -642,7 +642,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                     children: [
                                       Icon(
                                         Icons.storefront_outlined,
-                                        color: const Color(0xFFFFB000),
+                                        color: AppConst.black,
                                         size: 20.sp,
                                       ),
                                       SizedBox(width: 8.w),
@@ -665,7 +665,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                               _order.vendor?.name ??
                                                   'restaurant'.tr,
                                               style: TextStyle(
-                                                color: const Color(0xFFFFB000),
+                                                color: AppConst.black,
                                                 fontSize: 14.sp,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -713,7 +713,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                     children: [
                                       Icon(
                                         Icons.location_on,
-                                        color: const Color(0xFFFFB000),
+                                        color: AppConst.black,
                                         size: 20.sp,
                                       ),
                                       SizedBox(width: 8.w),
@@ -735,7 +735,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                             Text(
                                               _order.deliveryAddress ?? '—',
                                               style: TextStyle(
-                                                color: const Color(0xFFFFB000),
+                                                color: AppConst.black,
                                                 fontSize: 14.sp,
                                               ),
                                             ),
@@ -780,9 +780,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                               Text(
                                                 'delivery_instructions'.tr,
                                                 style: TextStyle(
-                                                  color: const Color(
-                                                    0xFFFFB000,
-                                                  ),
+                                                  color: AppConst.black,
                                                   fontSize: 12.sp,
                                                   fontWeight: FontWeight.w700,
                                                 ),
@@ -809,7 +807,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                     children: [
                                       Icon(
                                         Icons.payments_outlined,
-                                        color: const Color(0xFFFFB000),
+                                        color: AppConst.black,
                                         size: 20.sp,
                                       ),
                                       SizedBox(width: 8.w),
@@ -827,7 +825,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                               _order.paymentMethod!,
                                           ].join(' · '),
                                           style: TextStyle(
-                                            color: const Color(0xFFFFB000),
+                                            color: AppConst.black,
                                             fontSize: 14.sp,
                                           ),
                                         ),
@@ -851,7 +849,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                     Text(
                                       '${'items'.tr} (${_order.items.length})',
                                       style: TextStyle(
-                                        color: const Color(0xFFFFB000),
+                                        color: AppConst.black,
                                         fontSize: 13.sp,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -882,7 +880,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                           Text(
                                             '${e.quantity ?? 1}× $displayName',
                                             style: TextStyle(
-                                              color: const Color(0xFFFFB000),
+                                              color: AppConst.black,
                                               fontSize: 13.sp,
                                               fontWeight: FontWeight.w700,
                                             ),
@@ -961,7 +959,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                       children: [
                                         Icon(
                                           Icons.phone_outlined,
-                                          color: const Color(0xFFFFB000),
+                                          color: AppConst.black,
                                           size: 18.sp,
                                         ),
                                         SizedBox(width: 8.w),
@@ -993,7 +991,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                       ? null
                                       : _onAccept,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFFB000),
+                                    backgroundColor: AppConst.black,
                                     disabledBackgroundColor:
                                         AppConst.blackWithOpacity(0.4),
                                     shape: RoundedRectangleBorder(
@@ -1031,9 +1029,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
                                           ? null
                                           : _onMarkCompletePressed,
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFFFFB000,
-                                        ),
+                                        backgroundColor: AppConst.black,
                                         disabledBackgroundColor:
                                             AppConst.blackWithOpacity(0.4),
                                         shape: RoundedRectangleBorder(

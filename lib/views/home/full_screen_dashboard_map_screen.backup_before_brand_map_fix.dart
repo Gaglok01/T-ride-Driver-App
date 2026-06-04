@@ -73,7 +73,9 @@ class _FullScreenDashboardMapScreenState
   String? get _mapStyleJson {
     final styled = _mapType != MapType.satellite && _mapType != MapType.hybrid;
     if (!styled) return null;
-    return HomeMapStyles.lightUberLike;
+    return AppConst.isDarkMode
+        ? HomeMapStyles.darkUberLike
+        : HomeMapStyles.lightUberLike;
   }
 
   Set<Polyline> get _polylines {

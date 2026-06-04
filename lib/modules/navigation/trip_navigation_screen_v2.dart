@@ -53,10 +53,7 @@ class _TripNavigationScreenV2State extends State<TripNavigationScreenV2> {
     _polylines = {
       Polyline(
         polylineId: const PolylineId('route'),
-        points: [
-          widget.pickupLatLng,
-          widget.dropoffLatLng,
-        ],
+        points: [widget.pickupLatLng, widget.dropoffLatLng],
         width: 6,
       ),
     };
@@ -72,9 +69,7 @@ class _TripNavigationScreenV2State extends State<TripNavigationScreenV2> {
       widget.dropoffLatLng,
     ]);
 
-    await controller.animateCamera(
-      CameraUpdate.newLatLngBounds(bounds, 90),
-    );
+    await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 90));
 
     // IMPORTANT :
     // Après route overview, on désactive le follow.
@@ -109,12 +104,7 @@ class _TripNavigationScreenV2State extends State<TripNavigationScreenV2> {
 
     await controller.animateCamera(
       CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: driverLatLng,
-          zoom: 17,
-          tilt: 45,
-          bearing: 0,
-        ),
+        CameraPosition(target: driverLatLng, zoom: 17, tilt: 45, bearing: 0),
       ),
     );
   }
@@ -147,10 +137,7 @@ class _TripNavigationScreenV2State extends State<TripNavigationScreenV2> {
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
-            padding: const EdgeInsets.only(
-              bottom: 170,
-              top: 40,
-            ),
+            padding: const EdgeInsets.only(bottom: 170, top: 40),
             onMapCreated: (controller) async {
               if (!_mapController.isCompleted) {
                 _mapController.complete(controller);
@@ -168,19 +155,9 @@ class _TripNavigationScreenV2State extends State<TripNavigationScreenV2> {
             },
           ),
 
-          Positioned(
-            top: 50,
-            left: 16,
-            right: 16,
-            child: _topCard(),
-          ),
+          Positioned(top: 50, left: 16, right: 16, child: _topCard()),
 
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _bottomPanel(),
-          ),
+          Positioned(bottom: 0, left: 0, right: 0, child: _bottomPanel()),
         ],
       ),
     );
@@ -192,19 +169,11 @@ class _TripNavigationScreenV2State extends State<TripNavigationScreenV2> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 10,
-            color: Colors.black26,
-          ),
-        ],
+        boxShadow: const [BoxShadow(blurRadius: 10, color: Colors.black26)],
       ),
       child: const Text(
         'Trip Navigation V2',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -214,15 +183,8 @@ class _TripNavigationScreenV2State extends State<TripNavigationScreenV2> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(22),
-        ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 12,
-            color: Colors.black26,
-          ),
-        ],
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        boxShadow: [BoxShadow(blurRadius: 12, color: Colors.black26)],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
