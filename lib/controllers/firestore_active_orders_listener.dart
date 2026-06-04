@@ -27,7 +27,8 @@ class FirestoreActiveOrdersListener extends GetxController {
   final List<NearbyOrderMapOffer> _offerQueue = [];
 
   /// Offer currently shown as the draggable sheet on the map (if any).
-  final Rxn<NearbyOrderMapOffer> foregroundMapOffer = Rxn<NearbyOrderMapOffer>();
+  final Rxn<NearbyOrderMapOffer> foregroundMapOffer =
+      Rxn<NearbyOrderMapOffer>();
 
   /// Firestore listeners run app-wide; only surface orders when logged in.
   Future<bool> _hasActiveSession() async {
@@ -65,13 +66,15 @@ class FirestoreActiveOrdersListener extends GetxController {
   void removeOffersForDocKey(String docKey) {
     _offerQueue.removeWhere((o) => o.docKey == docKey);
     if (foregroundMapOffer.value?.docKey == docKey) {
-      foregroundMapOffer.value =
-          _offerQueue.isEmpty ? null : _offerQueue.removeAt(0);
+      foregroundMapOffer.value = _offerQueue.isEmpty
+          ? null
+          : _offerQueue.removeAt(0);
     }
   }
 
   void _enqueueOffer(NearbyOrderMapOffer offer) {
-    final exists = foregroundMapOffer.value?.docKey == offer.docKey ||
+    final exists =
+        foregroundMapOffer.value?.docKey == offer.docKey ||
         _offerQueue.any((o) => o.docKey == offer.docKey);
     if (exists) return;
 
@@ -84,58 +87,56 @@ class FirestoreActiveOrdersListener extends GetxController {
 
   void _attachRides() {
     var first = true;
-    _ridesSub = _db.collection('active_rides').snapshots().listen(
-      (snapshot) {
-        if (first) {
-          first = false;
-          return;
+    _ridesSub = _db.collection('active_rides').snapshots().listen((snapshot) {
+      if (first) {
+        first = false;
+        return;
+      }
+      for (final change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.removed) {
+          removeOffersForDocKey('active_rides:${change.doc.id}');
+          continue;
         }
-        for (final change in snapshot.docChanges) {
-          if (change.type == DocumentChangeType.removed) {
-            removeOffersForDocKey('active_rides:${change.doc.id}');
-            continue;
-          }
-          if (change.type == DocumentChangeType.modified) {
-            _removeMapOfferIfDocAccepted(change.doc, isCourier: false);
-            unawaited(_handleAcceptedUpdate(change.doc, isCourier: false));
-          }
-          final isNewOrUpdated = change.type == DocumentChangeType.added ||
-              change.type == DocumentChangeType.modified;
-          if (isNewOrUpdated) {
-            unawaited(_trySurfaceRideOffer(change.doc));
-          }
+        if (change.type == DocumentChangeType.modified) {
+          _removeMapOfferIfDocAccepted(change.doc, isCourier: false);
+          unawaited(_handleAcceptedUpdate(change.doc, isCourier: false));
         }
-      },
-      onError: (_) {},
-    );
+        final isNewOrUpdated =
+            change.type == DocumentChangeType.added ||
+            change.type == DocumentChangeType.modified;
+        if (isNewOrUpdated) {
+          unawaited(_trySurfaceRideOffer(change.doc));
+        }
+      }
+    }, onError: (_) {});
   }
 
   void _attachCourier() {
     var first = true;
-    _courierSub = _db.collection('active_courier').snapshots().listen(
-      (snapshot) {
-        if (first) {
-          first = false;
-          return;
+    _courierSub = _db.collection('active_courier').snapshots().listen((
+      snapshot,
+    ) {
+      if (first) {
+        first = false;
+        return;
+      }
+      for (final change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.removed) {
+          removeOffersForDocKey('active_courier:${change.doc.id}');
+          continue;
         }
-        for (final change in snapshot.docChanges) {
-          if (change.type == DocumentChangeType.removed) {
-            removeOffersForDocKey('active_courier:${change.doc.id}');
-            continue;
-          }
-          if (change.type == DocumentChangeType.modified) {
-            _removeMapOfferIfDocAccepted(change.doc, isCourier: true);
-            unawaited(_handleAcceptedUpdate(change.doc, isCourier: true));
-          }
-          final isNewOrUpdated = change.type == DocumentChangeType.added ||
-              change.type == DocumentChangeType.modified;
-          if (isNewOrUpdated) {
-            unawaited(_trySurfaceCourierOffer(change.doc));
-          }
+        if (change.type == DocumentChangeType.modified) {
+          _removeMapOfferIfDocAccepted(change.doc, isCourier: true);
+          unawaited(_handleAcceptedUpdate(change.doc, isCourier: true));
         }
-      },
-      onError: (_) {},
-    );
+        final isNewOrUpdated =
+            change.type == DocumentChangeType.added ||
+            change.type == DocumentChangeType.modified;
+        if (isNewOrUpdated) {
+          unawaited(_trySurfaceCourierOffer(change.doc));
+        }
+      }
+    }, onError: (_) {});
   }
 
   void _removeMapOfferIfDocAccepted(
@@ -151,8 +152,8 @@ class FirestoreActiveOrdersListener extends GetxController {
     final acceptedBy = raw is int
         ? raw
         : raw is num
-            ? raw.toInt()
-            : int.tryParse(raw.toString());
+        ? raw.toInt()
+        : int.tryParse(raw.toString());
     if (acceptedBy == null) return;
 
     final collection = isCourier ? 'active_courier' : 'active_rides';
@@ -201,8 +202,7 @@ class FirestoreActiveOrdersListener extends GetxController {
           me.lat,
           me.lng,
         );
-        if (meters == null ||
-            meters > FirestoreNearbyHelper.maxRangeMeters) {
+        if (meters == null || meters > FirestoreNearbyHelper.maxRangeMeters) {
           continue;
         }
         _enqueueOffer(wrap(doc.id, Map<String, dynamic>.from(data)));
@@ -269,7 +269,10 @@ class FirestoreActiveOrdersListener extends GetxController {
 
     if (!await FirestoreNearbyHelper.isPickupWithinRange(data)) return;
 
-    final mapped = FirestoreActiveOrderMapper.activeCourierToModel(doc.id, data);
+    final mapped = FirestoreActiveOrderMapper.activeCourierToModel(
+      doc.id,
+      data,
+    );
     _enqueueOffer(
       NearbyOrderMapOffer(
         docId: doc.id,
@@ -315,7 +318,9 @@ class FirestoreActiveOrdersListener extends GetxController {
 
     final sameDoc = viewingDocId != null && viewingDocId == doc.id;
     final sameOrderId =
-        changedOrderId != null && viewing.orderId != null && viewing.orderId == changedOrderId;
+        changedOrderId != null &&
+        viewing.orderId != null &&
+        viewing.orderId == changedOrderId;
     if (!sameDoc && !sameOrderId) return;
 
     FindingRideRequestsScreen.currentlyViewingOrder = null;

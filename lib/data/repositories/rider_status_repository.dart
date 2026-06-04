@@ -10,8 +10,8 @@ class RiderStatusRepository {
   RiderStatusRepository({
     ApiClient? apiClient,
     SecureStorageService? storageService,
-  })  : _apiClient = apiClient ?? ApiClient(),
-        _storageService = storageService ?? SecureStorageService();
+  }) : _apiClient = apiClient ?? ApiClient(),
+       _storageService = storageService ?? SecureStorageService();
 
   final ApiClient _apiClient;
   final SecureStorageService _storageService;
@@ -106,7 +106,10 @@ class RiderStatusRepository {
 }
 
 class RiderStatusRepositoryException implements Exception {
-  RiderStatusRepositoryException({required this.statusCode, required this.body});
+  RiderStatusRepositoryException({
+    required this.statusCode,
+    required this.body,
+  });
 
   final int statusCode;
   final String body;

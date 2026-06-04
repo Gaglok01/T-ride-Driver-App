@@ -141,4 +141,3 @@ class ProfileRepositoryException implements Exception {
   @override
   String toString() => 'ProfileRepositoryException($statusCode): $body';
 }
-

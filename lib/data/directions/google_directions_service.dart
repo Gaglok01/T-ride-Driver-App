@@ -145,9 +145,7 @@ class GoogleDirectionsService {
       debugPrint('[GoogleDirectionsService] Request timed out: $e\n$st');
       return null;
     } catch (e, st) {
-      debugPrint(
-        '[GoogleDirectionsService] Error fetching route: $e\n$st',
-      );
+      debugPrint('[GoogleDirectionsService] Error fetching route: $e\n$st');
       return null;
     }
   }

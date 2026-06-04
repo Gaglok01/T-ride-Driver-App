@@ -11,9 +11,9 @@ class FcmTokenService {
     FirebaseMessaging? messaging,
     SecureStorageService? storage,
     ApiClient? apiClient,
-  })  : _messaging = messaging ?? FirebaseMessaging.instance,
-        _storage = storage ?? SecureStorageService(),
-        _apiClient = apiClient ?? ApiClient();
+  }) : _messaging = messaging ?? FirebaseMessaging.instance,
+       _storage = storage ?? SecureStorageService(),
+       _apiClient = apiClient ?? ApiClient();
 
   final FirebaseMessaging _messaging;
   final SecureStorageService _storage;
@@ -52,23 +52,12 @@ class FcmTokenService {
           'Accept': 'application/json',
           'Authorization': 'Bearer $authToken',
         },
-        body: {
-          'fcm_token': fcmToken,
-        },
+        body: {'fcm_token': fcmToken},
       );
 
       print("FCM POST RESULT => ${response.statusCode} : ${response.body}");
-
-
-
     } catch (e) {
       print("FCM DEBUG ERROR: $e");
     }
   }
 }
-
-
-
-
-
-

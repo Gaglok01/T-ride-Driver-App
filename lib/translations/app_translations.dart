@@ -99,8 +99,7 @@ class AppTranslations extends Translations {
       'map_type_hybrid': 'Hybrid',
       'full_map_realtime_orders_hint':
           'Any order placed nearby will be shown here.',
-      'tap_map_live_orders_hint':
-          'Tap the map for a fullscreen view.',
+      'tap_map_live_orders_hint': 'Tap the map for a fullscreen view.',
       'map_order_bonus_line': 'Incl. @amount bonus',
       'map_order_route_fallback': 'Fetching route…',
       'map_order_schedule_unknown': 'Schedule unavailable',

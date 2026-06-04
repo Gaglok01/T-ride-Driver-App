@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     as nav;
 
@@ -296,7 +296,9 @@ class _GoogleMapState extends State<GoogleMap> {
       try {
         await _controller?.rawController?.setNavigationFooterEnabled(false);
         await _controller?.rawController?.setRecenterButtonEnabled(true);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 120));
+        await _controller?.rawController?.setPadding(
+          const EdgeInsets.only(bottom: 120),
+        );
         await _controller?.rawController?.setSpeedometerEnabled(true);
         await _controller?.rawController?.setReportIncidentButtonEnabled(false);
         await _controller?.rawController?.setTrafficIncidentCardsEnabled(false);
@@ -361,7 +363,3 @@ class _GoogleMapState extends State<GoogleMap> {
     );
   }
 }
-
-
-
-

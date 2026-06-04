@@ -18,8 +18,10 @@ class DriverProfileV2 extends StatefulWidget {
 }
 
 class _DriverProfileV2State extends State<DriverProfileV2> {
-  final DriverDashboardRepository _dashboardRepository = DriverDashboardRepository();
-  final DriverOnboardingRepository _onboardingRepository = DriverOnboardingRepository();
+  final DriverDashboardRepository _dashboardRepository =
+      DriverDashboardRepository();
+  final DriverOnboardingRepository _onboardingRepository =
+      DriverOnboardingRepository();
   final ImagePicker _picker = ImagePicker();
 
   File? _profilePhoto;
@@ -86,24 +88,24 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                   padding: EdgeInsets.all(18.w),
                   children: [
                     if (_error != null) _errorCard(_error!),
-            _header(),
-            SizedBox(height: 16.h),
-            _heroCard(),
-            SizedBox(height: 14.h),
-            _eligibilityCard(),
-            SizedBox(height: 14.h),
-            _aiVerificationCard(),
-            SizedBox(height: 14.h),
-            _vehicleCard(),
-            SizedBox(height: 14.h),
-            _documentsCard(),
-            SizedBox(height: 14.h),
-            _preferencesCard(),
-            SizedBox(height: 14.h),
-            _backgroundCheckCard(),
-            SizedBox(height: 14.h),
-            _quickActionsCard(),
-            SizedBox(height: 24.h),
+                    _header(),
+                    SizedBox(height: 16.h),
+                    _heroCard(),
+                    SizedBox(height: 14.h),
+                    _eligibilityCard(),
+                    SizedBox(height: 14.h),
+                    _aiVerificationCard(),
+                    SizedBox(height: 14.h),
+                    _vehicleCard(),
+                    SizedBox(height: 14.h),
+                    _documentsCard(),
+                    SizedBox(height: 14.h),
+                    _preferencesCard(),
+                    SizedBox(height: 14.h),
+                    _backgroundCheckCard(),
+                    SizedBox(height: 14.h),
+                    _quickActionsCard(),
+                    SizedBox(height: 24.h),
                   ],
                 ),
               ),
@@ -155,33 +157,47 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
               color: AppConst.primaryColor.withOpacity(0.18),
               border: Border.all(color: AppConst.primaryColor, width: 3),
             ),
-            child: (_dashboard?.profileImage != null && _dashboard!.profileImage!.isNotEmpty)
-                  ? ClipOval(
-                      child: Image.network(
-                        _dashboard!.profileImage!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Icon(Icons.person_rounded, size: 36.sp),
-                      ),
-                    )
-                  : Icon(Icons.person_rounded, size: 36.sp),
+            child:
+                (_dashboard?.profileImage != null &&
+                    _dashboard!.profileImage!.isNotEmpty)
+                ? ClipOval(
+                    child: Image.network(
+                      _dashboard!.profileImage!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          Icon(Icons.person_rounded, size: 36.sp),
+                    ),
+                  )
+                : Icon(Icons.person_rounded, size: 36.sp),
           ),
           SizedBox(width: 14.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_driverDisplayName(),
-                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900),
+                Text(
+                  _driverDisplayName(),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 SizedBox(height: 5.h),
-                _statusPill(_driverBadgeText(), _dashboard?.verified == true ? Icons.verified_rounded : Icons.pending_rounded),
+                _statusPill(
+                  _driverBadgeText(),
+                  _dashboard?.verified == true
+                      ? Icons.verified_rounded
+                      : Icons.pending_rounded,
+                ),
                 SizedBox(height: 10.h),
                 Row(
                   children: [
                     _miniStat((_dashboard?.rating ?? 0).toString(), 'Rating'),
                     _divider(),
-                    _miniStat((_dashboard?.todayTrips ?? 0).toString(), 'Today trips'),
+                    _miniStat(
+                      (_dashboard?.todayTrips ?? 0).toString(),
+                      'Today trips',
+                    ),
                     _divider(),
                     _miniStat('\$240', 'Today'),
                   ],
@@ -199,17 +215,13 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
 
     final eligibility = _dashboard?.eligibility ?? {};
 
-    final accountApproved =
-        eligibility['account_approved'] == true;
+    final accountApproved = eligibility['account_approved'] == true;
 
-    final driverActive =
-        eligibility['driver_active'] == true;
+    final driverActive = eligibility['driver_active'] == true;
 
-    final documentsApproved =
-        eligibility['documents_approved'] == true;
+    final documentsApproved = eligibility['documents_approved'] == true;
 
-    final backgroundApproved =
-        eligibility['background_check_approved'] == true;
+    final backgroundApproved = eligibility['background_check_approved'] == true;
 
     final issues = <String>[];
 
@@ -260,9 +272,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      canDrive
-                          ? 'Eligible to drive'
-                          : 'Cannot go online yet',
+                      canDrive ? 'Eligible to drive' : 'Cannot go online yet',
                       style: TextStyle(
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w900,
@@ -271,10 +281,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                     SizedBox(height: 4.h),
                     Text(
                       'Account: ${_dashboard?.accountStatus ?? 'Unknown'} | Driver: ${_dashboard?.driverStatus ?? 'Unknown'}',
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: Colors.black54,
-                      ),
+                      style: TextStyle(fontSize: 11.sp, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -288,11 +295,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                 padding: EdgeInsets.only(bottom: 6.h),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.circle,
-                      size: 6.sp,
-                      color: Colors.orange,
-                    ),
+                    Icon(Icons.circle, size: 6.sp, color: Colors.orange),
                     SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
@@ -312,13 +315,22 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       ),
     );
   }
+
   Widget _aiVerificationCard() {
     return _sectionCard(
       title: 'AI verification',
       icon: Icons.auto_awesome_rounded,
       children: [
-        _verificationStep('Driver license', 'AI verifying identity and expiration', true),
-        _verificationStep('Vehicle registration', 'Reading VIN, plate and vehicle details', true),
+        _verificationStep(
+          'Driver license',
+          'AI verifying identity and expiration',
+          true,
+        ),
+        _verificationStep(
+          'Vehicle registration',
+          'Reading VIN, plate and vehicle details',
+          true,
+        ),
         _verificationStep('Insurance', 'Checking active coverage', false),
       ],
     );
@@ -363,7 +375,10 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                   ),
                 ),
               ),
-              const Icon(Icons.auto_awesome_rounded, color: AppConst.primaryColor),
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: AppConst.primaryColor,
+              ),
             ],
           ),
           SizedBox(height: 18.h),
@@ -382,8 +397,16 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
             spacing: 8.w,
             runSpacing: 8.h,
             children: [
-              _darkPill(_dashboard?.vehiclePlateNumber?.isNotEmpty == true ? _dashboard!.vehiclePlateNumber! : 'Plate pending'),
-              _darkPill(_dashboard?.vehicleColor?.isNotEmpty == true ? _dashboard!.vehicleColor! : 'Color pending'),
+              _darkPill(
+                _dashboard?.vehiclePlateNumber?.isNotEmpty == true
+                    ? _dashboard!.vehiclePlateNumber!
+                    : 'Plate pending',
+              ),
+              _darkPill(
+                _dashboard?.vehicleColor?.isNotEmpty == true
+                    ? _dashboard!.vehicleColor!
+                    : 'Color pending',
+              ),
               _darkPill(_maskedVin()),
             ],
           ),
@@ -407,7 +430,8 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     final model = (_dashboard?.vehicleModel ?? '').toLowerCase();
     final color = (_dashboard?.vehicleColor ?? 'Gray').toLowerCase();
 
-    final isSuv = model.contains('cr-v') ||
+    final isSuv =
+        model.contains('cr-v') ||
         model.contains('rav4') ||
         model.contains('escape') ||
         model.contains('pilot') ||
@@ -427,7 +451,13 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       child: Row(
         children: [
           Expanded(
-            child: CustomPaint(painter: _VehicleSilhouettePainter(isSuv: isSuv, vehicleColor: color), child: const SizedBox.expand()),
+            child: CustomPaint(
+              painter: _VehicleSilhouettePainter(
+                isSuv: isSuv,
+                vehicleColor: color,
+              ),
+              child: const SizedBox.expand(),
+            ),
           ),
           SizedBox(width: 14.w),
           Column(
@@ -457,6 +487,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       ),
     );
   }
+
   Widget _documentsCard() {
     return _sectionCard(
       title: 'Documents',
@@ -504,7 +535,9 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
           child: ElevatedButton.icon(
             onPressed: _uploadingDocs ? null : _submitDocuments,
             icon: const Icon(Icons.cloud_upload_rounded),
-            label: Text(_uploadingDocs ? 'Uploading...' : 'Upload or update documents'),
+            label: Text(
+              _uploadingDocs ? 'Uploading...' : 'Upload or update documents',
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
@@ -517,6 +550,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       ],
     );
   }
+
   Widget _preferencesCard() {
     return _sectionCard(
       title: 'Preferences',
@@ -599,6 +633,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       if (mounted) setState(() => _savingPreferences = false);
     }
   }
+
   Future<void> _pickDocument(String type) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -617,7 +652,10 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
               children: [
                 Text(
                   'Upload document',
-                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 SizedBox(height: 14.h),
                 ListTile(
@@ -707,7 +745,9 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
         _vehicleRegistration = null;
       });
 
-      AppSnackbar.showSuccess(message: 'Documents uploaded for AI verification.');
+      AppSnackbar.showSuccess(
+        message: 'Documents uploaded for AI verification.',
+      );
       await _loadDashboard();
     } catch (e) {
       AppSnackbar.showApiError(e);
@@ -715,6 +755,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       if (mounted) setState(() => _uploadingDocs = false);
     }
   }
+
   Widget _backgroundCheckCard() {
     final raw = (_dashboard?.backgroundCheckStatus ?? 'not_started')
         .toString()
@@ -722,37 +763,36 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
 
     final adminOverride = _dashboard?.adminOverride == true;
 
-    final isClear = raw == 'approved' ||
+    final isClear =
+        raw == 'approved' ||
         raw == 'clear' ||
         raw == 'cleared' ||
         raw == 'completed' ||
         raw == 'verified';
 
-    final isFailed = raw == 'failed' ||
-        raw == 'rejected' ||
-        raw == 'suspended';
+    final isFailed = raw == 'failed' || raw == 'rejected' || raw == 'suspended';
 
     final title = isClear
         ? 'Background check clear'
         : isFailed
-            ? 'Background check issue'
-            : 'Background check pending';
+        ? 'Background check issue'
+        : 'Background check pending';
 
     final subtitle = adminOverride
         ? 'Admin override is active for testing. Compliance is still pending.'
         : isClear
-            ? 'Checkr verification is complete.'
-            : isFailed
-                ? 'Action is required before this driver can operate.'
-                : 'Required before production driving. Powered by Checkr.';
+        ? 'Checkr verification is complete.'
+        : isFailed
+        ? 'Action is required before this driver can operate.'
+        : 'Required before production driving. Powered by Checkr.';
 
     final color = adminOverride
         ? Colors.blue
         : isClear
-            ? Colors.green
-            : isFailed
-                ? Colors.red
-                : Colors.orange;
+        ? Colors.green
+        : isFailed
+        ? Colors.red
+        : Colors.orange;
 
     return _sectionCard(
       title: 'Background check',
@@ -771,10 +811,10 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                 adminOverride
                     ? Icons.admin_panel_settings_rounded
                     : isClear
-                        ? Icons.verified_user_rounded
-                        : isFailed
-                            ? Icons.error_rounded
-                            : Icons.hourglass_bottom_rounded,
+                    ? Icons.verified_user_rounded
+                    : isFailed
+                    ? Icons.error_rounded
+                    : Icons.hourglass_bottom_rounded,
                 color: color,
                 size: 28.sp,
               ),
@@ -869,15 +909,13 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
           SizedBox(height: 4.h),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w900,
-            ),
+            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900),
           ),
         ],
       ),
     );
   }
+
   String _vehicleTitle() {
     final parts = [
       _dashboard?.vehicleYear,
@@ -885,7 +923,9 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       _dashboard?.vehicleModel,
     ].where((v) => v != null && v.toString().trim().isNotEmpty).join(' ');
 
-    return parts.isEmpty ? 'Vehicle details will appear here after OCR parsing' : parts;
+    return parts.isEmpty
+        ? 'Vehicle details will appear here after OCR parsing'
+        : parts;
   }
 
   String _maskedVin() {
@@ -945,9 +985,11 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     if (s == 'rejected') return 'Reupload required';
     return 'Tap to upload using camera or gallery';
   }
+
   String _money(num value) {
     return '\$${value.toStringAsFixed(0)}';
   }
+
   Widget _quickActionsCard() {
     return _sectionCard(
       title: 'Account menu',
@@ -963,13 +1005,19 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
           Icons.speed_rounded,
           'Acceptance rate',
           '${(_dashboard?.acceptanceRate ?? 0).toStringAsFixed(1)}%',
-          () => AppSnackbar.showSuccess(message: 'Acceptance rate: ${(_dashboard?.acceptanceRate ?? 0).toStringAsFixed(1)}%'),
+          () => AppSnackbar.showSuccess(
+            message:
+                'Acceptance rate: ${(_dashboard?.acceptanceRate ?? 0).toStringAsFixed(1)}%',
+          ),
         ),
         _actionTile(
           Icons.pending_actions_rounded,
           'Pending documents',
           '${_dashboard?.pendingDocuments ?? 0} pending',
-          () => AppSnackbar.showSuccess(message: '${_dashboard?.pendingDocuments ?? 0} document(s) pending review.'),
+          () => AppSnackbar.showSuccess(
+            message:
+                '${_dashboard?.pendingDocuments ?? 0} document(s) pending review.',
+          ),
         ),
         _actionTile(
           Icons.logout_rounded,
@@ -980,6 +1028,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       ],
     );
   }
+
   void _confirmLogout() {
     Get.defaultDialog(
       title: 'Logout',
@@ -993,6 +1042,7 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       },
     );
   }
+
   Widget _errorCard(String message) {
     return Container(
       margin: EdgeInsets.all(18.w),
@@ -1000,31 +1050,23 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       decoration: BoxDecoration(
         color: Colors.red.withOpacity(0.08),
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(
-          color: Colors.red.withOpacity(0.20),
-        ),
+        border: Border.all(color: Colors.red.withOpacity(0.20)),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.error_outline_rounded,
-            color: Colors.red,
-            size: 28.sp,
-          ),
+          Icon(Icons.error_outline_rounded, color: Colors.red, size: 28.sp),
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
             ),
           ),
         ],
       ),
     );
   }
+
   Widget _sectionCard({
     required String title,
     required IconData icon,
@@ -1072,13 +1114,17 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       margin: EdgeInsets.only(bottom: 10.h),
       padding: EdgeInsets.all(13.w),
       decoration: BoxDecoration(
-        color: active ? AppConst.primaryColor.withOpacity(0.14) : Colors.grey.withOpacity(0.12),
+        color: active
+            ? AppConst.primaryColor.withOpacity(0.14)
+            : Colors.grey.withOpacity(0.12),
         borderRadius: BorderRadius.circular(18.r),
       ),
       child: Row(
         children: [
           Icon(
-            active ? Icons.check_circle_rounded : Icons.hourglass_bottom_rounded,
+            active
+                ? Icons.check_circle_rounded
+                : Icons.hourglass_bottom_rounded,
             color: active ? Colors.green : Colors.orange,
           ),
           SizedBox(width: 10.w),
@@ -1086,9 +1132,18 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 SizedBox(height: 3.h),
-                Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54)),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 11.sp, color: Colors.black54),
+                ),
               ],
             ),
           ),
@@ -1122,9 +1177,18 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                   SizedBox(height: 3.h),
-                  Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 11.sp, color: Colors.black54),
+                  ),
                 ],
               ),
             ),
@@ -1136,8 +1200,8 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
                 color: status == 'Ready'
                     ? Colors.green
                     : status.contains('verifying')
-                        ? Colors.orange
-                        : Colors.black54,
+                    ? Colors.orange
+                    : Colors.black54,
               ),
             ),
           ],
@@ -1145,7 +1209,13 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       ),
     );
   }
-  Widget _actionTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
+
+  Widget _actionTile(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
@@ -1165,19 +1235,29 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       borderRadius: BorderRadius.circular(999.r),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
-      decoration: BoxDecoration(
-        color: enabled ? AppConst.primaryColor.withOpacity(0.18) : Colors.grey.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(999.r),
-        border: Border.all(
-          color: enabled ? AppConst.primaryColor : Colors.black12,
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppConst.primaryColor.withOpacity(0.18)
+              : Colors.grey.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(999.r),
+          border: Border.all(
+            color: enabled ? AppConst.primaryColor : Colors.black12,
+          ),
         ),
-      ),
-      child: Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(enabled ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded, size: 15.sp),
+            Icon(
+              enabled
+                  ? Icons.check_circle_rounded
+                  : Icons.add_circle_outline_rounded,
+              size: 15.sp,
+            ),
             SizedBox(width: 5.w),
-            Text(label, style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800)),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+            ),
           ],
         ),
       ),
@@ -1193,7 +1273,11 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       ),
       child: Text(
         text,
-        style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w800),
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -1210,7 +1294,10 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
         children: [
           Icon(icon, size: 14.sp),
           SizedBox(width: 5.w),
-          Text(text, style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800)),
+          Text(
+            text,
+            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w800),
+          ),
         ],
       ),
     );
@@ -1220,8 +1307,14 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
-        Text(label, style: TextStyle(fontSize: 10.sp, color: Colors.black54)),
+        Text(
+          value,
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10.sp, color: Colors.black54),
+        ),
       ],
     );
   }
@@ -1234,14 +1327,13 @@ class _DriverProfileV2State extends State<DriverProfileV2> {
       color: Colors.black12,
     );
   }
-
 }
 
-
-
-
 class _VehicleSilhouettePainter extends CustomPainter {
-  const _VehicleSilhouettePainter({required this.isSuv, required this.vehicleColor});
+  const _VehicleSilhouettePainter({
+    required this.isSuv,
+    required this.vehicleColor,
+  });
 
   final bool isSuv;
   final String vehicleColor;
@@ -1309,25 +1401,7 @@ class _VehicleSilhouettePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _VehicleSilhouettePainter oldDelegate) {
-    return oldDelegate.isSuv != isSuv || oldDelegate.vehicleColor != vehicleColor;
+    return oldDelegate.isSuv != isSuv ||
+        oldDelegate.vehicleColor != vehicleColor;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

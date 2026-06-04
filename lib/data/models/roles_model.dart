@@ -20,13 +20,7 @@ class Roles {
 }
 
 class Role {
-  Role({
-    this.id,
-    this.name,
-    this.guardName,
-    this.createdAt,
-    this.updatedAt,
-  });
+  Role({this.id, this.name, this.guardName, this.createdAt, this.updatedAt});
 
   final int? id;
   final String? name;
@@ -40,21 +34,19 @@ class Role {
     String? guardName,
     String? createdAt,
     String? updatedAt,
-  }) =>
-      Role(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        guardName: guardName ?? this.guardName,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  }) => Role(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    guardName: guardName ?? this.guardName,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
 
   factory Role.fromJson(Map<String, dynamic> json) => Role(
-        id: (json['id'] as num?)?.toInt(),
-        name: json['name'] as String?,
-        guardName: json['guard_name'] as String?,
-        createdAt: json['created_at'] as String?,
-        updatedAt: json['updated_at'] as String?,
-      );
+    id: (json['id'] as num?)?.toInt(),
+    name: json['name'] as String?,
+    guardName: json['guard_name'] as String?,
+    createdAt: json['created_at'] as String?,
+    updatedAt: json['updated_at'] as String?,
+  );
 }
-

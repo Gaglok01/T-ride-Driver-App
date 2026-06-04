@@ -88,5 +88,3 @@ class DriverOnboardingException implements Exception {
   @override
   String toString() => 'DriverOnboardingException($statusCode): $body';
 }
-
-

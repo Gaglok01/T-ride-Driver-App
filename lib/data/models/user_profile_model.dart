@@ -68,7 +68,8 @@ class UserProfile {
       updatedAt: json['updated_at'] as String?,
       walletBalance: json['wallet_balance'] as String?,
       photo: (json['photo'] ?? json['image'] ?? json['image_url'])?.toString(),
-      roles: (json['roles'] as List<dynamic>?)
+      roles:
+          (json['roles'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
               .map(UserRole.fromJson)
               .toList() ??
@@ -109,11 +110,7 @@ class UserRole {
 }
 
 class RolePivot {
-  RolePivot({
-    this.modelType,
-    this.modelId,
-    this.roleId,
-  });
+  RolePivot({this.modelType, this.modelId, this.roleId});
 
   final String? modelType;
   final int? modelId;
@@ -127,5 +124,3 @@ class RolePivot {
     );
   }
 }
-
-

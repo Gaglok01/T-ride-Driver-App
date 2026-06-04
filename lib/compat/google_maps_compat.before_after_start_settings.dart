@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     as nav;
 
@@ -341,4 +341,3 @@ class _GoogleMapState extends State<GoogleMap> {
     );
   }
 }
-

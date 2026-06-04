@@ -1,9 +1,6 @@
 class WalletData {
-  WalletData({
-    this.status,
-    this.balance,
-    List<WalletTransaction>? transactions,
-  }) : transactions = transactions ?? const [];
+  WalletData({this.status, this.balance, List<WalletTransaction>? transactions})
+    : transactions = transactions ?? const [];
 
   final bool? status;
   final num? balance;
@@ -22,7 +19,8 @@ class WalletData {
     return WalletData(
       status: json['status'] as bool?,
       balance: parsedBalance,
-      transactions: (data['transactions'] as List<dynamic>?)
+      transactions:
+          (data['transactions'] as List<dynamic>?)
               ?.whereType<Map<String, dynamic>>()
               .map(WalletTransaction.fromJson)
               .toList() ??
@@ -73,4 +71,3 @@ class WalletTransaction {
     );
   }
 }
-

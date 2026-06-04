@@ -116,9 +116,7 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
           },
         );
       } else {
-        AppSnackbar.showError(
-          message: 'invalid_otp_try_again'.tr,
-        );
+        AppSnackbar.showError(message: 'invalid_otp_try_again'.tr);
       }
     } catch (e) {
       // ignore: avoid_print

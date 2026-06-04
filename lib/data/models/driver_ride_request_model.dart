@@ -48,19 +48,40 @@ class DriverRideRequest {
         fallback: 'Pickup location',
       ),
       dropoffAddress: _asString(
-        json['dropoff_address'] ?? json['destination_address'] ?? dropoff?['address'] ?? dropoff?['name'],
+        json['dropoff_address'] ??
+            json['destination_address'] ??
+            dropoff?['address'] ??
+            dropoff?['name'],
         fallback: 'Destination',
       ),
-      pickupLat: _asDouble(json['pickup_lat'] ?? pickup?['lat'] ?? pickup?['latitude']),
-      pickupLng: _asDouble(json['pickup_lng'] ?? pickup?['lng'] ?? pickup?['longitude']),
-      dropoffLat: _asDouble(json['dropoff_lat'] ?? json['destination_lat'] ?? dropoff?['lat'] ?? dropoff?['latitude']),
-      dropoffLng: _asDouble(json['dropoff_lng'] ?? json['destination_lng'] ?? dropoff?['lng'] ?? dropoff?['longitude']),
-      estimatedFare: _asNum(json['estimated_fare'] ?? json['fare'] ?? json['price']),
+      pickupLat: _asDouble(
+        json['pickup_lat'] ?? pickup?['lat'] ?? pickup?['latitude'],
+      ),
+      pickupLng: _asDouble(
+        json['pickup_lng'] ?? pickup?['lng'] ?? pickup?['longitude'],
+      ),
+      dropoffLat: _asDouble(
+        json['dropoff_lat'] ??
+            json['destination_lat'] ??
+            dropoff?['lat'] ??
+            dropoff?['latitude'],
+      ),
+      dropoffLng: _asDouble(
+        json['dropoff_lng'] ??
+            json['destination_lng'] ??
+            dropoff?['lng'] ??
+            dropoff?['longitude'],
+      ),
+      estimatedFare: _asNum(
+        json['estimated_fare'] ?? json['fare'] ?? json['price'],
+      ),
       distanceMiles: _asNum(json['distance_miles'] ?? json['distance']),
       durationMinutes: _asNum(json['duration_minutes'] ?? json['eta_minutes']),
       rideType: _asString(json['ride_type'] ?? json['type'], fallback: 'ride'),
       status: _asString(json['status'], fallback: 'requested'),
-      riderName: json['rider_name']?.toString() ?? _asMap(json['rider'])?['name']?.toString(),
+      riderName:
+          json['rider_name']?.toString() ??
+          _asMap(json['rider'])?['name']?.toString(),
       canBid: _asBool(json['can_bid'] ?? json['bid_enabled']),
       isPooling: _asBool(json['is_pooling'] ?? json['pooling']),
     );

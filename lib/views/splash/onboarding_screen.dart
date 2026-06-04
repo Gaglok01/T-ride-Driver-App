@@ -131,7 +131,8 @@ class OnboardingScreen extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        (controller.currentPage.value == onboardingData.length - 1
+                        (controller.currentPage.value ==
+                                    onboardingData.length - 1
                                 ? 'done'
                                 : 'next')
                             .tr,

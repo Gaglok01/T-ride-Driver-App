@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -92,15 +92,20 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     final riderName = (_ride.riderName ?? '').trim();
 
     if (status == 'arrived') {
-      return riderName.isNotEmpty ? 'Waiting for ' + riderName : 'Waiting for rider';
+      return riderName.isNotEmpty
+          ? 'Waiting for ' + riderName
+          : 'Waiting for rider';
     }
 
     if (status == 'started' || status == 'in_progress') {
       return 'Trip in progress';
     }
 
-    return riderName.isNotEmpty ? 'Heading to ' + riderName : 'Heading to rider';
+    return riderName.isNotEmpty
+        ? 'Heading to ' + riderName
+        : 'Heading to rider';
   }
+
   String get _address {
     final status = _ride.status.toLowerCase();
     if (status == 'started' || status == 'in_progress') {
@@ -468,7 +473,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
             ),
           ),
 
-
           Positioned(
             top: MediaQuery.of(context).padding.top + 10.h,
             left: 12.w,
@@ -557,7 +561,10 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                         ),
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 7.h,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black,
                           borderRadius: BorderRadius.circular(18.r),
@@ -566,7 +573,11 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                           children: [
                             Icon(Icons.call, color: Colors.white, size: 18.sp),
                             SizedBox(width: 12.w),
-                            Icon(Icons.message_rounded, color: Colors.white, size: 18.sp),
+                            Icon(
+                              Icons.message_rounded,
+                              color: Colors.white,
+                              size: 18.sp,
+                            ),
                           ],
                         ),
                       ),
@@ -588,23 +599,8 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
               ),
             ),
           ),
-
         ],
       ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

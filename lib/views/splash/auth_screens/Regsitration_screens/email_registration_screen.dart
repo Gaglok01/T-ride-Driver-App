@@ -63,9 +63,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> {
       if (success) {
         Get.to(() => const EmailOtpScreen(), arguments: {'email': email});
       } else {
-        AppSnackbar.showError(
-          message: 'failed_send_otp_try_again'.tr,
-        );
+        AppSnackbar.showError(message: 'failed_send_otp_try_again'.tr);
       }
     } catch (e) {
       // ignore: avoid_print

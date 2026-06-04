@@ -22,29 +22,29 @@ class OrderTripTimelineRows extends StatelessWidget {
     const purple = kOrderRoutePurple;
 
     Widget pickupGlyph() => Container(
-          width: 14.w,
-          height: 14.w,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            border: Border.all(color: purple, width: 2),
-          ),
-        );
+      width: 14.w,
+      height: 14.w,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: purple, width: 2),
+      ),
+    );
 
     Widget destGlyph() => Container(
-          width: 26.w,
-          height: 26.w,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(shape: BoxShape.circle, color: purple),
-          child: Container(
-            width: 12.w,
-            height: 12.w,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-            ),
-          ),
-        );
+      width: 26.w,
+      height: 26.w,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(shape: BoxShape.circle, color: purple),
+      child: Container(
+        width: 12.w,
+        height: 12.w,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+        ),
+      ),
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

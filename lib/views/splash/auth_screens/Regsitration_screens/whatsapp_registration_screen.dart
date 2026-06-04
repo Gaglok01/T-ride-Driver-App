@@ -70,9 +70,7 @@ class _WhatsappRegistrationScreenState
           ),
         );
       } else {
-        AppSnackbar.showError(
-          message: 'failed_send_otp_try_again'.tr,
-        );
+        AppSnackbar.showError(message: 'failed_send_otp_try_again'.tr);
       }
     } catch (e) {
       // ignore: avoid_print

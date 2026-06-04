@@ -36,7 +36,9 @@ class LanguageModel {
     if (data == null) return [];
     if (data is! List) return [];
     return data
-        .map((e) => e is Map<String, dynamic> ? LanguageModel.fromJson(e) : null)
+        .map(
+          (e) => e is Map<String, dynamic> ? LanguageModel.fromJson(e) : null,
+        )
         .whereType<LanguageModel>()
         .where((l) => l.status == 1)
         .toList();

@@ -136,7 +136,9 @@ class RidesRepository {
   }
 
   /// `POST /api/app/courier/{courierId}/cancel`
-  Future<Map<String, dynamic>> cancelCourierJob({required int courierId}) async {
+  Future<Map<String, dynamic>> cancelCourierJob({
+    required int courierId,
+  }) async {
     final token = await _storageService.getAuthToken();
     if (token == null || token.isEmpty) {
       throw RidesRepositoryException(
@@ -510,7 +512,9 @@ class RidesRepository {
   }
 
   /// `POST /api/app/driver/courier/{id}/accept`
-  Future<Map<String, dynamic>> acceptCourierJob({required int courierId}) async {
+  Future<Map<String, dynamic>> acceptCourierJob({
+    required int courierId,
+  }) async {
     final token = await _storageService.getAuthToken();
     if (token == null || token.isEmpty) {
       throw RidesRepositoryException(

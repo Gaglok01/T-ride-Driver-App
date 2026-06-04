@@ -54,7 +54,7 @@ class _TripNavigationScreenV2State extends State<TripNavigationScreenV2> {
       Polyline(
         polylineId: const PolylineId('route'),
         points: [widget.pickupLatLng, widget.dropoffLatLng],
-        width: 6,
+        width: 12,
       ),
     };
   }

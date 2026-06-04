@@ -34,6 +34,7 @@ class DriverDashboardRepository {
 
     return decoded['data'] as Map<String, dynamic>;
   }
+
   Future<void> updatePreferences({
     required bool bidEnabled,
     required bool poolingEnabled,
@@ -62,6 +63,4 @@ class DriverDashboardRepository {
       throw Exception(response.body);
     }
   }
-
 }
-

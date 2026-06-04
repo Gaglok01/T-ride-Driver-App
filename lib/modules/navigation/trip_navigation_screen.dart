@@ -92,15 +92,20 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     final riderName = (_ride.riderName ?? '').trim();
 
     if (status == 'arrived') {
-      return riderName.isNotEmpty ? 'Waiting for ' + riderName : 'Waiting for rider';
+      return riderName.isNotEmpty
+          ? 'Waiting for ' + riderName
+          : 'Waiting for rider';
     }
 
     if (status == 'started' || status == 'in_progress') {
       return 'Trip in progress';
     }
 
-    return riderName.isNotEmpty ? 'Heading to ' + riderName : 'Heading to rider';
+    return riderName.isNotEmpty
+        ? 'Heading to ' + riderName
+        : 'Heading to rider';
   }
+
   String get _address {
     final status = _ride.status.toLowerCase();
     if (status == 'started' || status == 'in_progress') {
@@ -243,7 +248,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     if (updated != null && mounted) {
       setState(() => _ride = updated);
       await _syncRideFirestoreStatus('arrived');
-      }
+    }
   }
 
   Future<void> _startTrip() async {
@@ -251,7 +256,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     if (updated != null && mounted) {
       setState(() => _ride = updated);
       await _syncRideFirestoreStatus('started');
-      }
+    }
   }
 
   Future<void> _completeTrip() async {
@@ -380,7 +385,6 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
     );
   }
 
-
   String get _tripBannerTitle {
     final status = _ride.status.toLowerCase();
 
@@ -390,6 +394,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
 
     return 'Navigation Active';
   }
+
   Widget _navChip(IconData icon, String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 9.h),
@@ -431,7 +436,7 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
               myLocationButtonEnabled: true,
               onMapCreated: (controller) async {
                 _mapController = controller;
-},
+              },
               markers: {
                 Marker(markerId: const MarkerId('target'), position: _target),
               },
@@ -469,13 +474,17 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
             ),
           ),
 
-
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
-              padding: EdgeInsets.fromLTRB(14.w, 14.h, 14.w, MediaQuery.of(context).padding.bottom + 14.h),
+              padding: EdgeInsets.fromLTRB(
+                14.w,
+                14.h,
+                14.w,
+                MediaQuery.of(context).padding.bottom + 14.h,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(26.r)),
@@ -510,12 +519,24 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Ride details', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900)),
+                                Text(
+                                  'Ride details',
+                                  style: TextStyle(
+                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
                                 SizedBox(height: 12.h),
-                                Text('Pickup', style: TextStyle(fontWeight: FontWeight.w900)),
+                                Text(
+                                  'Pickup',
+                                  style: TextStyle(fontWeight: FontWeight.w900),
+                                ),
                                 Text(_ride.pickupAddress),
                                 SizedBox(height: 10.h),
-                                Text('Drop-off', style: TextStyle(fontWeight: FontWeight.w900)),
+                                Text(
+                                  'Drop-off',
+                                  style: TextStyle(fontWeight: FontWeight.w900),
+                                ),
                                 Text(_ride.dropoffAddress),
                               ],
                             ),
@@ -524,50 +545,29 @@ class _TripNavigationScreenState extends State<TripNavigationScreen> {
                       }
                       if (value == 'last_trip') {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Last trip then offline selected.')),
+                          const SnackBar(
+                            content: Text('Last trip then offline selected.'),
+                          ),
                         );
                       }
                     },
                     itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'details', child: Text('Ride details')),
-                      PopupMenuItem(value: 'last_trip', child: Text('Last trip then offline')),
+                      PopupMenuItem(
+                        value: 'details',
+                        child: Text('Ride details'),
+                      ),
+                      PopupMenuItem(
+                        value: 'last_trip',
+                        child: Text('Last trip then offline'),
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
           ),
-
         ],
       ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

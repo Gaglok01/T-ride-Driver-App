@@ -298,8 +298,9 @@ class _FoodDeliveryListCard extends StatelessWidget {
     if ((order.vendor?.address ?? '').trim().isNotEmpty) {
       fromParts.add(order.vendor!.address!.trim());
     }
-    final fromText =
-        fromParts.isNotEmpty ? fromParts.join(', ') : 'restaurant'.tr;
+    final fromText = fromParts.isNotEmpty
+        ? fromParts.join(', ')
+        : 'restaurant'.tr;
 
     return Material(
       color: AppConst.white,

@@ -951,7 +951,7 @@ class HomeScreenState extends State<HomeScreen> {
       Polyline(
         polylineId: const PolylineId('active_route'),
         points: points,
-        width: 8,
+        width: 12,
         color: AppConst.accentColor,
         geodesic: true,
         startCap: Cap.roundCap,

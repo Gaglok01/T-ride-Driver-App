@@ -122,8 +122,3 @@ class ApiUrls {
   // static const String profile = 'api/profile';
   // static const String rides = 'api/rides';
 }
-
-
-
-
-

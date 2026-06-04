@@ -42,13 +42,13 @@ class NearbyOrderMapOffer {
 
   String pickupAddressShort() =>
       _pickupRaw?['address']?.toString().trim().isNotEmpty == true
-          ? _pickupRaw!['address'].toString()
-          : '';
+      ? _pickupRaw!['address'].toString()
+      : '';
 
   String destinationTitle() =>
       _dropoffRaw?['address']?.toString().trim().isNotEmpty == true
-          ? _dropoffRaw!['address'].toString()
-          : '';
+      ? _dropoffRaw!['address'].toString()
+      : '';
 
   /// Display name shown on the Uber-style rider row (first name preference).
   String riderDisplayName() {
@@ -64,7 +64,8 @@ class NearbyOrderMapOffer {
   }
 
   double? riderRatingStars() {
-    final r = _riderRaw?['rating'] ?? raw['passenger_rating'] ?? raw['rider_rating'];
+    final r =
+        _riderRaw?['rating'] ?? raw['passenger_rating'] ?? raw['rider_rating'];
     if (r == null) return null;
     if (r is num) return r.toDouble();
     return double.tryParse(r.toString());
@@ -84,7 +85,12 @@ class NearbyOrderMapOffer {
 
   /// Optional bonus/discount dollar amount shown in green (Firestore key varies).
   String? formattedBonusUsd() {
-    for (final k in const ['bonus_amount', 'fare_bonus', 'bonus', 'driver_bonus']) {
+    for (final k in const [
+      'bonus_amount',
+      'fare_bonus',
+      'bonus',
+      'driver_bonus',
+    ]) {
       final v = raw[k];
       if (v == null) continue;
       if (v is num) return v.toDouble().toStringAsFixed(2);

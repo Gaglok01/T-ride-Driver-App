@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_heat_map_repository.dart';
@@ -970,7 +970,7 @@ class HomeScreenState extends State<HomeScreen> {
           GoogleMap(
             initialCameraPosition: CameraPosition(target: mapCenter, zoom: 11),
             markers: _markers(),
-	    circles: _heatMapCircles(),
+            circles: _heatMapCircles(),
             polylines: {},
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
@@ -1560,7 +1560,9 @@ class HomeScreenState extends State<HomeScreen> {
     final status = ride.status.toLowerCase();
     final toPickup = status != 'in_progress' && status != 'started';
     final riderName = (ride.riderName ?? '').trim();
-    final title = toPickup ? (riderName.isNotEmpty ? 'Drive to ' + riderName : 'Drive to rider') : 'Trip in progress';
+    final title = toPickup
+        ? (riderName.isNotEmpty ? 'Drive to ' + riderName : 'Drive to rider')
+        : 'Trip in progress';
     final address = toPickup ? ride.pickupAddress : ride.dropoffAddress;
     final miles = _driverLatLng == null
         ? null
@@ -1853,7 +1855,3 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
-
-

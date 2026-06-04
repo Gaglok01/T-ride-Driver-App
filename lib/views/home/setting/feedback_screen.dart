@@ -144,8 +144,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     height: 120.h,
                     child: CustomTextField(
                       controller: _commentsController,
-                      hintText:
-                          'feedback_hint'.tr,
+                      hintText: 'feedback_hint'.tr,
                       keyboardType: TextInputType.multiline,
                       maxLines: 5,
                       onChanged: (value) => setState(() {}),

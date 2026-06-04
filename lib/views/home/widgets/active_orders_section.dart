@@ -173,7 +173,9 @@ class _ActiveOrdersSectionState extends State<ActiveOrdersSection> {
               });
             },
             child: Text(
-              _showAllActiveOrders ? 'show_less'.tr : '${'show_all'.tr} (${cards.length})',
+              _showAllActiveOrders
+                  ? 'show_less'.tr
+                  : '${'show_all'.tr} (${cards.length})',
               style: TextStyle(
                 color: AppConst.black,
                 fontSize: 14.sp,
@@ -458,7 +460,8 @@ class _ActiveOrdersSectionState extends State<ActiveOrdersSection> {
                 Text(
                   o.items
                       .map(
-                        (e) => '${e.quantity ?? 0}× ${e.productName ?? 'item'.tr}',
+                        (e) =>
+                            '${e.quantity ?? 0}× ${e.productName ?? 'item'.tr}',
                       )
                       .take(3)
                       .join(', '),

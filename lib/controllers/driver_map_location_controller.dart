@@ -70,10 +70,7 @@ class DriverMapLocationController extends GetxController {
     await _positionSubscription?.cancel();
     _positionSubscription = Geolocator.getPositionStream(
       locationSettings: settings,
-    ).listen(
-      _applyFix,
-      onError: (_) {},
-    );
+    ).listen(_applyFix, onError: (_) {});
   }
 
   void _applyFix(Position p) {

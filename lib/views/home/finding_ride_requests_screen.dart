@@ -232,7 +232,7 @@ class _FindingRideRequestsScreenState extends State<FindingRideRequestsScreen> {
         polylineId: const PolylineId('route'),
         points: points,
         color: kOrderRoutePurple,
-        width: 8,
+        width: 12,
         geodesic: geodesic,
         jointType: JointType.round,
         startCap: Cap.roundCap,

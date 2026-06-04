@@ -238,9 +238,7 @@ class _GoogleMapState extends State<GoogleMap> {
     if (!widget.navigationEnabled) return;
     final destination = _findDestination();
 
-    debugPrint(
-      'NAV BUILD ${DateTime.now()} markers=${widget.markers.length}',
-    );
+    debugPrint('NAV BUILD ${DateTime.now()} markers=${widget.markers.length}');
 
     if (destination == null) return;
 
@@ -309,14 +307,13 @@ class _GoogleMapState extends State<GoogleMap> {
         zoomLevel: 16.0,
       );
 
-
       try {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 500));
-
-        
+        await _controller?.rawController?.setPadding(
+          const EdgeInsets.only(bottom: 500),
+        );
       } catch (e) {
         debugPrint('T-RIDE ROUTE OVERVIEW FOLLOW TEST ERROR: $e');
       }
@@ -325,8 +322,10 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 500));
-} catch (e) {
+        await _controller?.rawController?.setPadding(
+          const EdgeInsets.only(bottom: 500),
+        );
+      } catch (e) {
         debugPrint('T-RIDE NAV CAMERA FINAL TEST ERROR: ');
       }
 
@@ -338,7 +337,7 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setReportIncidentButtonEnabled(false);
         await _controller?.rawController?.setTrafficIncidentCardsEnabled(false);
         await _controller?.rawController?.setTrafficPromptsEnabled(false);
-} catch (e) {
+      } catch (e) {
         debugPrint('T-RIDE NAV AFTER START SETTINGS ERROR: $e');
       }
     }
@@ -414,25 +413,3 @@ class _GoogleMapState extends State<GoogleMap> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

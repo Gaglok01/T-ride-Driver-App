@@ -31,7 +31,7 @@ class DriverDashboardData {
     this.vehicleColor,
     this.licenseExpiration,
     this.insuranceExpiration,
-      this.bidEnabled = true,
+    this.bidEnabled = true,
     this.poolingEnabled = true,
     this.courierEnabled = true,
     this.deliveryEnabled = true,
@@ -125,7 +125,9 @@ class DriverDashboardData {
       acceptanceRate: _parseNum(json['acceptance_rate']),
       pendingDocuments: _parseInt(json['pending_documents']),
       approvedDocuments: _parseInt(json['approved_documents']),
-      documentStatuses: Map<String, dynamic>.from(json['document_statuses'] ?? {}),
+      documentStatuses: Map<String, dynamic>.from(
+        json['document_statuses'] ?? {},
+      ),
       eligibility: Map<String, dynamic>.from(json['eligibility'] ?? {}),
       adminOverride: _parseBool((json['eligibility'] ?? {})['admin_override']),
       verified: _parseBool(json['verified']),
@@ -141,15 +143,12 @@ class DriverDashboardData {
       licenseExpiration: json['license_expiration']?.toString(),
       insuranceExpiration: json['insurance_expiration']?.toString(),
       bidEnabled: json['bid_enabled'] == true || json['bid_enabled'] == 1,
-      poolingEnabled: json['pooling_enabled'] == true || json['pooling_enabled'] == 1,
-      courierEnabled: json['courier_enabled'] == true || json['courier_enabled'] == 1,
-      deliveryEnabled: json['delivery_enabled'] == true || json['delivery_enabled'] == 1,
+      poolingEnabled:
+          json['pooling_enabled'] == true || json['pooling_enabled'] == 1,
+      courierEnabled:
+          json['courier_enabled'] == true || json['courier_enabled'] == 1,
+      deliveryEnabled:
+          json['delivery_enabled'] == true || json['delivery_enabled'] == 1,
     );
   }
 }
-
-
-
-
-
-

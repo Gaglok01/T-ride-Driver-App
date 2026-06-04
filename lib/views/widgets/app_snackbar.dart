@@ -56,12 +56,7 @@ abstract final class AppSnackbar {
     Duration duration = _defaultDuration,
     IconData? icon,
   }) {
-    _showBlack(
-      title: title,
-      message: message,
-      duration: duration,
-      icon: icon,
-    );
+    _showBlack(title: title, message: message, duration: duration, icon: icon);
   }
 
   static void showApiError(

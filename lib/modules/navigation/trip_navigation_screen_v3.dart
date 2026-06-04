@@ -293,7 +293,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     return ElevatedButton(
       onPressed: _handleAction,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFFFFB000),
         foregroundColor: Colors.white,
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         shape: RoundedRectangleBorder(
@@ -372,14 +372,12 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.20),
-                    blurRadius: 24,
-                    offset: const Offset(0, -6),
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.black.withOpacity(0.08),
+                    width: 1,
                   ),
-                ],
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -392,7 +390,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
                     style: TextStyle(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.w900,
-                      color: Colors.black,
+                      color: Colors.black87,
                     ),
                   ),
                   SizedBox(height: 2.h),
@@ -412,22 +410,52 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
                       if (_canContactRider) ...[
                         IconButton(
                           onPressed: () => debugPrint('CALL RIDER VIA TWILIO'),
-                          icon: const Icon(Icons.call_rounded),
+                          icon: const Icon(
+                            Icons.call_rounded,
+                            color: Colors.black87,
+                          ),
                         ),
                         IconButton(
                           onPressed: () => debugPrint('SMS RIDER VIA TWILIO'),
-                          icon: const Icon(Icons.message_rounded),
+                          icon: const Icon(
+                            Icons.message_rounded,
+                            color: Colors.black87,
+                          ),
                         ),
-                        IconButton(
-                          onPressed: () => debugPrint('CANCEL TRIP'),
-                          icon: const Icon(Icons.close_rounded),
+                        SizedBox(
+                          height: 38.h,
+                          child: OutlinedButton(
+                            onPressed: () => debugPrint('CANCEL TRIP'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(
+                                color: Colors.red,
+                                width: 1.4,
+                              ),
+                              padding: EdgeInsets.symmetric(horizontal: 10.w),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14.r),
+                              ),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
                         ),
+                        SizedBox(width: 8.w),
                       ],
                       Expanded(
                         child: SizedBox(height: 38.h, child: _actionButton()),
                       ),
                       PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert_rounded),
+                        icon: const Icon(
+                          Icons.more_vert_rounded,
+                          color: Colors.black87,
+                        ),
                         itemBuilder: (_) => [
                           const PopupMenuItem(
                             value: 'details',

@@ -4,7 +4,8 @@ class HomeMapStyles {
   HomeMapStyles._();
 
   /// Clean light canvas, muted roads / water, fewer POIs.
-  static const String lightUberLike = '['
+  static const String lightUberLike =
+      '['
       '{"elementType":"geometry","stylers":[{"color":"#f6f7f9"}]},'
       '{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},'
       '{"featureType":"poi","elementType":"labels","stylers":[{"visibility":"off"}]},'
@@ -19,7 +20,8 @@ class HomeMapStyles {
       ']';
 
   /// Dark navigation-style canvas (Uber night-like).
-  static const String darkUberLike = '['
+  static const String darkUberLike =
+      '['
       '{"elementType":"geometry","stylers":[{"color":"#242f3e"}]},'
       '{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},'
       '{"elementType":"labels.text.fill","stylers":[{"color":"#dfe4ec"}]},'

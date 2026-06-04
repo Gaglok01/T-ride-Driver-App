@@ -32,14 +32,18 @@ class _SettingScreenState extends State<SettingScreen> {
       if (!mounted) return;
       Get.offAll(() => const LoginScreen());
     } catch (e) {
-      if (mounted) AppSnackbar.showApiError(e, fallbackMessage: 'Unable to sign out.');
+      if (mounted)
+        AppSnackbar.showApiError(e, fallbackMessage: 'Unable to sign out.');
     } finally {
       if (mounted) setState(() => _isLoggingOut = false);
     }
   }
 
   void _showComingSoon(String title) {
-    AppSnackbar.showSuccess(title: title, message: 'This section is ready for backend connection.');
+    AppSnackbar.showSuccess(
+      title: title,
+      message: 'This section is ready for backend connection.',
+    );
   }
 
   @override
@@ -53,26 +57,84 @@ class _SettingScreenState extends State<SettingScreen> {
             _header(),
             SizedBox(height: 18.h),
             _section('Account', [
-              _item(Icons.person_outline_rounded, 'Driver profile', 'Vehicle, documents, payout and trust profile', () => Get.offAll(() => const Navbar(initialIndex: 4))),
-              _item(Icons.lock_outline_rounded, 'Security', 'Password, phone verification and device safety', () => _showComingSoon('Security')),
-              _item(Icons.account_balance_wallet_outlined, 'Earnings & payout', 'Balance, cash out and payment history', () => _showComingSoon('Earnings & payout')),
+              _item(
+                Icons.person_outline_rounded,
+                'Driver profile',
+                'Vehicle, documents, payout and trust profile',
+                () => Get.offAll(() => const Navbar(initialIndex: 4)),
+              ),
+              _item(
+                Icons.lock_outline_rounded,
+                'Security',
+                'Password, phone verification and device safety',
+                () => _showComingSoon('Security'),
+              ),
+              _item(
+                Icons.account_balance_wallet_outlined,
+                'Earnings & payout',
+                'Balance, cash out and payment history',
+                () => _showComingSoon('Earnings & payout'),
+              ),
             ]),
             SizedBox(height: 14.h),
             _section('Work preferences', [
-              _toggleItem(Icons.notifications_active_outlined, 'Push notifications', 'Ride offers, trip updates and alerts', _pushNotificationsEnabled, (v) => setState(() => _pushNotificationsEnabled = v)),
-              _toggleItem(Icons.flash_on_rounded, 'Auto-accept', 'Automatically accept eligible requests', _autoAcceptEnabled, (v) => setState(() => _autoAcceptEnabled = v)),
-              Obx(() => _toggleItem(Icons.contrast_rounded, 'Dark mode', 'Adjust the app appearance', _themeController.isDarkMode, _themeController.setDarkMode)),
+              _toggleItem(
+                Icons.notifications_active_outlined,
+                'Push notifications',
+                'Ride offers, trip updates and alerts',
+                _pushNotificationsEnabled,
+                (v) => setState(() => _pushNotificationsEnabled = v),
+              ),
+              _toggleItem(
+                Icons.flash_on_rounded,
+                'Auto-accept',
+                'Automatically accept eligible requests',
+                _autoAcceptEnabled,
+                (v) => setState(() => _autoAcceptEnabled = v),
+              ),
+              Obx(
+                () => _toggleItem(
+                  Icons.contrast_rounded,
+                  'Dark mode',
+                  'Adjust the app appearance',
+                  _themeController.isDarkMode,
+                  _themeController.setDarkMode,
+                ),
+              ),
             ]),
             SizedBox(height: 14.h),
             _section('Support', [
-              _item(Icons.support_agent_rounded, 'Help center', 'Get help with trips, riders and payments', () => _showComingSoon('Help center')),
-              _item(Icons.feedback_outlined, 'Send feedback', 'Report an issue or suggest an improvement', () => Get.to(() => const FeedbackScreen())),
-              _item(Icons.emergency_share_outlined, 'Safety tools', 'Emergency contact and trip sharing', () => _showComingSoon('Safety tools')),
+              _item(
+                Icons.support_agent_rounded,
+                'Help center',
+                'Get help with trips, riders and payments',
+                () => _showComingSoon('Help center'),
+              ),
+              _item(
+                Icons.feedback_outlined,
+                'Send feedback',
+                'Report an issue or suggest an improvement',
+                () => Get.to(() => const FeedbackScreen()),
+              ),
+              _item(
+                Icons.emergency_share_outlined,
+                'Safety tools',
+                'Emergency contact and trip sharing',
+                () => _showComingSoon('Safety tools'),
+              ),
             ]),
             SizedBox(height: 18.h),
             _logoutButton(),
             SizedBox(height: 12.h),
-            Text('T-Ride Driver', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.sp, color: Colors.black38, fontWeight: FontWeight.w700)),
+            Text(
+              'T-Ride Driver',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: Colors.black38,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),
@@ -84,7 +146,10 @@ class _SettingScreenState extends State<SettingScreen> {
       children: [
         IconButton(
           onPressed: () => Get.offAll(() => const Navbar(initialIndex: 4)),
-          icon: const Icon(Icons.arrow_back_rounded, color: AppConst.primaryColor),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppConst.primaryColor,
+          ),
           style: IconButton.styleFrom(backgroundColor: Colors.white),
         ),
         SizedBox(width: 10.w),
@@ -92,9 +157,23 @@ class _SettingScreenState extends State<SettingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Settings', style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w900, color: Colors.black)),
+              Text(
+                'Settings',
+                style: TextStyle(
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
+                ),
+              ),
               SizedBox(height: 2.h),
-              Text('Manage your driver account', style: TextStyle(fontSize: 13.sp, color: Colors.black54, fontWeight: FontWeight.w600)),
+              Text(
+                'Manage your driver account',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
@@ -111,7 +190,14 @@ class _SettingScreenState extends State<SettingScreen> {
         children: [
           Padding(
             padding: EdgeInsets.only(left: 4.w, bottom: 10.h),
-            child: Text(title, style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900, color: Colors.black)),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w900,
+                color: Colors.black,
+              ),
+            ),
           ),
           ...children,
         ],
@@ -119,24 +205,64 @@ class _SettingScreenState extends State<SettingScreen> {
     );
   }
 
-  Widget _item(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _item(
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
       leading: _iconBox(icon),
-      title: Text(title, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900, color: Colors.black)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54, height: 1.25)),
-      trailing: Icon(Icons.chevron_right_rounded, color: AppConst.primaryColor.withOpacity(0.75)),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w900,
+          color: Colors.black,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 11.sp, color: Colors.black54, height: 1.25),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: AppConst.primaryColor.withOpacity(0.75),
+      ),
       onTap: onTap,
     );
   }
 
-  Widget _toggleItem(IconData icon, String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
+  Widget _toggleItem(
+    IconData icon,
+    String title,
+    String subtitle,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
       leading: _iconBox(icon),
-      title: Text(title, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900, color: Colors.black)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 11.sp, color: Colors.black54, height: 1.25)),
-      trailing: Switch(value: value, activeTrackColor: AppConst.primaryColor.withOpacity(0.55), activeColor: AppConst.primaryColor, inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75), onChanged: onChanged),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w900,
+          color: Colors.black,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 11.sp, color: Colors.black54, height: 1.25),
+      ),
+      trailing: Switch(
+        value: value,
+        activeTrackColor: AppConst.primaryColor.withOpacity(0.55),
+        activeColor: AppConst.primaryColor,
+        inactiveThumbColor: AppConst.primaryColor.withOpacity(0.75),
+        onChanged: onChanged,
+      ),
     );
   }
 
@@ -144,7 +270,10 @@ class _SettingScreenState extends State<SettingScreen> {
     return Container(
       width: 42.w,
       height: 42.w,
-      decoration: BoxDecoration(color: AppConst.primaryColor.withOpacity(0.22), borderRadius: BorderRadius.circular(14.r)),
+      decoration: BoxDecoration(
+        color: AppConst.primaryColor.withOpacity(0.22),
+        borderRadius: BorderRadius.circular(14.r),
+      ),
       child: Icon(icon, color: AppConst.primaryColor, size: 21.sp),
     );
   }
@@ -155,7 +284,11 @@ class _SettingScreenState extends State<SettingScreen> {
       child: OutlinedButton.icon(
         onPressed: _isLoggingOut ? null : _onLogoutPressed,
         icon: _isLoggingOut
-            ? SizedBox(width: 16.w, height: 16.w, child: const CircularProgressIndicator(strokeWidth: 2))
+            ? SizedBox(
+                width: 16.w,
+                height: 16.w,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              )
             : const Icon(Icons.logout_rounded),
         label: Text(_isLoggingOut ? 'Signing out...' : 'Sign out'),
         style: OutlinedButton.styleFrom(
@@ -163,7 +296,9 @@ class _SettingScreenState extends State<SettingScreen> {
           side: BorderSide(color: Colors.red.shade100),
           backgroundColor: Colors.white,
           padding: EdgeInsets.symmetric(vertical: 15.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.r)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18.r),
+          ),
         ),
       ),
     );
@@ -173,7 +308,13 @@ class _SettingScreenState extends State<SettingScreen> {
     return BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(24.r),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 18, offset: const Offset(0, 8))],
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+        ),
+      ],
     );
   }
 }

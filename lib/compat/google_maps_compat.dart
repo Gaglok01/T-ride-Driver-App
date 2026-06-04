@@ -238,9 +238,7 @@ class _GoogleMapState extends State<GoogleMap> {
     if (!widget.navigationEnabled) return;
     final destination = _findDestination();
 
-    debugPrint(
-      'NAV BUILD ${DateTime.now()} markers=${widget.markers.length}',
-    );
+    debugPrint('NAV BUILD ${DateTime.now()} markers=${widget.markers.length}');
 
     if (destination == null) return;
 
@@ -300,15 +298,13 @@ class _GoogleMapState extends State<GoogleMap> {
         zoomLevel: 16.0,
       );
 
-
-
       try {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 330));
-
-        
+        await _controller?.rawController?.setPadding(
+          const EdgeInsets.only(bottom: 430, right: 16),
+        );
       } catch (e) {
         debugPrint('T-RIDE ROUTE OVERVIEW FOLLOW TEST ERROR: $e');
       }
@@ -317,8 +313,10 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(bottom: 330));
-} catch (e) {
+        await _controller?.rawController?.setPadding(
+          const EdgeInsets.only(bottom: 430, right: 16),
+        );
+      } catch (e) {
         debugPrint('T-RIDE NAV CAMERA FINAL TEST ERROR: ');
       }
 
@@ -330,7 +328,7 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setReportIncidentButtonEnabled(false);
         await _controller?.rawController?.setTrafficIncidentCardsEnabled(false);
         await _controller?.rawController?.setTrafficPromptsEnabled(false);
-} catch (e) {
+      } catch (e) {
         debugPrint('T-RIDE NAV AFTER START SETTINGS ERROR: $e');
       }
     }
@@ -381,6 +379,8 @@ class _GoogleMapState extends State<GoogleMap> {
     }
 
     return nav.GoogleMapsNavigationView(
+      initialMapColorScheme: nav.MapColorScheme.light,
+      initialForceNightMode: nav.NavigationForceNightMode.forceDay,
       initialNavigationUIEnabledPreference:
           nav.NavigationUIEnabledPreference.disabled,
       initialCameraPosition: navCamera,
@@ -391,7 +391,9 @@ class _GoogleMapState extends State<GoogleMap> {
           await controller.setNavigationHeaderEnabled(true);
           await controller.setNavigationFooterEnabled(false);
           await controller.setRecenterButtonEnabled(true);
-          await controller.setPadding(const EdgeInsets.only(bottom: 330));
+          await controller.setPadding(
+            const EdgeInsets.only(bottom: 430, right: 16),
+          );
           await controller.setSpeedometerEnabled(true);
           await controller.setReportIncidentButtonEnabled(false);
           await controller.setTrafficIncidentCardsEnabled(false);
@@ -406,26 +408,3 @@ class _GoogleMapState extends State<GoogleMap> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -28,11 +28,7 @@ Future<BitmapDescriptor> pickupRouteMarkerBitmap() async {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5 * scale,
   );
-  canvas.drawCircle(
-    c,
-    6 * scale,
-    Paint()..color = kOrderRoutePurple,
-  );
+  canvas.drawCircle(c, 6 * scale, Paint()..color = kOrderRoutePurple);
   final picture = recorder.endRecording();
   final img = await picture.toImage(size.ceil(), size.ceil());
   final bd = await img.toByteData(format: ui.ImageByteFormat.png);
@@ -61,11 +57,7 @@ Future<BitmapDescriptor> destinationRouteMarkerBitmap() async {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3 * scale,
   );
-  canvas.drawCircle(
-    c,
-    10 * scale,
-    Paint()..color = Colors.white,
-  );
+  canvas.drawCircle(c, 10 * scale, Paint()..color = Colors.white);
   final picture = recorder.endRecording();
   final img = await picture.toImage(size.ceil(), size.ceil());
   final bd = await img.toByteData(format: ui.ImageByteFormat.png);

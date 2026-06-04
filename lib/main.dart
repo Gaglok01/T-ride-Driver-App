@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -20,13 +20,13 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 const AndroidNotificationChannel rideRequestsChannel =
     AndroidNotificationChannel(
-  'ride_requests',
-  'Ride Requests',
-  description: 'Notifications for new ride requests',
-  importance: Importance.max,
-  playSound: true,
-  enableVibration: true,
-);
+      'ride_requests',
+      'Ride Requests',
+      description: 'Notifications for new ride requests',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +41,8 @@ Future<void> main() async {
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+        AndroidFlutterLocalNotificationsPlugin
+      >()
       ?.createNotificationChannel(rideRequestsChannel);
 
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {

@@ -14,8 +14,7 @@ class DriverHeatMapRepository {
       Uri.parse('${ApiUrls.baseUrl}api/public/driver/heat-map'),
       headers: {
         'Accept': 'application/json',
-        if (token != null && token.isNotEmpty)
-          'Authorization': 'Bearer $token',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       },
     );
 

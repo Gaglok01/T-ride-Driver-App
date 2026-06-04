@@ -35,8 +35,7 @@ class OrderActiveStatusResponse {
     );
   }
 
-  bool get hasAnyOrder =>
-      ride != null || courier != null || foodOrder != null;
+  bool get hasAnyOrder => ride != null || courier != null || foodOrder != null;
 }
 
 /// Shared shape for `ride` and `courier` payloads.
@@ -142,20 +141,17 @@ class ActiveRideCourierOrder {
       return DateTime.fromMillisecondsSinceEpoch(v, isUtc: true).toLocal();
     }
     if (v is num) {
-      return DateTime.fromMillisecondsSinceEpoch(v.round(), isUtc: true)
-          .toLocal();
+      return DateTime.fromMillisecondsSinceEpoch(
+        v.round(),
+        isUtc: true,
+      ).toLocal();
     }
     return null;
   }
 }
 
 class ActiveDriverSummary {
-  ActiveDriverSummary({
-    this.id,
-    this.name,
-    this.driverCode,
-    this.user,
-  });
+  ActiveDriverSummary({this.id, this.name, this.driverCode, this.user});
 
   final int? id;
   final String? name;
@@ -184,11 +180,7 @@ class ActiveDriverSummary {
 }
 
 class ActiveDriverUser {
-  ActiveDriverUser({
-    this.id,
-    this.name,
-    this.phoneNumber,
-  });
+  ActiveDriverUser({this.id, this.name, this.phoneNumber});
 
   final int? id;
   final String? name;
@@ -277,7 +269,8 @@ class ActiveFoodOrder {
       vendor: json['vendor'] != null
           ? FoodVendorSummary.fromJson(_asJsonMap(json['vendor'])!)
           : null,
-      items: (json['items'] as List<dynamic>?)
+      items:
+          (json['items'] as List<dynamic>?)
               ?.map((e) => FoodOrderLineItem.fromJson(_asJsonMap(e)!))
               .toList() ??
           [],
@@ -299,6 +292,7 @@ class FoodVendorSummary {
   final String? name;
   final String? logo;
   final String? address;
+
   /// When API includes vendor coords (e.g. `latitude` / `longitude`).
   final String? latitude;
   final String? longitude;
@@ -309,10 +303,12 @@ class FoodVendorSummary {
       name: json['name'] as String?,
       logo: json['logo'] as String?,
       address: json['address'] as String?,
-      latitude: json['latitude']?.toString() ??
+      latitude:
+          json['latitude']?.toString() ??
           json['lat']?.toString() ??
           json['vendor_lat']?.toString(),
-      longitude: json['longitude']?.toString() ??
+      longitude:
+          json['longitude']?.toString() ??
           json['lng']?.toString() ??
           json['long']?.toString() ??
           json['vendor_lng']?.toString(),

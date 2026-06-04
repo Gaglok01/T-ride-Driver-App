@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:t_rider_services_app/controllers/app_theme_controller.dart';
@@ -6,7 +6,8 @@ import 'package:t_rider_services_app/controllers/app_theme_controller.dart';
 class AppConst {
   static const String appName = 'T Ride';
   static const String logoBlack = 'assets/T 1.png';
-  static const String NewLogo = 'assets/WhatsApp_Image_2025-12-31_at_2.44.07_AM-removebg-preview.png';
+  static const String NewLogo =
+      'assets/WhatsApp_Image_2025-12-31_at_2.44.07_AM-removebg-preview.png';
   static const Color primaryColor = Color(0xffFDC700);
   static const Color accentColor = primaryColor;
   static const Color transparent = Colors.transparent;
@@ -68,4 +69,3 @@ class AppConst {
     bottomLeft: Radius.circular(20.r),
   );
 }
-

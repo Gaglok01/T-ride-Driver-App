@@ -60,7 +60,13 @@ class EarningsScreen extends StatelessWidget {
               SizedBox(height: 12.h),
               Row(
                 children: [
-                  Expanded(child: _metric('This month', _money(monthly), Icons.route_rounded)),
+                  Expanded(
+                    child: _metric(
+                      'This month',
+                      _money(monthly),
+                      Icons.route_rounded,
+                    ),
+                  ),
                   SizedBox(width: 12.w),
                   Expanded(
                     child: _metric(
@@ -258,5 +264,3 @@ class EarningsScreen extends StatelessWidget {
     );
   }
 }
-
-

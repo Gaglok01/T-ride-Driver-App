@@ -984,7 +984,7 @@ class HomeScreenState extends State<HomeScreen> {
           GoogleMap(
             initialCameraPosition: CameraPosition(target: mapCenter, zoom: 11),
             markers: _markers(),
-	    circles: _heatMapCircles(),
+            circles: _heatMapCircles(),
             polylines: {},
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
@@ -1156,12 +1156,14 @@ class HomeScreenState extends State<HomeScreen> {
           ),
           InkWell(
             borderRadius: BorderRadius.circular(20.r),
-            onTap: () => Get.to(() => EarningsScreen(
+            onTap: () => Get.to(
+              () => EarningsScreen(
                 today: _todayEarnings,
                 weekly: _weekEarnings,
                 monthly: _monthEarnings,
                 wallet: _walletBalance,
-              )),
+              ),
+            ),
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
               decoration: BoxDecoration(
@@ -1376,12 +1378,14 @@ class HomeScreenState extends State<HomeScreen> {
                         title: 'Today',
                         value: _todayEarnings.toStringAsFixed(0),
                         color: Colors.purple,
-                        onTap: () => Get.to(() => EarningsScreen(
-                today: _todayEarnings,
-                weekly: _weekEarnings,
-                monthly: _monthEarnings,
-                wallet: _walletBalance,
-              )),
+                        onTap: () => Get.to(
+                          () => EarningsScreen(
+                            today: _todayEarnings,
+                            weekly: _weekEarnings,
+                            monthly: _monthEarnings,
+                            wallet: _walletBalance,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1395,7 +1399,10 @@ class HomeScreenState extends State<HomeScreen> {
                     onPressed: _accountStatus == 'approved'
                         ? () => _toggleOnline(true)
                         : null,
-                    icon: const Icon(Icons.power_settings_new_rounded, size: 22),
+                    icon: const Icon(
+                      Icons.power_settings_new_rounded,
+                      size: 22,
+                    ),
                     label: Text(
                       'GO ONLINE',
                       style: TextStyle(
@@ -1461,12 +1468,14 @@ class HomeScreenState extends State<HomeScreen> {
                         title: 'Today',
                         value: _todayEarnings.toStringAsFixed(0),
                         color: Colors.purple,
-                        onTap: () => Get.to(() => EarningsScreen(
-                today: _todayEarnings,
-                weekly: _weekEarnings,
-                monthly: _monthEarnings,
-                wallet: _walletBalance,
-              )),
+                        onTap: () => Get.to(
+                          () => EarningsScreen(
+                            today: _todayEarnings,
+                            weekly: _weekEarnings,
+                            monthly: _monthEarnings,
+                            wallet: _walletBalance,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1478,7 +1487,10 @@ class HomeScreenState extends State<HomeScreen> {
                   height: 58.h,
                   child: ElevatedButton.icon(
                     onPressed: () => _toggleOnline(false),
-                    icon: const Icon(Icons.power_settings_new_rounded, size: 22),
+                    icon: const Icon(
+                      Icons.power_settings_new_rounded,
+                      size: 22,
+                    ),
                     label: Text(
                       'GO OFFLINE',
                       style: TextStyle(
@@ -1567,50 +1579,48 @@ class HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 14.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: color.withOpacity(0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          SizedBox(width: 8.w),
-          Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 12.sp,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          border: Border.all(color: color.withOpacity(0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-          ),
-          SizedBox(width: 6.w),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(12.r),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            SizedBox(width: 8.w),
+            Text(
+              title,
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.sp),
             ),
-            child: Text(
-              value,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 11.sp,
+            SizedBox(width: 6.w),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Text(
+                value,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11.sp,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
+
   Widget _requestCard(DriverRideRequest ride) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1723,7 +1733,9 @@ class HomeScreenState extends State<HomeScreen> {
     final status = ride.status.toLowerCase();
     final toPickup = status != 'in_progress' && status != 'started';
     final riderName = (ride.riderName ?? '').trim();
-    final title = toPickup ? (riderName.isNotEmpty ? 'Drive to ' + riderName : 'Drive to rider') : 'Trip in progress';
+    final title = toPickup
+        ? (riderName.isNotEmpty ? 'Drive to ' + riderName : 'Drive to rider')
+        : 'Trip in progress';
     final address = toPickup ? ride.pickupAddress : ride.dropoffAddress;
     final miles = _driverLatLng == null
         ? null
@@ -2016,19 +2028,3 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

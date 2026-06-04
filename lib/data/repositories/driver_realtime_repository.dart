@@ -6,9 +6,11 @@ import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart'
 import 'package:t_rider_services_app/data/network/api_client.dart';
 
 class DriverRealtimeRepository {
-  DriverRealtimeRepository({ApiClient? apiClient, SecureStorageService? storageService})
-      : _apiClient = apiClient ?? ApiClient(),
-        _storageService = storageService ?? SecureStorageService();
+  DriverRealtimeRepository({
+    ApiClient? apiClient,
+    SecureStorageService? storageService,
+  }) : _apiClient = apiClient ?? ApiClient(),
+       _storageService = storageService ?? SecureStorageService();
 
   final ApiClient _apiClient;
   final SecureStorageService _storageService;
@@ -42,7 +44,8 @@ class DriverRealtimeRepository {
     }
     final decoded = jsonDecode(response.body);
     dynamic raw = decoded;
-    if (decoded is Map) raw = decoded['data'] ?? decoded['requests'] ?? decoded['rides'] ?? [];
+    if (decoded is Map)
+      raw = decoded['data'] ?? decoded['requests'] ?? decoded['rides'] ?? [];
     if (raw is! List) return const [];
     return raw
         .whereType<Map>()
@@ -52,13 +55,18 @@ class DriverRealtimeRepository {
   }
 
   Future<DriverRideRequest?> fetchActiveRide() async {
-    final response = await _apiClient.get(ApiUrls.driverActiveRide, headers: await _headers());
+    final response = await _apiClient.get(
+      ApiUrls.driverActiveRide,
+      headers: await _headers(),
+    );
     if (response.statusCode == 404) return null;
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw DriverRealtimeException(response.statusCode, response.body);
     }
     final decoded = jsonDecode(response.body);
-    dynamic raw = decoded is Map ? (decoded['data'] ?? decoded['ride']) : decoded;
+    dynamic raw = decoded is Map
+        ? (decoded['data'] ?? decoded['ride'])
+        : decoded;
     if (raw is! Map) return null;
     return DriverRideRequest.fromJson(Map<String, dynamic>.from(raw));
   }
@@ -72,12 +80,7 @@ class DriverRealtimeRepository {
     final response = await _apiClient.post(
       ApiUrls.driverLocationUpdate,
       headers: await _headers(),
-      body: {
-        'lat': lat,
-        'lng': lng,
-        'heading': heading,
-        'is_online': isOnline,
-      },
+      body: {'lat': lat, 'lng': lng, 'heading': heading, 'is_online': isOnline},
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw DriverRealtimeException(response.statusCode, response.body);
@@ -114,13 +117,20 @@ class DriverRealtimeRepository {
       throw DriverRealtimeException(response.statusCode, response.body);
     }
     final decoded = jsonDecode(response.body);
-    dynamic raw = decoded is Map ? (decoded['data'] ?? decoded['ride']) : decoded;
-    if (raw is Map) return DriverRideRequest.fromJson(Map<String, dynamic>.from(raw));
+    dynamic raw = decoded is Map
+        ? (decoded['data'] ?? decoded['ride'])
+        : decoded;
+    if (raw is Map)
+      return DriverRideRequest.fromJson(Map<String, dynamic>.from(raw));
     return null;
   }
 
   Future<void> _postVoid(String endpoint, {Object? body}) async {
-    final response = await _apiClient.post(endpoint, headers: await _headers(), body: body);
+    final response = await _apiClient.post(
+      endpoint,
+      headers: await _headers(),
+      body: body,
+    );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw DriverRealtimeException(response.statusCode, response.body);
     }

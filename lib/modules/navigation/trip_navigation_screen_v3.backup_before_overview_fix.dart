@@ -2,7 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_navigation_flutter/google_navigation_flutter.dart' as nav;
+import 'package:google_navigation_flutter/google_navigation_flutter.dart'
+    as nav;
 
 import '../../compat/google_maps_compat.dart';
 import '../../data/models/driver_ride_request_model.dart';
@@ -23,8 +24,8 @@ class _StableNavigationMapState extends State<_StableNavigationMap> {
     return GoogleMap(
       key: const ValueKey('stable_trip_navigation_map'),
       padding: EdgeInsets.only(
-                bottom: 350.h + MediaQuery.of(context).padding.bottom,
-              ),
+        bottom: 350.h + MediaQuery.of(context).padding.bottom,
+      ),
       initialCameraPosition: CameraPosition(target: widget.target, zoom: 16),
       navigationDestination: widget.target,
       navigationEnabled: true,
@@ -36,6 +37,7 @@ class _StableNavigationMapState extends State<_StableNavigationMap> {
     );
   }
 }
+
 class TripNavigationScreenV3 extends StatefulWidget {
   final DriverRideRequest ride;
 
@@ -51,7 +53,9 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
 
   GoogleMapController? _mapController;
 
-  final ValueNotifier<String> _navInfo = ValueNotifier<String>('-- min | -- mi');
+  final ValueNotifier<String> _navInfo = ValueNotifier<String>(
+    '-- min | -- mi',
+  );
   String _eta = '-- min';
   String _distance = '-- mi';
   Timer? _pickupWaitTimer;
@@ -63,25 +67,26 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     super.initState();
     _ride = widget.ride;
     _updateEtaDistance();
-    _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 5,
-      ),
-    ).listen((pos) {
-      _updateEtaDistance();
-
-      _mapController?.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(pos.latitude, pos.longitude),
-            zoom: 18.5,
-            tilt: 60,
-            bearing: pos.heading < 0 ? 0 : pos.heading,
+    _positionSub =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.bestForNavigation,
+            distanceFilter: 5,
           ),
-        ),
-      );
-    });
+        ).listen((pos) {
+          _updateEtaDistance();
+
+          _mapController?.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: LatLng(pos.latitude, pos.longitude),
+                zoom: 18.5,
+                tilt: 60,
+                bearing: pos.heading < 0 ? 0 : pos.heading,
+              ),
+            ),
+          );
+        });
   }
 
   LatLng get _target {
@@ -97,7 +102,8 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     final status = _ride.status.toLowerCase();
     final name = (_ride.riderName ?? '').trim();
 
-    if (status == 'started' || status == 'in_progress') return 'Trip in progress';
+    if (status == 'started' || status == 'in_progress')
+      return 'Trip in progress';
     if (status == 'arrived') return 'Arrived at pickup';
 
     return name.isEmpty ? 'Heading to rider' : 'Heading to $name';
@@ -123,7 +129,6 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
       });
     } catch (_) {}
   }
-
 
   double _distanceMiles(double a, double b, double c, double d) {
     return Geolocator.distanceBetween(a, b, c, d) / 1609.34;
@@ -227,6 +232,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
 
     await _completeTrip();
   }
+
   void _startPickupWaitTimer() {
     _pickupWaitTimer?.cancel();
     _navInfo.dispose();
@@ -328,7 +334,10 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
             child: Container(
               width: double.infinity,
               padding: EdgeInsets.fromLTRB(
-                12.w, 8.h, 12.w, MediaQuery.of(context).padding.bottom + 8.h,
+                12.w,
+                8.h,
+                12.w,
+                MediaQuery.of(context).padding.bottom + 8.h,
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -384,20 +393,24 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
                         ),
                       ],
                       Expanded(
-                        child: SizedBox(
-                          height: 38.h,
-                          child: _actionButton(),
-                        ),
+                        child: SizedBox(height: 38.h, child: _actionButton()),
                       ),
                       PopupMenuButton<String>(
                         icon: const Icon(Icons.more_vert_rounded),
                         itemBuilder: (_) => [
-                          const PopupMenuItem(value: 'details', child: Text('Ride details')),
-                          const PopupMenuItem(value: 'last_trip', child: Text('Last trip then offline')),
+                          const PopupMenuItem(
+                            value: 'details',
+                            child: Text('Ride details'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'last_trip',
+                            child: Text('Last trip then offline'),
+                          ),
                           PopupMenuItem(
                             value: 'cancel',
                             child: Text(
-                              _ride.status.toLowerCase() == 'arrived' && _canChargeNoShow
+                              _ride.status.toLowerCase() == 'arrived' &&
+                                      _canChargeNoShow
                                   ? 'Cancel - rider no-show fee'
                                   : 'Cancel trip',
                             ),
@@ -415,21 +428,3 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

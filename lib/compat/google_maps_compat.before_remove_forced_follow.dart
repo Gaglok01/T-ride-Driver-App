@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     as nav;
 
@@ -301,8 +301,6 @@ class _GoogleMapState extends State<GoogleMap> {
 
         await Future.delayed(const Duration(seconds: 2));
         await _controller?.rawController?.showRouteOverview();
-
-        
       } catch (e) {
         debugPrint('T-RIDE ROUTE OVERVIEW FOLLOW TEST ERROR: $e');
       }
@@ -387,12 +385,3 @@ class _GoogleMapState extends State<GoogleMap> {
     );
   }
 }
-
-
-
-
-
-
-
-
-

@@ -83,7 +83,7 @@ class _FullScreenDashboardMapScreenState
           polylineId: _polyId,
           points: _routePoints,
           color: kOrderRoutePurple,
-          width: 8,
+          width: 12,
           geodesic: true,
           jointType: JointType.round,
           startCap: Cap.roundCap,

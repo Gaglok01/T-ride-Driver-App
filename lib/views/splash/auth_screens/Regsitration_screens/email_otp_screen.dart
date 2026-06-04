@@ -35,9 +35,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
     final identifier = args['email'] as String? ?? '';
 
     if (identifier.isEmpty) {
-      AppSnackbar.showError(
-        message: 'missing_email_identifier'.tr,
-      );
+      AppSnackbar.showError(message: 'missing_email_identifier'.tr);
       return;
     }
 
@@ -62,9 +60,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
           },
         );
       } else {
-        AppSnackbar.showError(
-          message: 'invalid_otp_try_again'.tr,
-        );
+        AppSnackbar.showError(message: 'invalid_otp_try_again'.tr);
       }
     } catch (e) {
       // ignore: avoid_print

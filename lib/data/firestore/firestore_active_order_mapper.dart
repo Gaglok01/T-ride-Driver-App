@@ -45,8 +45,10 @@ class FirestoreActiveOrderMapper {
       return DateTime.fromMillisecondsSinceEpoch(v, isUtc: true).toLocal();
     }
     if (v is num) {
-      return DateTime.fromMillisecondsSinceEpoch(v.round(), isUtc: true)
-          .toLocal();
+      return DateTime.fromMillisecondsSinceEpoch(
+        v.round(),
+        isUtc: true,
+      ).toLocal();
     }
     return null;
   }
@@ -138,9 +140,11 @@ class FirestoreActiveOrderMapper {
           _parseCoordLng(pickup['longitude']) ?? _parseCoordLng(pickup['lng']);
       if (lat != null && lng != null) return (lat: lat, lng: lng);
     }
-    final lat = _parseCoordLat(data['pickup_lat']) ??
+    final lat =
+        _parseCoordLat(data['pickup_lat']) ??
         _parseCoordLat(data['pickup_latitude']);
-    final lng = _parseCoordLng(data['pickup_lng']) ??
+    final lng =
+        _parseCoordLng(data['pickup_lng']) ??
         _parseCoordLng(data['pickup_longitude']);
     if (lat != null && lng != null) return (lat: lat, lng: lng);
     return null;
@@ -154,13 +158,16 @@ class FirestoreActiveOrderMapper {
     if (dropoff != null) {
       final lat =
           _parseCoordLat(dropoff['latitude']) ?? _parseCoordLat(dropoff['lat']);
-      final lng = _parseCoordLng(dropoff['longitude']) ??
+      final lng =
+          _parseCoordLng(dropoff['longitude']) ??
           _parseCoordLng(dropoff['lng']);
       if (lat != null && lng != null) return (lat: lat, lng: lng);
     }
-    final lat = _parseCoordLat(data['dropoff_lat']) ??
+    final lat =
+        _parseCoordLat(data['dropoff_lat']) ??
         _parseCoordLat(data['dropoff_latitude']);
-    final lng = _parseCoordLng(data['dropoff_lng']) ??
+    final lng =
+        _parseCoordLng(data['dropoff_lng']) ??
         _parseCoordLng(data['dropoff_longitude']);
     if (lat != null && lng != null) return (lat: lat, lng: lng);
     return null;

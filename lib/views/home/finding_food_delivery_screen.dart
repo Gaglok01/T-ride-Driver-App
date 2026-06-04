@@ -155,7 +155,7 @@ class _FindingFoodDeliveryScreenState extends State<FindingFoodDeliveryScreen> {
           polylineId: const PolylineId('route'),
           points: points,
           color: const Color(0xFFFFB000),
-          width: 5,
+          width: 12,
           geodesic: geodesic,
           startCap: Cap.roundCap,
           endCap: Cap.roundCap,
