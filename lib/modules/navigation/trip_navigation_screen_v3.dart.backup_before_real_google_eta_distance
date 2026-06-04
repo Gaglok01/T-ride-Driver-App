@@ -71,7 +71,6 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     super.initState();
     _ride = widget.ride;
     _updateEtaDistance();
-
     _positionSub =
         Geolocator.getPositionStream(
           locationSettings: const LocationSettings(
@@ -96,20 +95,6 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
             ),
           );
         });
-  }
-
-  String _formatNavSeconds(int seconds) {
-    final minutes = (seconds / 60).ceil().clamp(1, 999);
-    return '$minutes min';
-  }
-
-  String _formatNavMeters(int meters) {
-    final miles = meters / 1609.34;
-    if (miles < 0.1) {
-      final feet = meters * 3.28084;
-      return '${feet.round()} ft';
-    }
-    return '${miles.toStringAsFixed(1)} mi';
   }
 
   LatLng get _target {
