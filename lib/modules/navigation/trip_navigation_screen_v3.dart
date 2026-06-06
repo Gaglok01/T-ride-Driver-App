@@ -355,7 +355,13 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
-        return Container(
+        return DraggableScrollableSheet(
+          initialChildSize: 0.78,
+          minChildSize: 0.45,
+          maxChildSize: 0.92,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
           margin: EdgeInsets.all(10.w),
           padding: EdgeInsets.all(16.w),
           decoration: BoxDecoration(
@@ -369,7 +375,9 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
               ),
             ],
           ),
-          child: Column(
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.check_circle_rounded, size: 46.sp, color: AppConst.primaryColor),
@@ -407,6 +415,9 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
               ),
             ],
           ),
+          ),
+        );
+          },
         );
       },
     );
@@ -720,6 +731,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     );
   }
 }
+
 
 
 
