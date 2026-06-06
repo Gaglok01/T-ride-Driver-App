@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:t_rider_services_app/consts/appConst.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
@@ -398,83 +399,165 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black87,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 76.w,
+                        padding: EdgeInsets.symmetric(vertical: 8.h),
+                        decoration: BoxDecoration(
+                          color: AppConst.primaryColor,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              _ride.status.toLowerCase() == 'arrived'
+                                  ? _pickupWaitText.split(' ').first
+                                  : _eta,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black,
+                              ),
+                            ),
+                            SizedBox(height: 1.h),
+                            Text(
+                              _ride.status.toLowerCase() == 'arrived'
+                                  ? 'WAIT'
+                                  : 'ETA',
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Container(
+                        width: 76.w,
+                        padding: EdgeInsets.symmetric(vertical: 8.h),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              _distance,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black,
+                              ),
+                            ),
+                            SizedBox(height: 1.h),
+                            Text(
+                              'DIST',
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          _title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w900,
+                            height: 1.15,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    _ride.status.toLowerCase() == 'arrived'
-                        ? _pickupWaitText
-                        : '$_eta | $_distance',
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  SizedBox(height: 6.h),
+                  SizedBox(height: 8.h),
                   Row(
                     children: [
                       if (_canContactRider) ...[
-                        IconButton(
-                          onPressed: () => debugPrint('CALL RIDER VIA TWILIO'),
-                          icon: const Icon(
-                            Icons.call_rounded,
-                            color: Colors.black87,
-                          ),
+                        _navIconButton(
+                          icon: Icons.call_rounded,
+                          onTap: () => debugPrint('CALL RIDER VIA TWILIO'),
                         ),
-                        IconButton(
-                          onPressed: () => debugPrint('SMS RIDER VIA TWILIO'),
-                          icon: const Icon(
-                            Icons.message_rounded,
-                            color: Colors.black87,
-                          ),
+                        SizedBox(width: 6.w),
+                        _navIconButton(
+                          icon: Icons.message_rounded,
+                          onTap: () => debugPrint('SMS RIDER VIA TWILIO'),
                         ),
-                        SizedBox(
-                          height: 38.h,
-                          child: OutlinedButton(
-                            onPressed: () => debugPrint('CANCEL TRIP'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.red,
-                              side: const BorderSide(
-                                color: Colors.red,
-                                width: 1.4,
-                              ),
-                              padding: EdgeInsets.symmetric(horizontal: 10.w),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14.r),
-                              ),
-                            ),
-                            child: Text(
-                              'Cancel',
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
+                        SizedBox(width: 6.w),
                       ],
-                      Expanded(
-                        child: SizedBox(height: 38.h, child: _actionButton()),
+                      SizedBox(
+                        height: 40.h,
+                        child: OutlinedButton(
+                          onPressed: () => debugPrint('CANCEL TRIP'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(
+                              color: Colors.red,
+                              width: 1.2,
+                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 12.w),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
                       ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: SizedBox(height: 40.h, child: _actionButton()),
+                      ),
+                      SizedBox(width: 4.w),
                       PopupMenuButton<String>(
                         icon: const Icon(
                           Icons.more_vert_rounded,
                           color: Colors.black87,
                         ),
+                        onSelected: (value) {
+                          if (value == 'cancel') {
+                            debugPrint('CANCEL TRIP');
+                          } else if (value == 'details') {
+                            debugPrint('RIDE DETAILS');
+                          } else if (value == 'last_trip') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Last trip then offline selected.'),
+                              ),
+                            );
+                          }
+                        },
                         itemBuilder: (_) => [
                           const PopupMenuItem(
                             value: 'details',
                             child: Text('Ride details'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'call',
+                            child: Text('Call rider'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'sms',
+                            child: Text('Send message'),
                           ),
                           const PopupMenuItem(
                             value: 'last_trip',
@@ -492,8 +575,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
                         ],
                       ),
                     ],
-                  ),
-                ],
+                  ),                ],
               ),
             ),
           ),
@@ -501,4 +583,23 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
       ),
     );
   }
+  Widget _navIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8.r),
+      child: Container(
+        width: 40.w,
+        height: 40.h,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Icon(icon, size: 20.sp, color: Colors.black87),
+      ),
+    );
+  }
 }
+

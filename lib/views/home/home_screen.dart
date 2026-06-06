@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_heat_map_repository.dart';
@@ -56,7 +56,8 @@ class HomeScreenState extends State<HomeScreen> {
   Timer? _requestCountdownTimer;
 
   int _arrivalCountdownSeconds = 0;
-  int _requestSecondsLeft = 12;
+  int _requestSecondsLeft = 20;
+  int _dispatchAcceptTimeoutSeconds = 20;
   int? _countdownRequestId;
   String _remainingDistanceText = '';
   String _remainingDurationText = '';
@@ -167,6 +168,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _bootstrap() async {
+    await _loadDispatchSettings();
     await _startLocation();
     await refreshDashboard();
     await _loadHeatMapZones();
@@ -482,6 +484,24 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
+
+  Future<void> _loadDispatchSettings() async {
+    try {
+      final settings = await _driverRepository.fetchDispatchSettings();
+      final rawTimeout = settings['accept_timeout_seconds'];
+      final timeout = rawTimeout is num ? rawTimeout.toInt() : int.tryParse('$rawTimeout');
+
+      if (!mounted || timeout == null) return;
+
+      setState(() {
+        _dispatchAcceptTimeoutSeconds = timeout.clamp(5, 300);
+        _requestSecondsLeft = _dispatchAcceptTimeoutSeconds;
+      });
+    } catch (_) {
+      // Keep safe fallback if dispatcher settings cannot be loaded.
+    }
+  }
+
   Future<void> _loadActiveRide({bool silent = false}) async {
     try {
       final active = await _driverRepository.fetchActiveRide();
@@ -499,8 +519,8 @@ class HomeScreenState extends State<HomeScreen> {
     if (request == null) {
       _requestCountdownTimer?.cancel();
       _countdownRequestId = null;
-      if (_requestSecondsLeft != 12 && mounted) {
-        setState(() => _requestSecondsLeft = 12);
+      if (_requestSecondsLeft != _dispatchAcceptTimeoutSeconds && mounted) {
+        setState(() => _requestSecondsLeft = _dispatchAcceptTimeoutSeconds);
       }
       return;
     }
@@ -511,7 +531,7 @@ class HomeScreenState extends State<HomeScreen> {
 
     _requestCountdownTimer?.cancel();
     _countdownRequestId = request.id;
-    _requestSecondsLeft = 12;
+    _requestSecondsLeft = _dispatchAcceptTimeoutSeconds;
 
     _requestCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -529,7 +549,7 @@ class HomeScreenState extends State<HomeScreen> {
         setState(() {
           _expiredRequestIds.add(expiredId ?? -1);
           _requests.removeWhere((r) => r.id == expiredId);
-          _requestSecondsLeft = 12;
+          _requestSecondsLeft = _dispatchAcceptTimeoutSeconds;
           _countdownRequestId = null;
         });
         timer.cancel();
@@ -1195,7 +1215,7 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: AppConst.primaryColor,
-                    borderRadius: BorderRadius.circular(999.r),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
                     _isOnline ? 'ONLINE' : 'OFFLINE',
@@ -1470,7 +1490,7 @@ class HomeScreenState extends State<HomeScreen> {
                       foregroundColor: Colors.black,
                       elevation: 8,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999.r),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                   ),
@@ -1558,7 +1578,7 @@ class HomeScreenState extends State<HomeScreen> {
                       foregroundColor: AppConst.primaryColor,
                       elevation: 8,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999.r),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                   ),
@@ -1680,7 +1700,7 @@ class HomeScreenState extends State<HomeScreen> {
     final progress = (_requestSecondsLeft / 12).clamp(0.0, 1.0).toDouble();
     final pickupMiles = ride.pickupDistanceMiles;
     final pickupEta = pickupMiles == null ? null : math.max(1, (pickupMiles / 25 * 60).round());
-    final pickupEtaLine = pickupMiles == null ? 'ETA pending' : pickupEta.toString() + ' min · ' + pickupMiles.toStringAsFixed(1) + ' mi';
+    final pickupEtaLine = pickupMiles == null ? 'ETA pending' : pickupEta.toString() + ' min Â· ' + pickupMiles.toStringAsFixed(1) + ' mi';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1692,7 +1712,7 @@ class HomeScreenState extends State<HomeScreen> {
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
               decoration: BoxDecoration(
                 color: AppConst.primaryColor,
-                borderRadius: BorderRadius.circular(999.r),
+                borderRadius: BorderRadius.circular(8.r),
               ),
               child: Text(
                 ride.rideType.toUpperCase(),
@@ -1825,7 +1845,7 @@ class HomeScreenState extends State<HomeScreen> {
                   foregroundColor: Colors.black,
             padding: EdgeInsets.symmetric(vertical: 15.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999.r),
+              borderRadius: BorderRadius.circular(8.r),
             ),
           ),
           child: const Text('Arrived'),
@@ -1840,7 +1860,7 @@ class HomeScreenState extends State<HomeScreen> {
                   foregroundColor: Colors.black,
             padding: EdgeInsets.symmetric(vertical: 15.h),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999.r),
+              borderRadius: BorderRadius.circular(8.r),
             ),
           ),
           child: const Text('Start trip'),
@@ -1854,7 +1874,7 @@ class HomeScreenState extends State<HomeScreen> {
                   foregroundColor: Colors.black,
           padding: EdgeInsets.symmetric(vertical: 15.h),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999.r),
+            borderRadius: BorderRadius.circular(8.r),
           ),
         ),
         child: const Text('Complete'),
@@ -1863,7 +1883,7 @@ class HomeScreenState extends State<HomeScreen> {
 
     return Container(
       padding: EdgeInsets.all(14.w),
-      decoration: _cardDecoration(radius: 26),
+      decoration: _cardDecoration(radius: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1873,7 +1893,7 @@ class HomeScreenState extends State<HomeScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                 decoration: BoxDecoration(
                   color: Colors.green.withOpacity(0.14),
-                  borderRadius: BorderRadius.circular(999.r),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Text(
                   status.toUpperCase(),
@@ -1940,7 +1960,7 @@ class HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.symmetric(vertical: 11.h),
                     decoration: BoxDecoration(
                       color: AppConst.primaryColor,
-                      borderRadius: BorderRadius.circular(999.r),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Column(
                       children: [
@@ -1980,7 +2000,7 @@ class HomeScreenState extends State<HomeScreen> {
                     foregroundColor: Colors.black,
                     padding: EdgeInsets.symmetric(vertical: 15.h),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999.r),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                   ),
                 ),
@@ -1995,7 +2015,7 @@ class HomeScreenState extends State<HomeScreen> {
                       side: const BorderSide(color: Colors.red),
                       padding: EdgeInsets.symmetric(vertical: 15.h),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999.r),
+                        borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
                     child: const Text('Cancel'),
@@ -2016,7 +2036,7 @@ class HomeScreenState extends State<HomeScreen> {
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(999.r),
+        borderRadius: BorderRadius.circular(8.r),
       ),
       child: Text(
         text,
@@ -2105,6 +2125,11 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+
+
+
 
 
 
