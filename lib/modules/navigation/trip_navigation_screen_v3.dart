@@ -297,6 +297,16 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     return 'No-show eligible: ${m}:${s.toString().padLeft(2, '0')}';
   }
 
+  String get _pickupWaitShort {
+    final remaining = 300 - _pickupWaitSeconds;
+    if (remaining > 0) {
+      final m = remaining ~/ 60;
+      final s = remaining % 60;
+      return '$m:${s.toString().padLeft(2, '0')}';
+    }
+    return 'NO-SHOW';
+  }
+
   bool get _canChargeNoShow => _pickupWaitSeconds >= 300;
 
   bool get _canContactRider {
@@ -338,7 +348,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
   Future<void> _showTripCompletedSheet() async {
     final earned = _ride.estimatedFare == null
         ? '\$--'
-        : '\${_ride.estimatedFare!.toStringAsFixed(2)}';
+        : String.fromCharCode(36) + _ride.estimatedFare!.toStringAsFixed(2);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -520,7 +530,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
                           children: [
                             Text(
                               _ride.status.toLowerCase() == 'arrived'
-                                  ? _pickupWaitText.split(' ').first
+                                  ? _pickupWaitShort
                                   : _eta,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -710,6 +720,10 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     );
   }
 }
+
+
+
+
 
 
 
