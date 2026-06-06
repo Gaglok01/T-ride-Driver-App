@@ -89,7 +89,6 @@ class HomeScreenState extends State<HomeScreen> {
   double _heading = 0;
   DriverRideRequest? _activeRide;
   List<DriverRideRequest> _requests = [];
-  final Set<int> _expiredRequestIds = <int>{};
   List<HeatMapZone> _heatMapZones = [];
 
   static const LatLng _fallbackCenter = LatLng(41.2565, -95.9345);
@@ -527,7 +526,6 @@ class HomeScreenState extends State<HomeScreen> {
       if (_requestSecondsLeft <= 1) {
         final expiredId = _countdownRequestId;
         setState(() {
-          _expiredRequestIds.add(expiredId ?? -1);
           _requests.removeWhere((r) => r.id == expiredId);
           _requestSecondsLeft = 12;
           _countdownRequestId = null;
@@ -552,7 +550,7 @@ class HomeScreenState extends State<HomeScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _requests = requests.where((r) => !_expiredRequestIds.contains(r.id)).toList();
+        _requests = requests;
         _loadingRequests = false;
         WidgetsBinding.instance.addPostFrameCallback((_) => _syncRequestCountdown());
       });
@@ -1677,11 +1675,6 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _requestCard(DriverRideRequest ride) {
-    final progress = (_requestSecondsLeft / 12).clamp(0.0, 1.0).toDouble();
-    final pickupMiles = ride.pickupDistanceMiles;
-    final pickupEta = pickupMiles == null ? null : math.max(1, (pickupMiles / 25 * 60).round());
-    final pickupEtaLine = pickupMiles == null ? 'ETA pending' : pickupEta.toString() + ' min · ' + pickupMiles.toStringAsFixed(1) + ' mi';
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1699,23 +1692,19 @@ class HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900),
               ),
             ),
+            if (ride.isPooling) ...[
+              SizedBox(width: 8.w),
+              _smallPill('POOLING'),
+            ],
+            if (ride.canBid) ...[SizedBox(width: 8.w), _smallPill('BID')],
             const Spacer(),
             Text(
               ride.estimatedFare == null ? '\$--' : _money(ride.estimatedFare!),
-              style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w900),
+              style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w900),
             ),
           ],
         ),
-        SizedBox(height: 10.h),
-        Text(
-          pickupEtaLine,
-          style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w800,
-            color: Colors.black54,
-          ),
-        ),
-        SizedBox(height: 12.h),
+        SizedBox(height: 14.h),
         _locationRow(
           Icons.radio_button_checked_rounded,
           'Pickup',
@@ -1753,51 +1742,35 @@ class HomeScreenState extends State<HomeScreen> {
                 onPressed: () => _declineRide(ride),
                 style: OutlinedButton.styleFrom(
                   padding: EdgeInsets.symmetric(vertical: 14.h),
+                ),
+                child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ),
+            SizedBox(width: 10.w),
+            if (ride.canBid)
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _submitBid(ride),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                  ),
+                  child: const Text('Bid'),
+                ),
+              ),
+            if (ride.canBid) SizedBox(width: 10.w),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: () => _acceptRide(ride),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConst.primaryColor,
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                 ),
-                child: const Text(
-                  'Decline',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-            SizedBox(width: 10.w),
-            Expanded(
-              flex: 2,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8.r),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: AppConst.primaryColor.withOpacity(0.35),
-                        valueColor: AlwaysStoppedAnimation<Color>(AppConst.primaryColor),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _acceptRide(ride),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        foregroundColor: Colors.black,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                      child: Text(
-                        'ACCEPT',
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                    ),
-                  ),
-                ],
+                child: const Text('Accept', style: TextStyle(fontWeight: FontWeight.w900)),
               ),
             ),
           ],
@@ -1805,6 +1778,7 @@ class HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+
   Widget _activeTripCard() {
     final ride = _activeRide!;
     final status = ride.status.toLowerCase();
@@ -2105,12 +2079,6 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
-
-
-
-
 
 
 

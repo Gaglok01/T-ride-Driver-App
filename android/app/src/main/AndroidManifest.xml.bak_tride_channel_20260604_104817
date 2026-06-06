@@ -38,10 +38,7 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCXpA-QVjMCk9Q6KWONfDKvPlMx0jidrR0" />
-            <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="tride_dispatch_requests_v3" />
-</application>
+    </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
@@ -54,5 +51,4 @@
         </intent>
     </queries>
 </manifest>
-
 

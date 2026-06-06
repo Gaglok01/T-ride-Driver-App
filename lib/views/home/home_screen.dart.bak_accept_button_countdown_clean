@@ -1678,131 +1678,133 @@ class HomeScreenState extends State<HomeScreen> {
 
   Widget _requestCard(DriverRideRequest ride) {
     final progress = (_requestSecondsLeft / 12).clamp(0.0, 1.0).toDouble();
-    final pickupMiles = ride.pickupDistanceMiles;
-    final pickupEta = pickupMiles == null ? null : math.max(1, (pickupMiles / 25 * 60).round());
-    final pickupEtaLine = pickupMiles == null ? 'ETA pending' : pickupEta.toString() + ' min · ' + pickupMiles.toStringAsFixed(1) + ' mi';
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-              decoration: BoxDecoration(
-                color: AppConst.primaryColor,
-                borderRadius: BorderRadius.circular(999.r),
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: AppConst.primaryColor,
+                  borderRadius: BorderRadius.circular(999.r),
+                ),
+                child: Text(
+                  ride.rideType.toUpperCase(),
+                  style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900),
+                ),
               ),
-              child: Text(
-                ride.rideType.toUpperCase(),
-                style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900),
+              const Spacer(),
+              Text(
+                ride.estimatedFare == null ? '\$--' : _money(ride.estimatedFare!),
+                style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w900),
               ),
-            ),
-            const Spacer(),
-            Text(
-              ride.estimatedFare == null ? '\$--' : _money(ride.estimatedFare!),
-              style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w900),
-            ),
-          ],
-        ),
-        SizedBox(height: 10.h),
-        Text(
-          pickupEtaLine,
-          style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w800,
-            color: Colors.black54,
+            ],
           ),
-        ),
-        SizedBox(height: 12.h),
-        _locationRow(
-          Icons.radio_button_checked_rounded,
-          'Pickup',
-          ride.pickupAddress,
-        ),
-        SizedBox(height: 10.h),
-        _locationRow(
-          Icons.location_on_rounded,
-          'Drop-off',
-          ride.dropoffAddress,
-        ),
-        SizedBox(height: 14.h),
-        Row(
-          children: [
-            _meta(
-              Icons.route_rounded,
-              ride.distanceMiles == null
-                  ? 'Distance pending'
-                  : '${ride.distanceMiles!.toStringAsFixed(1)} mi',
+          SizedBox(height: 12.h),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999.r),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 12.h,
+              backgroundColor: Colors.black12,
+              valueColor: AlwaysStoppedAnimation<Color>(AppConst.primaryColor),
             ),
-            SizedBox(width: 10.w),
-            _meta(
-              Icons.schedule_rounded,
-              ride.durationMinutes == null
-                  ? 'ETA pending'
-                  : '${ride.durationMinutes!.round()} min',
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            '${_requestSecondsLeft}s to accept',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w900,
+              color: Colors.black87,
             ),
-          ],
-        ),
-        SizedBox(height: 16.h),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => _declineRide(ride),
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                ),
-                child: const Text(
-                  'Decline',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Expanded(
+                child: _meta(
+                  Icons.near_me_rounded,
+                  ride.pickupDistanceMiles == null
+                      ? 'Driver to rider: --'
+                      : 'Driver to rider: ${ride.pickupDistanceMiles!.toStringAsFixed(1)} mi',
                 ),
               ),
-            ),
-            SizedBox(width: 10.w),
-            Expanded(
-              flex: 2,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: ClipRRect(
+              SizedBox(width: 10.w),
+              Expanded(
+                child: _meta(
+                  Icons.route_rounded,
+                  ride.distanceMiles == null
+                      ? 'Trip: --'
+                      : 'Trip: ${ride.distanceMiles!.toStringAsFixed(1)} mi',
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          _locationRow(
+            Icons.radio_button_checked_rounded,
+            'Pickup',
+            ride.pickupAddress,
+          ),
+          SizedBox(height: 10.h),
+          _locationRow(
+            Icons.location_on_rounded,
+            'Drop-off',
+            ride.dropoffAddress,
+          ),
+          SizedBox(height: 16.h),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => _declineRide(ride),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8.r),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: AppConst.primaryColor.withOpacity(0.35),
-                        valueColor: AlwaysStoppedAnimation<Color>(AppConst.primaryColor),
-                      ),
                     ),
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _acceptRide(ride),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        foregroundColor: Colors.black,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                      child: Text(
-                        'ACCEPT',
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                    ),
+                  child: const Text(
+                    'Decline',
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+              SizedBox(width: 10.w),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: () => _acceptRide(ride),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConst.primaryColor,
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                  ),
+                  child: const Text(
+                    'ACCEPT',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
   Widget _activeTripCard() {
@@ -2105,10 +2107,6 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
-
-
 
 
 

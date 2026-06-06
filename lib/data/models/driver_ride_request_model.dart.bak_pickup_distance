@@ -1,4 +1,4 @@
-﻿import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class DriverRideRequest {
   const DriverRideRequest({
@@ -11,7 +11,6 @@ class DriverRideRequest {
     required this.dropoffLng,
     this.estimatedFare,
     this.distanceMiles,
-    this.pickupDistanceMiles,
     this.durationMinutes,
     this.rideType = 'ride',
     this.status = 'requested',
@@ -29,7 +28,6 @@ class DriverRideRequest {
   final double dropoffLng;
   final num? estimatedFare;
   final num? distanceMiles;
-  final num? pickupDistanceMiles;
   final num? durationMinutes;
   final String rideType;
   final String status;
@@ -78,7 +76,6 @@ class DriverRideRequest {
         json['estimated_fare'] ?? json['fare'] ?? json['price'],
       ),
       distanceMiles: _asNum(json['distance_miles'] ?? json['distance']),
-      pickupDistanceMiles: _asNum(json['pickup_distance_miles'] ?? json['driver_to_pickup_miles']),
       durationMinutes: _asNum(json['duration_minutes'] ?? json['eta_minutes']),
       rideType: _asString(json['ride_type'] ?? json['type'], fallback: 'ride'),
       status: _asString(json['status'], fallback: 'requested'),
@@ -124,4 +121,3 @@ class DriverRideRequest {
     return s == 'true' || s == '1' || s == 'yes';
   }
 }
-

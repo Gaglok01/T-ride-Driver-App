@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -14,14 +14,13 @@ import 'package:t_rider_services_app/firebase_options.dart';
 import 'package:t_rider_services_app/data/services/fcm_token_service.dart';
 import 'package:t_rider_services_app/translations/app_translations.dart';
 import 'package:t_rider_services_app/views/splash/splash_screen.dart';
-import 'package:t_rider_services_app/views/home/home_screen.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 const AndroidNotificationChannel rideRequestsChannel =
     AndroidNotificationChannel(
-      'tride_dispatch_requests_v3',
+      'tride_dispatch_requests',
       'T-Ride Dispatch',
       description: 'T-Ride dispatch notifications',
       importance: Importance.max,
@@ -29,14 +28,6 @@ const AndroidNotificationChannel rideRequestsChannel =
       sound: RawResourceAndroidNotificationSound('tride_dispatch'),
       enableVibration: true,
     );
-
-Future<void> _openRideRequestsFromNotification(RemoteMessage message) async {
-  // The notification means a request exists. Open the driver home screen,
-  // where the live request list is loaded/refreshed.
-  if (Get.isRegistered<GetMaterialController>()) {
-    Get.offAll(() => const HomeScreen());
-  }
-}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,7 +44,9 @@ Future<void> main() async {
       .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
       >()
-      ?.createNotificationChannel(rideRequestsChannel);  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      ?.createNotificationChannel(rideRequestsChannel);
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     final notification = message.notification;
 
     flutterLocalNotificationsPlugin.show(
@@ -62,7 +55,7 @@ Future<void> main() async {
       body: notification?.body ?? 'You have a new ride request',
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'tride_dispatch_requests_v3',
+          'tride_dispatch_requests',
           'T-Ride Dispatch',
           channelDescription: 'T-Ride dispatch notifications',
           importance: Importance.max,
@@ -75,15 +68,23 @@ Future<void> main() async {
     );
   });
 
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    _openRideRequestsFromNotification(message);
-  });
-
-  FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-    if (message != null) {
-      _openRideRequestsFromNotification(message);
-    }
-  });
+    await flutterLocalNotificationsPlugin.show(
+    id: 999,
+    title: 'T-Ride test',
+    body: 'Testing dispatch sound',
+    notificationDetails: const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'tride_dispatch_requests',
+        'T-Ride Dispatch',
+        channelDescription: 'T-Ride dispatch notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        sound: RawResourceAndroidNotificationSound('tride_dispatch'),
+      ),
+    ),
+  );
 
   await FcmTokenService().registerDeviceToken();
 
@@ -153,9 +154,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-
-
 
 
 
