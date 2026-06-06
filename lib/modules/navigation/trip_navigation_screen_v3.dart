@@ -240,6 +240,11 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     }
 
     await _repo.completeRide(_ride.id);
+
+    if (mounted) {
+      await _showTripCompletedSheet();
+    }
+
     try {
       await nav.GoogleMapsNavigator.cleanup();
     } catch (_) {}
@@ -296,7 +301,14 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
 
   bool get _canContactRider {
     final status = _ride.status.toLowerCase();
-    return status == 'accepted' || status == 'arrived';
+
+    if (status == 'accepted') return true;
+
+    if (status == 'arrived') {
+      return _pickupWaitSeconds >= 300;
+    }
+
+    return false;
   }
 
   Widget _actionButton() {
@@ -323,6 +335,102 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     );
   }
 
+  Future<void> _showTripCompletedSheet() async {
+    final earned = _ride.estimatedFare == null
+        ? '\$--'
+        : '\${_ride.estimatedFare!.toStringAsFixed(2)}';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          margin: EdgeInsets.all(10.w),
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.18),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle_rounded, size: 46.sp, color: AppConst.primaryColor),
+              SizedBox(height: 10.h),
+              Text('Trip completed', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w900)),
+              SizedBox(height: 12.h),
+              Text(earned, style: TextStyle(fontSize: 34.sp, fontWeight: FontWeight.w900)),
+              Text('Earned', style: TextStyle(fontSize: 12.sp, color: Colors.black54, fontWeight: FontWeight.w800)),
+              SizedBox(height: 14.h),
+              _tripDoneRow(Icons.route_rounded, _distance, 'Distance'),
+              SizedBox(height: 8.h),
+              _tripDoneRow(Icons.schedule_rounded, _eta, 'Duration'),
+              SizedBox(height: 8.h),
+              _tripDoneAddress(Icons.radio_button_checked_rounded, 'Pickup', _ride.pickupAddress),
+              SizedBox(height: 8.h),
+              _tripDoneAddress(Icons.location_on_rounded, 'Drop-off', _ride.dropoffAddress),
+              SizedBox(height: 14.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (_) => Icon(Icons.star_rounded, color: Colors.orange, size: 30.sp)),
+              ),
+              SizedBox(height: 14.h),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConst.primaryColor,
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+                  ),
+                  child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _tripDoneRow(IconData icon, String value, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 18.sp, color: AppConst.primaryColor),
+        SizedBox(width: 8.w),
+        Expanded(child: Text(label, style: TextStyle(fontSize: 12.sp, color: Colors.black54))),
+        Text(value, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900)),
+      ],
+    );
+  }
+
+  Widget _tripDoneAddress(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18.sp, color: AppConst.primaryColor),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 10.sp, color: Colors.black45, fontWeight: FontWeight.w800)),
+              Text(value, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
   @override
   void dispose() {
     _pickupWaitTimer?.cancel();
@@ -602,4 +710,7 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     );
   }
 }
+
+
+
 
