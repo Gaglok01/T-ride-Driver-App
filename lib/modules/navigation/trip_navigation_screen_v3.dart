@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     as nav;
 
 import '../../compat/google_maps_compat.dart';
 import '../../data/models/driver_ride_request_model.dart';
 import '../../data/repositories/driver_realtime_repository.dart';
+import '../../data/directions/google_directions_service.dart';
 
 class _StableNavigationMap extends StatefulWidget {
   final LatLng target;
@@ -136,6 +138,22 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
   Future<void> _updateEtaDistance() async {
     try {
       final pos = await Geolocator.getCurrentPosition();
+
+      final route = await GoogleDirectionsService.fetchDrivingRoute(
+        origin: gmaps.LatLng(pos.latitude, pos.longitude),
+        destination: gmaps.LatLng(_target.latitude, _target.longitude),
+      );
+
+      if (!mounted) return;
+
+      if (route != null) {
+        setState(() {
+          _distance = _formatNavMeters(route.distanceMeters);
+          _eta = _formatNavSeconds(route.durationSeconds);
+        });
+        return;
+      }
+
       final meters = Geolocator.distanceBetween(
         pos.latitude,
         pos.longitude,
@@ -146,16 +164,12 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
       final miles = meters / 1609.34;
       final minutes = (miles / 25 * 60).clamp(1, 999).round();
 
-      if (!mounted) {
-        return;
-      }
       setState(() {
         _distance = '${miles.toStringAsFixed(1)} mi';
         _eta = '$minutes min';
       });
     } catch (_) {}
   }
-
   double _distanceMiles(double a, double b, double c, double d) {
     return Geolocator.distanceBetween(a, b, c, d) / 1609.34;
   }
@@ -206,12 +220,14 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
   Future<void> _startTrip() async {
     final updated = await _repo.startRide(_ride.id);
     if (updated != null && mounted) {
+      _pickupWaitTimer?.cancel();
+      _pickupWaitSeconds = 0;
+
       setState(() => _ride = updated);
-      _startPickupWaitTimer();
+
       await _updateEtaDistance();
     }
   }
-
   Future<void> _completeTrip() async {
     if (!await _nearDropoff()) {
       if (!mounted) {
@@ -731,6 +747,13 @@ class _TripNavigationScreenV3State extends State<TripNavigationScreenV3> {
     );
   }
 }
+
+
+
+
+
+
+
 
 
 

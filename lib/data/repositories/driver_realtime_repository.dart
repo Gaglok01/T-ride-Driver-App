@@ -54,6 +54,27 @@ class DriverRealtimeRepository {
         .toList();
   }
 
+
+  Future<Map<String, dynamic>> fetchDispatchSettings() async {
+    final response = await _apiClient.get(
+      ApiUrls.driverDispatchSettings,
+      headers: await _headers(),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw DriverRealtimeException(response.statusCode, response.body);
+    }
+
+    final decoded = jsonDecode(response.body);
+    final raw = decoded is Map ? decoded['data'] : null;
+
+    if (raw is Map) {
+      return Map<String, dynamic>.from(raw);
+    }
+
+    return const <String, dynamic>{};
+  }
+
   Future<DriverRideRequest?> fetchActiveRide() async {
     final response = await _apiClient.get(
       ApiUrls.driverActiveRide,
@@ -144,3 +165,4 @@ class DriverRealtimeException implements Exception {
   @override
   String toString() => 'DriverRealtimeException($statusCode): $body';
 }
+
