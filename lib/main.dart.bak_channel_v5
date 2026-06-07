@@ -24,7 +24,7 @@ final AudioPlayer dispatchAudioPlayer = AudioPlayer();
 
 const AndroidNotificationChannel rideRequestsChannel =
     AndroidNotificationChannel(
-      'tride_dispatch_requests_v5',
+      'tride_dispatch_requests_v3',
       'T-Ride Dispatch',
       description: 'T-Ride dispatch notifications',
       importance: Importance.max,
@@ -71,7 +71,7 @@ Future<void> main() async {
       body: notification?.body ?? 'You have a new ride request',
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'tride_dispatch_requests_v5',
+          'tride_dispatch_requests_v3',
           'T-Ride Dispatch',
           channelDescription: 'T-Ride dispatch notifications',
           importance: Importance.max,
@@ -162,7 +162,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
 
 
 

@@ -15,7 +15,7 @@ class MainActivity: FlutterActivity() {
 
     private fun createDispatchNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "tride_dispatch_requests_v5"
+            val channelId = "tride_dispatch_requests_v3"
             val channelName = "T-Ride Dispatch"
             val soundUri = Uri.parse("android.resource://" + packageName + "/raw/tride_dispatch")
 
@@ -41,4 +41,3 @@ class MainActivity: FlutterActivity() {
         }
     }
 }
-

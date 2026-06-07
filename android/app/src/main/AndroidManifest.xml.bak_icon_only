@@ -7,7 +7,7 @@
     <application
         android:label="t_rider_services_app"
         android:name="${applicationName}"
-        android:icon="@drawable/ic_stat_tride">
+        android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -39,12 +39,8 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCXpA-QVjMCk9Q6KWONfDKvPlMx0jidrR0" />
             <meta-data
-            android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_stat_tride" />
-
-        <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="tride_dispatch_requests_v5" />
+            android:value="tride_dispatch_requests_v3" />
 </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -58,8 +54,5 @@
         </intent>
     </queries>
 </manifest>
-
-
-
 
 
