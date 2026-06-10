@@ -1,0 +1,182 @@
+﻿import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:get/get.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:t_rider_services_app/config/app_theme.dart';
+import 'package:t_rider_services_app/controllers/app_language_controller.dart';
+import 'package:t_rider_services_app/controllers/app_theme_controller.dart';
+import 'package:t_rider_services_app/controllers/firestore_active_orders_listener.dart';
+import 'package:t_rider_services_app/firebase_options.dart';
+import 'package:t_rider_services_app/data/services/fcm_token_service.dart';
+import 'package:t_rider_services_app/translations/app_translations.dart';
+import 'package:t_rider_services_app/views/splash/splash_screen.dart';
+import 'package:t_rider_services_app/views/home/home_screen.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+final AudioPlayer dispatchAudioPlayer = AudioPlayer();
+
+const AndroidNotificationChannel rideRequestsChannel =
+    AndroidNotificationChannel(
+      'tride_dispatch_requests_v7',
+      'T-Ride Dispatch',
+      description: 'T-Ride dispatch notifications',
+      importance: Importance.max,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('tride_dispatch'),
+      enableVibration: true,
+    );
+
+Future<void> _openRideRequestsFromNotification(RemoteMessage message) async {
+  // The notification means a request exists. Open the driver home screen,
+  // where the live request list is loaded/refreshed.
+  if (Get.isRegistered<GetMaterialController>()) {
+    Get.offAll(() => const HomeScreen());
+  }
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await flutterLocalNotificationsPlugin.initialize(
+    settings: const InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    ),
+  );
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(rideRequestsChannel);
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    final notification = message.notification;
+
+    dispatchAudioPlayer.setReleaseMode(ReleaseMode.loop);
+    dispatchAudioPlayer.play(AssetSource('sounds/tride_dispatch.wav'));
+    Future.delayed(const Duration(seconds: 20), () {
+      dispatchAudioPlayer.stop();
+    });
+
+    flutterLocalNotificationsPlugin.show(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: notification?.title ?? 'New ride request',
+      body: notification?.body ?? 'You have a new ride request',
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'tride_dispatch_requests_v7',
+          'T-Ride Dispatch',
+          channelDescription: 'T-Ride dispatch notifications',
+          importance: Importance.max,
+          priority: Priority.max,
+          playSound: true,
+          enableVibration: true,
+          sound: RawResourceAndroidNotificationSound('tride_dispatch'),
+        ),
+      ),
+    );
+  });
+
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    _openRideRequestsFromNotification(message);
+  });
+
+  FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+    if (message != null) {
+      _openRideRequestsFromNotification(message);
+    }
+  });
+
+  await FcmTokenService().registerDeviceToken();
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ),
+  );
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final appLanguageController = Get.put(AppLanguageController());
+    final appThemeController = Get.put(AppThemeController());
+
+    if (!Get.isRegistered<FirestoreActiveOrdersListener>()) {
+      Get.put(FirestoreActiveOrdersListener(), permanent: true);
+    }
+
+    return ScreenUtilInit(
+      designSize: const Size(375, 812),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return Obx(
+          () => GetMaterialApp(
+            key: ValueKey(appThemeController.themeMode.value),
+            title: 'T Ride',
+            debugShowCheckedModeBanner: false,
+            translations: AppTranslations(),
+            locale: appLanguageController.locale.value,
+            fallbackLocale: const Locale('en'),
+            supportedLocales: const [
+              Locale('en'),
+              Locale('ar'),
+              Locale('es'),
+              Locale('fr'),
+              Locale('zh'),
+            ],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: appThemeController.themeMode.value,
+            builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+              value: const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.light,
+                statusBarBrightness: Brightness.dark,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
+            home: const SplashScreen(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

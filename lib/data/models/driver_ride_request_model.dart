@@ -16,6 +16,12 @@ class DriverRideRequest {
     this.rideType = 'ride',
     this.status = 'requested',
     this.riderName,
+    this.receiverName,
+    this.receiverPhone,
+    this.packageSize,
+    this.packageWeight,
+    this.pickupInstructions,
+    this.dropoffInstructions,
     this.canBid = false,
     this.isPooling = false,
   });
@@ -34,6 +40,12 @@ class DriverRideRequest {
   final String rideType;
   final String status;
   final String? riderName;
+  final String? receiverName;
+  final String? receiverPhone;
+  final String? packageSize;
+  final String? packageWeight;
+  final String? pickupInstructions;
+  final String? dropoffInstructions;
   final bool canBid;
   final bool isPooling;
 
@@ -80,11 +92,20 @@ class DriverRideRequest {
       distanceMiles: _asNum(json['distance_miles'] ?? json['distance']),
       pickupDistanceMiles: _asNum(json['pickup_distance_miles'] ?? json['driver_to_pickup_miles']),
       durationMinutes: _asNum(json['duration_minutes'] ?? json['eta_minutes']),
-      rideType: _asString(json['ride_type'] ?? json['type'], fallback: 'ride'),
+      rideType: _asString(
+        json['service_type'] ?? json['order_type'] ?? json['ride_type'] ?? json['type'],
+        fallback: 'ride',
+      ),
       status: _asString(json['status'], fallback: 'requested'),
       riderName:
           json['rider_name']?.toString() ??
           _asMap(json['rider'])?['name']?.toString(),
+      receiverName: json['receiver_name']?.toString(),
+      receiverPhone: json['receiver_phone']?.toString(),
+      packageSize: json['package_size']?.toString(),
+      packageWeight: json['package_weight']?.toString(),
+      pickupInstructions: json['pickup_instructions']?.toString(),
+      dropoffInstructions: json['dropoff_instructions']?.toString(),
       canBid: _asBool(json['can_bid'] ?? json['bid_enabled']),
       isPooling: _asBool(json['is_pooling'] ?? json['pooling']),
     );
@@ -124,4 +145,6 @@ class DriverRideRequest {
     return s == 'true' || s == '1' || s == 'yes';
   }
 }
+
+
 

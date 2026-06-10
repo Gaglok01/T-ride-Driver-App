@@ -1,5 +1,4 @@
 ﻿import 'dart:async';
-import 'dart:io';
 import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_heat_map_repository.dart';
@@ -11,8 +10,6 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:t_rider_services_app/main.dart' as app_main;
 import 'package:http/http.dart' as http;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -34,9 +31,7 @@ import 'package:t_rider_services_app/views/widgets/app_snackbar.dart';
 import 'package:t_rider_services_app/modules/navigation/trip_navigation_screen_v3.dart';
 
 class HomeScreen extends StatefulWidget {
-  static final ValueNotifier<bool> activeRideNotifier = ValueNotifier<bool>(
-    false,
-  );
+  static final ValueNotifier<bool> activeRideNotifier = ValueNotifier<bool>(false);
   const HomeScreen({super.key});
 
   @override
@@ -49,9 +44,6 @@ class HomeScreenState extends State<HomeScreen> {
   final DriverDashboardRepository _dashboardRepository =
       DriverDashboardRepository();
   final DriverHeatMapRepository _heatMapRepository = DriverHeatMapRepository();
-  final ImagePicker _courierProofPicker = ImagePicker();
-  XFile? _pickupProofPhoto;
-  XFile? _dropoffProofPhoto;
 
   GoogleMapController? _mapController;
   StreamSubscription<Position>? _positionSub;
@@ -327,9 +319,7 @@ class HomeScreenState extends State<HomeScreen> {
       _arrivalCountdownSeconds = 300;
     });
 
-    _arrivalCountdownTimer = Timer.periodic(const Duration(seconds: 1), (
-      timer,
-    ) {
+    _arrivalCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -500,13 +490,12 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
+
   Future<void> _loadDispatchSettings() async {
     try {
       final settings = await _driverRepository.fetchDispatchSettings();
       final rawTimeout = settings['accept_timeout_seconds'];
-      final timeout = rawTimeout is num
-          ? rawTimeout.toInt()
-          : int.tryParse('$rawTimeout');
+      final timeout = rawTimeout is num ? rawTimeout.toInt() : int.tryParse('$rawTimeout');
 
       if (!mounted || timeout == null) return;
 
@@ -523,16 +512,7 @@ class HomeScreenState extends State<HomeScreen> {
     try {
       final active = await _driverRepository.fetchActiveRide();
       if (!mounted) return;
-      setState(() {
-        if (active == null) {
-          // Keep the current active ride when backend briefly returns empty data.
-          return;
-        } else if (active.id > 0 && active.status.trim().isNotEmpty) {
-          _activeRide = active;
-        } else {
-          debugPrint('[ACTIVE_RIDE_SKIP_EMPTY] ignored incomplete active ride: id=, type=, status=');
-        }
-      });
+      setState(() => _activeRide = active);
       await _refreshRemainingTripInfo();
     } catch (_) {
       // New backend may not be ready yet. Keep UI ready without fake rides.
@@ -559,9 +539,7 @@ class HomeScreenState extends State<HomeScreen> {
     _countdownRequestId = request.id;
     _requestSecondsLeft = _dispatchAcceptTimeoutSeconds;
 
-    _requestCountdownTimer = Timer.periodic(const Duration(seconds: 1), (
-      timer,
-    ) {
+    _requestCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -587,7 +565,6 @@ class HomeScreenState extends State<HomeScreen> {
       setState(() => _requestSecondsLeft--);
     });
   }
-
   Future<void> _loadRequests({bool silent = false}) async {
     if (!_isOnline) return;
     if (!silent) setState(() => _loadingRequests = true);
@@ -601,13 +578,9 @@ class HomeScreenState extends State<HomeScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _requests = requests
-            .where((r) => !_expiredRequestIds.contains(r.id))
-            .toList();
+        _requests = requests.where((r) => !_expiredRequestIds.contains(r.id)).toList();
         _loadingRequests = false;
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _syncRequestCountdown(),
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) => _syncRequestCountdown());
       });
     } catch (e) {
       if (!mounted) return;
@@ -646,18 +619,12 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _acceptRide(DriverRideRequest ride) async {
+    try { await app_main.dispatchAudioPlayer.stop(); } catch (_) {}
     try {
-      await app_main.dispatchAudioPlayer.stop();
-    } catch (_) {}
-    try {
-      final type = ride.rideType.trim().toLowerCase();
-
-      final active = type == 'courier'
-          ? await _driverRepository.acceptCourierJob(ride.id)
-          : await _driverRepository.acceptRide(ride.id);
+      final active = await _driverRepository.acceptRide(ride.id);
       if (!mounted) return;
       setState(() {
-        _activeRide = (active == null || active.rideType.trim().isEmpty) ? ride : active;
+        _activeRide = active ?? ride;
         _navigationStartedForActiveRide = false;
         _requests.removeWhere((e) => e.id == ride.id);
       });
@@ -666,9 +633,7 @@ class HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       AppSnackbar.showApiError(
         e,
-        fallbackMessage: ride.rideType.trim().toLowerCase() == 'courier'
-            ? 'Unable to accept this courier request.'
-            : 'Unable to accept this ride.',
+        fallbackMessage: 'Unable to accept this ride.',
       );
     }
   }
@@ -705,8 +670,7 @@ class HomeScreenState extends State<HomeScreen> {
     final miles = _distanceMiles(p, ride.pickupLatLng);
     if (miles > _startTripMaxMiles) {
       AppSnackbar.showError(
-        message:
-            'Arrived will unlock when you are within 0.5 miles of the rider.',
+        message: 'Arrived will unlock when you are within 0.5 miles of the rider.',
       );
       return;
     }
@@ -741,17 +705,12 @@ class HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    if (ride.rideType.trim().toLowerCase() == 'courier') {
-      final confirmed = await _showCourierPickupVerificationSheet(ride);
-      if (confirmed != true) return;
-    }
-
     try {
       final updated = await _driverRepository.startRide(ride.id);
       if (!mounted) return;
 
       _arrivalCountdownTimer?.cancel();
-      _requestCountdownTimer?.cancel();
+    _requestCountdownTimer?.cancel();
 
       setState(() {
         _arrivalCountdownSeconds = 0;
@@ -766,191 +725,9 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<XFile?> _takeCourierProofPhoto() async {
-    try {
-      return await _courierProofPicker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 70,
-        maxWidth: 1600,
-      );
-    } catch (e) {
-      AppSnackbar.showApiError(
-        e,
-        fallbackMessage: 'Unable to open camera.',
-      );
-      return null;
-    }
-  }
-
-  Future<bool?> _showCourierPickupVerificationSheet(
-    DriverRideRequest ride,
-  ) async {
-    bool confirmed = false;
-    XFile? pickupPhoto = _pickupProofPhoto;
-
-    return showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 18.h),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 42.w,
-                        height: 4.h,
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      'Package Pickup Verification',
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      'Confirm only after the package is physically in your possession.',
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    _locationRow(
-                      Icons.storefront_rounded,
-                      'Pickup',
-                      ride.pickupAddress,
-                    ),
-                    SizedBox(height: 10.h),
-                    _locationRow(
-                      Icons.flag_rounded,
-                      'Drop-off',
-                      ride.dropoffAddress,
-                    ),
-                    SizedBox(height: 16.h),
-                    Container(
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8E1),
-                        borderRadius: BorderRadius.circular(14.r),
-                        border: Border.all(
-                          color: AppConst.primaryColor.withValues(alpha: 0.45),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.inventory_2_rounded,
-                            color: Colors.black87,
-                            size: 22.sp,
-                          ),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: Text(
-                              'Check the package condition before leaving pickup. Pickup photo is required.',
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 14.h),
-                    SizedBox(height: 14.h),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48.h,
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final photo = await _takeCourierProofPhoto();
-                          if (photo == null) return;
-                          setSheetState(() {
-                            pickupPhoto = photo;
-                            _pickupProofPhoto = photo;
-                          });
-                        },
-                        icon: Icon(pickupPhoto == null ? Icons.photo_camera_rounded : Icons.check_circle_rounded),
-                        label: Text(
-                          pickupPhoto == null ? 'TAKE PICKUP PHOTO' : 'PICKUP PHOTO SAVED',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                    ),
-                    CheckboxListTile(
-                      value: confirmed,
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text(
-                        'I confirm I picked up the correct package.',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setSheetState(() => confirmed = value ?? false);
-                      },
-                    ),
-                    SizedBox(height: 12.h),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50.h,
-                      child: FilledButton(
-                        onPressed: confirmed && pickupPhoto != null ? () => Navigator.pop(sheetContext, true) : null,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppConst.primaryColor,
-                          foregroundColor: Colors.black,
-                          disabledBackgroundColor: Colors.black12,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                        ),
-                        child: Text(
-                          'CONFIRM PICKUP',
-                          style: TextStyle(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _showTripEarnedSheet(DriverRideRequest ride) async {
-    final earned = ride.estimatedFare == null
-        ? r'$--'
-        : _money(ride.estimatedFare!);
+    final earned =
+        ride.estimatedFare == null ? r'$--' : _money(ride.estimatedFare!);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -977,36 +754,13 @@ class HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.payments_rounded,
-                    size: 54.sp,
-                    color: AppConst.primaryColor,
-                  ),
+                  Icon(Icons.payments_rounded, size: 54.sp, color: AppConst.primaryColor),
                   SizedBox(height: 14.h),
-                  Text(
-                    'Nice work!',
-                    style: TextStyle(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                  Text('Nice work!', style: TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w900)),
                   SizedBox(height: 6.h),
-                  Text(
-                    'You just earned',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black54,
-                    ),
-                  ),
+                  Text('You just earned', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700, color: Colors.black54)),
                   SizedBox(height: 4.h),
-                  Text(
-                    earned,
-                    style: TextStyle(
-                      fontSize: 44.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                  Text(earned, style: TextStyle(fontSize: 44.sp, fontWeight: FontWeight.w900)),
                   SizedBox(height: 20.h),
                   SizedBox(
                     width: double.infinity,
@@ -1017,10 +771,7 @@ class HomeScreenState extends State<HomeScreen> {
                         backgroundColor: AppConst.primaryColor,
                         foregroundColor: Colors.black,
                       ),
-                      child: const Text(
-                        'CONTINUE',
-                        style: TextStyle(fontWeight: FontWeight.w900),
-                      ),
+                      child: const Text('CONTINUE', style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
                   ),
                 ],
@@ -1031,7 +782,6 @@ class HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-
   Future<bool> _showCompletionReviewSheet() async {
     int stars = 5;
     final commentController = TextEditingController();
@@ -1142,9 +892,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _cancelTrip() async {
-    try {
-      await app_main.dispatchAudioPlayer.stop();
-    } catch (_) {}
+    try { await app_main.dispatchAudioPlayer.stop(); } catch (_) {}
     final ride = _activeRide;
     if (ride == null) return;
 
@@ -1154,7 +902,7 @@ class HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
 
       _arrivalCountdownTimer?.cancel();
-      _requestCountdownTimer?.cancel();
+    _requestCountdownTimer?.cancel();
 
       setState(() {
         _activeRide = null;
@@ -1174,190 +922,9 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<bool?> _showCourierDeliveryProofSheet(DriverRideRequest ride) async {
-    bool confirmed = false;
-    XFile? dropoffPhoto = _dropoffProofPhoto;
-
-    return showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final packageLine =
-                ((ride.packageSize ?? 'Package').trim()) +
-                ' - ' +
-                ((ride.packageWeight ?? '--').trim()) +
-                ' lb';
-
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 18.h),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 42.w,
-                        height: 4.h,
-                        decoration: BoxDecoration(
-                          color: Colors.black26,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      'Delivery Proof',
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black,
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      'Confirm delivery only after the package is delivered to the correct location or receiver.',
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    _locationRow(Icons.flag_rounded, 'Drop-off', ride.dropoffAddress),
-                    SizedBox(height: 10.h),
-                    _locationRow(Icons.person_rounded, 'Receiver', ((ride.receiverName ?? '--').trim()) + ' - ' + ((ride.receiverPhone ?? '--').trim())),
-                    SizedBox(height: 10.h),
-                    _locationRow(Icons.inventory_2_rounded, 'Package', packageLine),
-                    if ((ride.dropoffInstructions ?? '').trim().isNotEmpty) ...[
-                      SizedBox(height: 12.h),
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(12.w),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF8E1),
-                          borderRadius: BorderRadius.circular(14.r),
-                          border: Border.all(color: AppConst.primaryColor.withValues(alpha: 0.45)),
-                        ),
-                        child: Text(
-                          'Drop-off instructions: ' + ride.dropoffInstructions!.trim(),
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                    ],
-                    SizedBox(height: 14.h),
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(14.r),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.photo_camera_rounded, color: Colors.black87, size: 22.sp),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: Text(
-                              'Delivery photo is required before completing this delivery.',
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 14.h),
-                    SizedBox(height: 14.h),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48.h,
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final photo = await _takeCourierProofPhoto();
-                          if (photo == null) return;
-                          setSheetState(() {
-                            dropoffPhoto = photo;
-                            _dropoffProofPhoto = photo;
-                          });
-                        },
-                        icon: Icon(dropoffPhoto == null ? Icons.photo_camera_rounded : Icons.check_circle_rounded),
-                        label: Text(
-                          dropoffPhoto == null ? 'TAKE DELIVERY PHOTO' : 'DELIVERY PHOTO SAVED',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                    ),
-                    CheckboxListTile(
-                      value: confirmed,
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: Text(
-                        'I confirm the package was delivered.',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setSheetState(() => confirmed = value ?? false);
-                      },
-                    ),
-                    SizedBox(height: 12.h),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50.h,
-                      child: FilledButton(
-                        onPressed: confirmed && dropoffPhoto != null ? () => Navigator.pop(sheetContext, true) : null,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppConst.primaryColor,
-                          foregroundColor: Colors.black,
-                          disabledBackgroundColor: Colors.black12,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                        ),
-                        child: Text(
-                          'COMPLETE DELIVERY',
-                          style: TextStyle(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _completeTrip() async {
     final ride = _activeRide;
     if (ride == null) return;
-
-    if (ride.rideType.trim().toLowerCase() == 'courier') {
-      final confirmed = await _showCourierDeliveryProofSheet(ride);
-      if (confirmed != true) return;
-    }
 
     try {
       await _driverRepository.completeRide(ride.id);
@@ -1615,28 +1182,19 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          if (_hasActiveRide &&
-              _driverLatLng != null &&
-              _navigationStartedForActiveRide)
+          if (_hasActiveRide && _driverLatLng != null && _navigationStartedForActiveRide)
             HomeEmbeddedNavigation(
               origin: _driverLatLng!,
-              destination:
-                  (_activeRide!.status.toLowerCase() == 'in_progress' ||
-                      _activeRide!.status.toLowerCase() == 'started')
+              destination: (_activeRide!.status.toLowerCase() == 'in_progress' || _activeRide!.status.toLowerCase() == 'started')
                   ? _activeRide!.dropoffLatLng
                   : _activeRide!.pickupLatLng,
-              title:
-                  (_activeRide!.status.toLowerCase() == 'in_progress' ||
-                      _activeRide!.status.toLowerCase() == 'started')
+              title: (_activeRide!.status.toLowerCase() == 'in_progress' || _activeRide!.status.toLowerCase() == 'started')
                   ? 'Dropoff'
                   : 'Pickup',
             )
           else
             GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: mapCenter,
-                zoom: 11,
-              ),
+              initialCameraPosition: CameraPosition(target: mapCenter, zoom: 11),
               markers: _markers(),
               circles: _heatMapCircles(),
               polylines: _polylines(),
@@ -1667,7 +1225,12 @@ class HomeScreenState extends State<HomeScreen> {
               ),
             ),
           if (_hasActiveRide)
-            Positioned(left: 0, right: 0, bottom: 0, child: _activeTripCard()),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _activeTripCard(),
+            ),
         ],
       ),
     );
@@ -1895,7 +1458,7 @@ class HomeScreenState extends State<HomeScreen> {
                   'Earnings today',
                   style: TextStyle(
                     color: Colors.black54,
-                    fontSize: 11.sp,
+                            fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1961,7 +1524,7 @@ class HomeScreenState extends State<HomeScreen> {
                 _isOnline ? 'Active' : 'Offline',
                 style: TextStyle(
                   color: Colors.black,
-                  fontSize: 16.sp,
+                            fontSize: 16.sp,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -2279,15 +1842,8 @@ class HomeScreenState extends State<HomeScreen> {
   Widget _requestCard(DriverRideRequest ride) {
     final progress = (_requestSecondsLeft / 12).clamp(0.0, 1.0).toDouble();
     final pickupMiles = ride.pickupDistanceMiles;
-    final pickupEta = pickupMiles == null
-        ? null
-        : math.max(1, (pickupMiles / 25 * 60).round());
-    final pickupEtaLine = pickupMiles == null
-        ? 'ETA pending'
-        : pickupEta.toString() +
-              ' min | ' +
-              pickupMiles.toStringAsFixed(1) +
-              ' mi';
+    final pickupEta = pickupMiles == null ? null : math.max(1, (pickupMiles / 25 * 60).round());
+    final pickupEtaLine = pickupMiles == null ? 'ETA pending' : pickupEta.toString() + ' min Ã‚Â· ' + pickupMiles.toStringAsFixed(1) + ' mi';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -2380,12 +1936,8 @@ class HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8.r),
                       child: LinearProgressIndicator(
                         value: progress,
-                        backgroundColor: AppConst.primaryColor.withOpacity(
-                          0.35,
-                        ),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppConst.primaryColor,
-                        ),
+                        backgroundColor: AppConst.primaryColor.withOpacity(0.35),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppConst.primaryColor),
                       ),
                     ),
                   ),
@@ -2416,7 +1968,6 @@ class HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
   Widget _activeTripCard() {
     final ride = _activeRide!;
     final status = ride.status.toLowerCase();
@@ -2435,7 +1986,7 @@ class HomeScreenState extends State<HomeScreen> {
       );
       miles = meters / 1609.344;
       final minutes = math.max(1, (miles / 0.45).round());
-      etaDistText = '$minutes min | ${miles.toStringAsFixed(1)} mi';
+      etaDistText = '$minutes min • ${miles.toStringAsFixed(1)} mi';
     }
 
     final nearTarget = miles != null && miles <= _startTripMaxMiles;
@@ -2444,29 +1995,22 @@ class HomeScreenState extends State<HomeScreen> {
     VoidCallback? action;
 
     final riderName = (ride.riderName ?? '').trim();
-    final riderFirstName = riderName.isEmpty
-        ? 'rider'
-        : riderName.split(' ').first;
-    final isCourier = ride.rideType.trim().toLowerCase() == 'courier';
-    debugPrint('[COURIER_UI] package=' + (ride.packageSize ?? 'null') + ', weight=' + (ride.packageWeight ?? 'null') + ', receiver=' + (ride.receiverName ?? 'null') + ', phone=' + (ride.receiverPhone ?? 'null') + ', pickupNote=' + (ride.pickupInstructions ?? 'null') + ', dropoffNote=' + (ride.dropoffInstructions ?? 'null'));
-    debugPrint('[ACTIVE_FLOW] rideType=' + ride.rideType + ', status=' + status + ', nav=' + _navigationStartedForActiveRide.toString());
+    final riderFirstName = riderName.isEmpty ? 'rider' : riderName.split(' ').first;
 
-    if (status == 'accepted' || status == 'assigned' || status == 'confirmed') {
+    if (status == 'accepted') {
       if (!_navigationStartedForActiveRide) {
-        actionLabel = isCourier
-            ? 'DRIVE TO PICKUP'
-            : 'DRIVE TO ' + riderFirstName.toUpperCase();
+        actionLabel = 'DRIVE TO ' + riderFirstName.toUpperCase();
         action = _startDrivingToRider;
       } else if (nearTarget) {
-        actionLabel = isCourier ? 'ARRIVED AT PICKUP' : 'ARRIVED';
+        actionLabel = 'ARRIVED';
         action = _arrived;
       }
     } else if (status == 'arrived') {
-      actionLabel = isCourier ? 'CONFIRM PACKAGE PICKUP' : 'START';
+      actionLabel = 'START';
       action = _startTrip;
     } else if (status == 'started' || status == 'in_progress') {
       if (nearTarget) {
-        actionLabel = isCourier ? 'COMPLETE DELIVERY' : 'COMPLETE';
+        actionLabel = 'COMPLETE';
         action = _completeTrip;
       }
     }
@@ -2543,38 +2087,6 @@ class HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          if (isCourier) ...[
-            SizedBox(height: 8.h),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(10.w),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E1),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Package: ' + ((ride.packageSize ?? 'Package').trim()) + ' - ' + ((ride.packageWeight ?? '--').trim()) + ' lb',
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900),
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    'Receiver: ' + ((ride.receiverName ?? '--').trim()) + ' - ' + ((ride.receiverPhone ?? '--').trim()),
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    'Note: ' + ((toPickup ? ride.pickupInstructions : ride.dropoffInstructions) ?? '').trim(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-            ),
-          ],
           if (actionLabel != null) ...[
             SizedBox(height: 5.h),
             SizedBox(
@@ -2596,8 +2108,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          ],
-        ],
+          ],        ],
       ),
     );
   }
@@ -2607,8 +2118,7 @@ class HomeScreenState extends State<HomeScreen> {
     if (ride == null) return;
 
     final status = ride.status.toLowerCase();
-    final canCancelNoShow =
-        status == 'arrived' && _arrivalCountdownSeconds <= 0;
+    final canCancelNoShow = status == 'arrived' && _arrivalCountdownSeconds <= 0;
     final canEarlyDropoff = status == 'started' || status == 'in_progress';
 
     await showModalBottomSheet<void>(
@@ -2654,9 +2164,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ListTile(
                   leading: const Icon(Icons.volume_off_rounded),
                   title: const Text('Navigation audio / vibration'),
-                  subtitle: const Text(
-                    'Coming next: voice, vibration, silent mode',
-                  ),
+                  subtitle: const Text('Coming next: voice, vibration, silent mode'),
                   onTap: () {},
                 ),
                 ListTile(
@@ -2673,9 +2181,7 @@ class HomeScreenState extends State<HomeScreen> {
                   ListTile(
                     leading: const Icon(Icons.flag_circle_rounded),
                     title: const Text('Early dropoff'),
-                    subtitle: const Text(
-                      'Complete before reaching 0.5 mi zone',
-                    ),
+                    subtitle: const Text('Complete before reaching 0.5 mi zone'),
                     onTap: () {
                       Navigator.pop(context);
                       _completeTrip();
@@ -2708,7 +2214,6 @@ class HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-
   Widget _smallPill(String text) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
@@ -2803,6 +2308,68 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

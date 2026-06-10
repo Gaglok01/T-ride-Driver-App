@@ -75,6 +75,9 @@ class _FindingRideRequestsScreenState extends State<FindingRideRequestsScreen> {
   /// After a successful accept API call; switches primary action from Accept → Cancel.
   bool _acceptedThisSession = false;
 
+  /// Courier MVP: driver must confirm package pickup before completing delivery.
+  bool _packagePickedUp = false;
+
   /// Shown until [ActiveRideCourierOrder.acceptedAt] or Firestore `accepted_at` is available.
   DateTime? _acceptedAtFallback;
   ActiveRideCourierOrder? _rideData;
@@ -729,6 +732,18 @@ class _FindingRideRequestsScreenState extends State<FindingRideRequestsScreen> {
       );
       return false;
     }
+  }
+
+  Future<void> _onConfirmPackagePickup() async {
+    if (!_isCourier) return;
+
+    setState(() => _packagePickedUp = true);
+
+    AppSnackbar.showSuccess(
+      title: 'Package picked up',
+      message: 'Package pickup confirmed. You can now complete delivery.',
+      duration: const Duration(seconds: 2),
+    );
   }
 
   Future<void> _onMarkCompletePressed() async {
@@ -1422,6 +1437,8 @@ class _FindingRideRequestsScreenState extends State<FindingRideRequestsScreen> {
                                     child: FilledButton(
                                       onPressed: _rideActionInProgress
                                           ? null
+                                          : (_isCourier && !_packagePickedUp)
+                                          ? _onConfirmPackagePickup
                                           : _onMarkCompletePressed,
                                       style: FilledButton.styleFrom(
                                         backgroundColor: kOrderRoutePurple,
@@ -1446,7 +1463,11 @@ class _FindingRideRequestsScreenState extends State<FindingRideRequestsScreen> {
                                               ),
                                             )
                                           : Text(
-                                              'mark_as_completed'.tr,
+                                              _isCourier && !_packagePickedUp
+                                                  ? 'Confirm Package Pickup'
+                                                  : (_isCourier
+                                                        ? 'Complete Delivery'
+                                                        : 'Complete Ride'),
                                               style: TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 16.sp,

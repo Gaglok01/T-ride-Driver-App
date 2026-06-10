@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:t_rider_services_app/config/api_urls.dart';
 import 'package:t_rider_services_app/data/local/secure_storage_service.dart';
@@ -43,9 +43,12 @@ class DriverRealtimeRepository {
       throw DriverRealtimeException(response.statusCode, response.body);
     }
     final decoded = jsonDecode(response.body);
+// ignore: avoid_print
+print('DriverRealtimeRepository.fetchActiveRide body: ' + response.body);
     dynamic raw = decoded;
-    if (decoded is Map)
+    if (decoded is Map) {
       raw = decoded['data'] ?? decoded['requests'] ?? decoded['rides'] ?? [];
+    }
     if (raw is! List) return const [];
     return raw
         .whereType<Map>()
@@ -66,6 +69,8 @@ class DriverRealtimeRepository {
     }
 
     final decoded = jsonDecode(response.body);
+// ignore: avoid_print
+print('DriverRealtimeRepository.fetchActiveRide body: ' + response.body);
     final raw = decoded is Map ? decoded['data'] : null;
 
     if (raw is Map) {
@@ -85,11 +90,28 @@ class DriverRealtimeRepository {
       throw DriverRealtimeException(response.statusCode, response.body);
     }
     final decoded = jsonDecode(response.body);
+// ignore: avoid_print
+print('DriverRealtimeRepository.fetchActiveRide body: ' + response.body);
     dynamic raw = decoded is Map
         ? (decoded['data'] ?? decoded['ride'])
         : decoded;
+
+    // ignore: avoid_print
+    print('DriverRealtimeRepository.fetchActiveRide raw: ' + raw.toString());
+
+    if (raw is List) {
+      // ignore: avoid_print
+      print('DriverRealtimeRepository.fetchActiveRide ignored list data: ' + raw.toString());
+      return null;
+    }
     if (raw is! Map) return null;
-    return DriverRideRequest.fromJson(Map<String, dynamic>.from(raw));
+
+    final parsed = DriverRideRequest.fromJson(Map<String, dynamic>.from(raw));
+
+    // ignore: avoid_print
+    print('DriverRealtimeRepository.fetchActiveRide parsed: id=' + parsed.id.toString() + ', type=' + parsed.rideType + ', status=' + parsed.status);
+
+    return parsed;
   }
 
   Future<void> updateLocation({
@@ -112,6 +134,13 @@ class DriverRealtimeRepository {
     return _postRideAction(ApiUrls.driverAcceptRide(rideId));
   }
 
+  Future<DriverRideRequest?> acceptCourierJob(int courierId) async {
+    return _postRideAction(
+      ApiUrls.driverAcceptCourier(courierId),
+      body: {'action': 'accept'},
+    );
+  }
+
   Future<void> declineRide(int rideId) async {
     await _postVoid(ApiUrls.driverDeclineRide(rideId));
   }
@@ -132,12 +161,18 @@ class DriverRealtimeRepository {
     await _postVoid(ApiUrls.driverBidRide(rideId), body: {'amount': amount});
   }
 
-  Future<DriverRideRequest?> _postRideAction(String endpoint) async {
-    final response = await _apiClient.post(endpoint, headers: await _headers());
+  Future<DriverRideRequest?> _postRideAction(String endpoint, {Object? body}) async {
+    final response = await _apiClient.post(
+      endpoint,
+      headers: await _headers(),
+      body: body,
+    );
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw DriverRealtimeException(response.statusCode, response.body);
     }
     final decoded = jsonDecode(response.body);
+// ignore: avoid_print
+print('DriverRealtimeRepository.fetchActiveRide body: ' + response.body);
     dynamic raw = decoded is Map
         ? (decoded['data'] ?? decoded['ride'])
         : decoded;
@@ -165,4 +200,14 @@ class DriverRealtimeException implements Exception {
   @override
   String toString() => 'DriverRealtimeException($statusCode): $body';
 }
+
+
+
+
+
+
+
+
+
+
 
