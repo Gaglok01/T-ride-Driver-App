@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:t_rider_services_app/main.dart' as app_main;
 import 'package:http/http.dart' as http;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
@@ -618,6 +619,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _acceptRide(DriverRideRequest ride) async {
+    try { await app_main.dispatchAudioPlayer.stop(); } catch (_) {}
     try {
       final active = await _driverRepository.acceptRide(ride.id);
       if (!mounted) return;
@@ -890,6 +892,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _cancelTrip() async {
+    try { await app_main.dispatchAudioPlayer.stop(); } catch (_) {}
     final ride = _activeRide;
     if (ride == null) return;
 
@@ -2305,6 +2308,8 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
 
 
 

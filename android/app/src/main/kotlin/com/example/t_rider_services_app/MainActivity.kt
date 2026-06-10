@@ -1,4 +1,4 @@
-package com.example.t_rider_services_app
+﻿package com.example.t_rider_services_app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -15,7 +15,7 @@ class MainActivity: FlutterActivity() {
 
     private fun createDispatchNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "tride_dispatch_requests_v5"
+            val channelId = "tride_dispatch_requests_v7"
             val channelName = "T-Ride Dispatch"
             val soundUri = Uri.parse("android.resource://" + packageName + "/raw/tride_dispatch")
 
@@ -41,4 +41,6 @@ class MainActivity: FlutterActivity() {
         }
     }
 }
+
+
 

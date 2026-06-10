@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:t_rider_services_app/consts/appConst.dart';
 import 'setting/driver_profile_v2.dart';
@@ -51,9 +51,12 @@ class _NavbarState extends State<Navbar> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: Container(
+    return ValueListenableBuilder<bool>(
+      valueListenable: HomeScreen.activeRideNotifier,
+      builder: (context, hasActiveRide, _) {
+        return Scaffold(
+          body: _screens[_currentIndex],
+          bottomNavigationBar: (_currentIndex == 0 && hasActiveRide) ? null : (_currentIndex == 0 && (_homeScreenKey.currentState?.hasActiveRide ?? false)) ? null : Container(
         decoration: BoxDecoration(
           color: AppConst.white,
           boxShadow: [
@@ -96,6 +99,8 @@ class _NavbarState extends State<Navbar> {
           ),
         ),
       ),
+        );
+      },
     );
   }
 
@@ -189,3 +194,5 @@ class _NavbarState extends State<Navbar> {
   //   );
   // }
 }
+
+

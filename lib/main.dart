@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -24,7 +24,7 @@ final AudioPlayer dispatchAudioPlayer = AudioPlayer();
 
 const AndroidNotificationChannel rideRequestsChannel =
     AndroidNotificationChannel(
-      'tride_dispatch_requests_v5',
+      'tride_dispatch_requests_v7',
       'T-Ride Dispatch',
       description: 'T-Ride dispatch notifications',
       importance: Importance.max,
@@ -56,7 +56,9 @@ Future<void> main() async {
       .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
       >()
-      ?.createNotificationChannel(rideRequestsChannel);  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      ?.createNotificationChannel(rideRequestsChannel);
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     final notification = message.notification;
 
     dispatchAudioPlayer.setReleaseMode(ReleaseMode.loop);
@@ -71,7 +73,7 @@ Future<void> main() async {
       body: notification?.body ?? 'You have a new ride request',
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
-          'tride_dispatch_requests_v5',
+          'tride_dispatch_requests_v7',
           'T-Ride Dispatch',
           channelDescription: 'T-Ride dispatch notifications',
           importance: Importance.max,
@@ -162,6 +164,9 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+
+
 
 
 
