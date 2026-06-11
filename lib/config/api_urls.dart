@@ -1,4 +1,4 @@
-/// API base URL and endpoint constants for T-Ride.
+﻿/// API base URL and endpoint constants for T-Ride.
 /// Structure follows MVVM - config lives in core layer.
 class ApiUrls {
   ApiUrls._();
@@ -23,11 +23,11 @@ class ApiUrls {
   static const String getProfile = 'api/app/get-profile';
   static const String updateProfile = 'api/app/update-profile';
 
-  /// Driver home dashboard â€” `GET` (is_online, stats).
+  /// Driver home dashboard Ã¢â‚¬â€ `GET` (is_online, stats).
   static const String driverDashboard = 'api/app/driver/dashboard';
   static const String driverPreferences = 'api/app/driver/preferences';
 
-  /// Driver online toggle â€” `POST` body: `{ "is_online": true }`.
+  /// Driver online toggle Ã¢â‚¬â€ `POST` body: `{ "is_online": true }`.
   static const String updateOnlineStatus = 'api/app/driver/toggle-online';
   static const String driverStatus = 'api/app/driver/status';
   static const String driverProfileSetup = 'api/app/driver/profile-setup';
@@ -49,16 +49,16 @@ class ApiUrls {
   /// Active ride / courier / food delivery snapshot for the rider app.
   static const String ridesActiveStatus = 'api/app/rides/active-status';
 
-  /// `POST` â€” `api/app/rides/{id}/cancel`
+  /// `POST` Ã¢â‚¬â€ `api/app/rides/{id}/cancel`
   static String rideCancel(int rideId) => 'api/app/rides/$rideId/cancel';
 
-  /// `POST` â€” `api/app/driver/ride/{id}/status`
+  /// `POST` Ã¢â‚¬â€ `api/app/driver/ride/{id}/status`
   /// Driver-side completion endpoint (replaces the old
   /// `api/app/rides/{id}/complete`). Body: none.
   static String rideComplete(int rideId) =>
       'api/app/driver/ride/$rideId/status';
 
-  /// `GET` â€” `api/app/rides/{id}` (single ride details)
+  /// `GET` Ã¢â‚¬â€ `api/app/rides/{id}` (single ride details)
   static String rideDetails(int rideId) => 'api/app/rides/$rideId';
 
   // Courier
@@ -67,35 +67,38 @@ class ApiUrls {
   static const String courierNearby = 'api/app/courier/nearby';
   static const String courierActive = 'api/app/courier/active';
 
-  /// `POST` â€” cancel courier job: `api/app/courier/{id}/cancel`
+  /// `POST` Ã¢â‚¬â€ cancel courier job: `api/app/courier/{id}/cancel`
   static String courierCancel(int id) => 'api/app/courier/$id/cancel';
 
-  /// `POST` â€” `api/app/courier/{id}/complete`
+  /// `POST` Ã¢â‚¬â€ `api/app/courier/{id}/complete`
   static String courierComplete(int id) => 'api/app/courier/$id/complete';
 
-  /// `GET` â€” `api/app/courier/{id}` (single courier details)
+  /// `GET` Ã¢â‚¬â€ `api/app/courier/{id}` (single courier details)
   static String courierDetails(int courierId) => 'api/app/courier/$courierId';
 
-  /// `POST` â€” driver accepts a ride: `api/app/driver/ride/{id}/accept`
+  /// `POST` Ã¢â‚¬â€ driver accepts a ride: `api/app/driver/ride/{id}/accept`
   static String driverAcceptRide(int rideId) =>
       'api/app/driver/ride/$rideId/accept';
 
-  /// `POST` â€” `api/app/driver/courier/{id}/accept`
+  /// `POST` Ã¢â‚¬â€ `api/app/driver/courier/{id}/accept`
   static String driverAcceptCourier(int courierId) =>
       'api/app/driver/courier/$courierId/accept';
+
+  static String driverCourierProof(int courierId) =>
+      'api/app/driver/courier/$courierId/proof';
 
   // Food / delivery (driver)
   static const String foodOrderActive = 'api/app/food/order/active';
 
-  /// `POST` â€” `api/app/food/order/{id}/cancel`
+  /// `POST` Ã¢â‚¬â€ `api/app/food/order/{id}/cancel`
   static String foodOrderCancel(int orderId) =>
       'api/app/food/order/$orderId/cancel';
 
-  /// `POST` â€” `api/app/food/order/{id}/complete`
+  /// `POST` Ã¢â‚¬â€ `api/app/food/order/{id}/complete`
   static String foodOrderComplete(int orderId) =>
       'api/app/food/order/$orderId/complete';
 
-  /// `POST` â€” driver accepts a food delivery order.
+  /// `POST` Ã¢â‚¬â€ driver accepts a food delivery order.
   static String driverAcceptFoodOrder(int orderId) =>
       'api/app/driver/food/$orderId/accept';
 
@@ -123,4 +126,5 @@ class ApiUrls {
   // static const String profile = 'api/profile';
   // static const String rides = 'api/rides';
 }
+
 

@@ -1,5 +1,7 @@
 ﻿import 'dart:convert';
 
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:t_rider_services_app/config/api_urls.dart';
 import 'package:t_rider_services_app/data/local/secure_storage_service.dart';
 import 'package:t_rider_services_app/data/models/driver_ride_request_model.dart';
@@ -161,6 +163,40 @@ print('DriverRealtimeRepository.fetchActiveRide body: ' + response.body);
     await _postVoid(ApiUrls.driverBidRide(rideId), body: {'amount': amount});
   }
 
+  Future<DriverRideRequest?> uploadCourierProof({
+    required int courierId,
+    required String type,
+    required XFile photo,
+  }) async {
+    final headers = await _headers();
+    final uri = Uri.parse(_apiClient.baseUrl + ApiUrls.driverCourierProof(courierId));
+
+    final request = http.MultipartRequest('POST', uri);
+    request.headers.addAll({
+      'Accept': 'application/json',
+      'Authorization': headers['Authorization'] ?? '',
+    });
+
+    request.fields['type'] = type;
+    request.files.add(await http.MultipartFile.fromPath('photo', photo.path));
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw DriverRealtimeException(response.statusCode, response.body);
+    }
+
+    final decoded = jsonDecode(response.body);
+    final raw = decoded is Map ? (decoded['data'] ?? decoded['ride']) : decoded;
+
+    if (raw is Map) {
+      return DriverRideRequest.fromJson(Map<String, dynamic>.from(raw));
+    }
+
+    return null;
+  }
+
   Future<DriverRideRequest?> _postRideAction(String endpoint, {Object? body}) async {
     final response = await _apiClient.post(
       endpoint,
@@ -200,6 +236,8 @@ class DriverRealtimeException implements Exception {
   @override
   String toString() => 'DriverRealtimeException($statusCode): $body';
 }
+
+
 
 
 

@@ -12,7 +12,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:t_rider_services_app/main.dart' as app_main;
 import 'package:http/http.dart' as http;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -747,6 +746,12 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     try {
+      if (_pickupProofPhoto == null) return;
+      await _driverRepository.uploadCourierProof(
+        courierId: ride.id,
+        type: 'pickup',
+        photo: _pickupProofPhoto!,
+      );
       final updated = await _driverRepository.startRide(ride.id);
       if (!mounted) return;
 
@@ -1360,6 +1365,12 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     try {
+      if (_dropoffProofPhoto == null) return;
+      await _driverRepository.uploadCourierProof(
+        courierId: ride.id,
+        type: 'delivery',
+        photo: _dropoffProofPhoto!,
+      );
       await _driverRepository.completeRide(ride.id);
       if (!mounted) return;
 
@@ -1757,7 +1768,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             child: IconButton(
               onPressed: () => Get.to(() => const SettingScreen()),
-              icon: const Icon(Icons.settings_rounded, color: Colors.white),
+              icon: const Icon(Icons.menu_rounded, color: Colors.white),
             ),
           ),
           SizedBox(width: 12.w),
@@ -2543,7 +2554,7 @@ class HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          if (isCourier) ...[
+          if (isCourier && (status == 'arrived' || ((status == 'started' || status == 'in_progress') && nearTarget))) ...[
             SizedBox(height: 8.h),
             Container(
               width: double.infinity,
@@ -2555,22 +2566,47 @@ class HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Package: ' + ((ride.packageSize ?? 'Package').trim()) + ' - ' + ((ride.packageWeight ?? '--').trim()) + ' lb',
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900),
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    'Receiver: ' + ((ride.receiverName ?? '--').trim()) + ' - ' + ((ride.receiverPhone ?? '--').trim()),
-                    style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    'Note: ' + ((toPickup ? ride.pickupInstructions : ride.dropoffInstructions) ?? '').trim(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w700),
-                  ),
+                  if (status == 'arrived') ...[
+                    Text(
+                      'Pickup instructions',
+                      style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      ((ride.pickupInstructions ?? '').trim().isEmpty)
+                          ? 'No pickup instructions'
+                          : ride.pickupInstructions!.trim(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
+                    ),
+                    SizedBox(height: 6.h),
+                    Text(
+                      'Package: ' + ((ride.packageSize ?? 'Package').trim()) + ' - ' + ((ride.packageWeight ?? '--').trim()) + ' lb',
+                      style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900),
+                    ),
+                  ] else ...[
+                    Text(
+                      'Delivery details',
+                      style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      'Receiver: ' + ((ride.receiverName ?? '--').trim()) + ' - ' + ((ride.receiverPhone ?? '--').trim()),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
+                    ),
+                    SizedBox(height: 3.h),
+                    Text(
+                      ((ride.dropoffInstructions ?? '').trim().isEmpty)
+                          ? 'No drop-off instructions'
+                          : 'Instructions: ' + ride.dropoffInstructions!.trim(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -2803,6 +2839,8 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
 
 
 
