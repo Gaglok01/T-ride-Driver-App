@@ -1,6 +1,22 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_navigation_flutter/google_navigation_flutter.dart'
     as nav;
+
+Future<void> forceStopTNavigation() async {
+  try {
+    await nav.GoogleMapsNavigator.stopGuidance();
+  } catch (_) {}
+
+  try {
+    await nav.GoogleMapsNavigator.clearDestinations();
+  } catch (_) {}
+
+  await Future.delayed(const Duration(milliseconds: 300));
+
+  try {
+    await nav.GoogleMapsNavigator.cleanup();
+  } catch (_) {}
+}
 
 class LatLng {
   final double latitude;
@@ -188,6 +204,7 @@ class GoogleMap extends StatefulWidget {
 class _GoogleMapState extends State<GoogleMap> {
   GoogleMapController? _controller;
   bool _guidanceStarted = false;
+  bool _disposed = false;
   LatLng? _lastDestination;
 
   @override
@@ -236,9 +253,7 @@ class _GoogleMapState extends State<GoogleMap> {
     if (!widget.navigationEnabled) return;
     final destination = _findDestination();
 
-    debugPrint(
-      'NAV BUILD ${DateTime.now()} markers=${widget.markers.length}',
-    );
+    debugPrint('NAV BUILD ${DateTime.now()} markers=${widget.markers.length}');
 
     if (destination == null) return;
 
@@ -264,6 +279,7 @@ class _GoogleMapState extends State<GoogleMap> {
         await nav.GoogleMapsNavigator.initializeNavigationSession();
       }
     }
+    if (_disposed || !mounted || !widget.navigationEnabled) return;
     debugPrint('T-RIDE NAV SDK: navigation session initialized');
 
     if (!await nav.GoogleMapsNavigator.areTermsAccepted()) {
@@ -295,16 +311,18 @@ class _GoogleMapState extends State<GoogleMap> {
       debugPrint('T-RIDE NAV SDK: guidance started');
 
       await Future.delayed(const Duration(milliseconds: 1200));
-      await _controller?.rawController?.followMyLocation(nav.CameraPerspective.tilted, zoomLevel: 17.0);
+      await _controller?.rawController?.followMyLocation(
+        nav.CameraPerspective.tilted,
+        zoomLevel: 17.0,
+      );
 
-      
       try {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(top: 65, bottom: 430, right: 10, left: 10));
-
-        
+        await _controller?.rawController?.setPadding(
+          const EdgeInsets.only(top: 65, bottom: 430, right: 10, left: 10),
+        );
       } catch (e) {
         debugPrint('T-RIDE ROUTE OVERVIEW FOLLOW TEST ERROR: $e');
       }
@@ -313,8 +331,10 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setNavigationUIEnabled(true);
         await _controller?.rawController?.setNavigationHeaderEnabled(true);
         await _controller?.rawController?.setNavigationFooterEnabled(false);
-        await _controller?.rawController?.setPadding(const EdgeInsets.only(top: 65, bottom: 430, right: 10, left: 10));
-} catch (e) {
+        await _controller?.rawController?.setPadding(
+          const EdgeInsets.only(top: 65, bottom: 430, right: 10, left: 10),
+        );
+      } catch (e) {
         debugPrint('T-RIDE NAV CAMERA FINAL TEST ERROR: ');
       }
 
@@ -326,7 +346,7 @@ class _GoogleMapState extends State<GoogleMap> {
         await _controller?.rawController?.setReportIncidentButtonEnabled(false);
         await _controller?.rawController?.setTrafficIncidentCardsEnabled(false);
         await _controller?.rawController?.setTrafficPromptsEnabled(false);
-} catch (e) {
+      } catch (e) {
         debugPrint('T-RIDE NAV AFTER START SETTINGS ERROR: $e');
       }
     }
@@ -357,7 +377,12 @@ class _GoogleMapState extends State<GoogleMap> {
     }
 
     return nav.GoogleMapsNavigationView(
-      initialPadding: const EdgeInsets.only(top: 65, bottom: 430, right: 10, left: 10),
+      initialPadding: const EdgeInsets.only(
+        top: 65,
+        bottom: 430,
+        right: 10,
+        left: 10,
+      ),
       initialMapColorScheme: nav.MapColorScheme.light,
       initialForceNightMode: nav.NavigationForceNightMode.forceDay,
       initialNavigationUIEnabledPreference:
@@ -370,7 +395,9 @@ class _GoogleMapState extends State<GoogleMap> {
           await controller.setNavigationHeaderEnabled(true);
           await controller.setNavigationFooterEnabled(false);
           await controller.setRecenterButtonEnabled(true);
-          await controller.setPadding(const EdgeInsets.only(top: 65, bottom: 430, right: 10, left: 10));
+          await controller.setPadding(
+            const EdgeInsets.only(top: 65, bottom: 430, right: 10, left: 10),
+          );
           await controller.setSpeedometerEnabled(true);
           await controller.setReportIncidentButtonEnabled(false);
           await controller.setTrafficIncidentCardsEnabled(false);
@@ -385,32 +412,3 @@ class _GoogleMapState extends State<GoogleMap> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
