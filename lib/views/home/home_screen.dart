@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 import 'package:t_rider_services_app/data/repositories/driver_onboarding_repository.dart';
 import 'package:t_rider_services_app/data/repositories/driver_dashboard_repository.dart';
@@ -1757,7 +1757,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             child: IconButton(
               onPressed: () => Get.to(() => const SettingScreen()),
-              icon: const Icon(Icons.settings_rounded, color: Colors.white),
+              icon: const Icon(Icons.menu_rounded, color: Colors.white),
             ),
           ),
           SizedBox(width: 12.w),
@@ -2448,6 +2448,8 @@ class HomeScreenState extends State<HomeScreen> {
         ? 'rider'
         : riderName.split(' ').first;
     final isCourier = ride.rideType.trim().toLowerCase() == 'courier';
+    final showCourierDetails =
+        isCourier && (status == 'arrived' || (!toPickup && nearTarget));
     debugPrint('[COURIER_UI] package=' + (ride.packageSize ?? 'null') + ', weight=' + (ride.packageWeight ?? 'null') + ', receiver=' + (ride.receiverName ?? 'null') + ', phone=' + (ride.receiverPhone ?? 'null') + ', pickupNote=' + (ride.pickupInstructions ?? 'null') + ', dropoffNote=' + (ride.dropoffInstructions ?? 'null'));
     debugPrint('[ACTIVE_FLOW] rideType=' + ride.rideType + ', status=' + status + ', nav=' + _navigationStartedForActiveRide.toString());
 
@@ -2543,7 +2545,7 @@ class HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          if (isCourier) ...[
+          if (showCourierDetails) ...[
             SizedBox(height: 8.h),
             Container(
               width: double.infinity,
@@ -2803,6 +2805,8 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
 
 
 
